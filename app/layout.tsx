@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "클리닉 매니저",
+  title: "인천센터치과 경영프로그램",
   description: "진료실 관리 시스템",
 };
 

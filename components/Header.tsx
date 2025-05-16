@@ -34,7 +34,7 @@ export default function Header() {
   return (
     <header className="w-full bg-white border-b border-gray-200 shadow-sm">
       <div className="container mx-auto flex justify-between items-center py-4">
-        <h1 className="text-2xl font-bold text-primary">클리닉 매니저</h1>
+        <h1 className="text-2xl font-bold text-primary">인천센터치과 경영프로그램</h1>
         
         <div className="flex items-center gap-4">
           <div className="flex items-center text-sm text-gray-600">

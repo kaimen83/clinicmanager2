@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from "react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Calendar } from "./ui/calendar";
@@ -18,13 +17,15 @@ import {
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
+import { useDateContext } from "@/lib/context/dateContext";
 
 export default function ClinicNavigation() {
-  const [date, setDate] = useState<Date | undefined>(new Date());
+  const { selectedDate, setSelectedDate } = useDateContext();
 
   const handleDateSelect = (date: Date | undefined) => {
-    setDate(date);
-    // 여기에 날짜 선택 시 동작할 로직 추가 (예: 해당 날짜의 데이터 로드)
+    if (date) {
+      setSelectedDate(date);
+    }
   };
 
   return (
@@ -75,12 +76,12 @@ export default function ClinicNavigation() {
                   variant="outline"
                   className={cn(
                     "justify-start text-left font-normal",
-                    !date && "text-muted-foreground"
+                    !selectedDate && "text-muted-foreground"
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {date ? (
-                    format(date, "PPP", { locale: ko })
+                  {selectedDate ? (
+                    format(selectedDate, "PPP", { locale: ko })
                   ) : (
                     <span>날짜 선택</span>
                   )}
@@ -89,7 +90,7 @@ export default function ClinicNavigation() {
               <PopoverContent className="w-auto p-0">
                 <Calendar
                   mode="single"
-                  selected={date}
+                  selected={selectedDate}
                   onSelect={handleDateSelect}
                   initialFocus
                   locale={ko}
