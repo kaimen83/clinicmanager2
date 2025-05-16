@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { useDateContext } from "@/lib/context/dateContext";
+import SystemSettingsModal from "./SystemSettingsModal";
 
 export default function ClinicNavigation() {
   const { selectedDate, setSelectedDate } = useDateContext();
@@ -66,6 +67,8 @@ export default function ClinicNavigation() {
             <Star className="w-4 h-4" />
             <span>병원리뷰</span>
           </Button>
+          
+          <SystemSettingsModal />
         </div>
         
         <div className="flex items-center gap-2">
