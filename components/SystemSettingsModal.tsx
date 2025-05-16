@@ -9,6 +9,7 @@ import SettingsList from "./SettingsList";
 import { Badge } from "./ui/badge";
 import { Separator } from "./ui/separator";
 import { ScrollArea } from "./ui/scroll-area";
+import ExpenseSubTabs from "./ExpenseSubTabs";
 
 type TabItem = {
   id: string;
@@ -82,8 +83,7 @@ export default function SystemSettingsModal() {
     {
       id: "expenses",
       label: "지출관련",
-      icon: <ReceiptText className="h-4 w-4" />,
-      settingType: "expenseAccount"
+      icon: <ReceiptText className="h-4 w-4" />
     },
     {
       id: "oralProducts",
@@ -105,11 +105,6 @@ export default function SystemSettingsModal() {
   const handleTabChange = (value: string) => {
     setActiveTab(value);
   };
-  
-  // 다이얼로그 상태 변경 핸들러
-  const handleOpenChange = (newOpen: boolean) => {
-    setOpen(newOpen);
-  };
 
   // 현재 선택된 탭에 따라 콘텐츠를 렌더링합니다
   const renderTabContent = () => {
@@ -130,6 +125,9 @@ export default function SystemSettingsModal() {
     
     // 특수 탭들
     switch (currentTab.id) {
+      case "expenses":
+        return <ExpenseSubTabs title={`${currentTab.label} 관리`} />;
+        
       case "dbBackup":
         return (
           <div className="p-6 bg-white rounded-lg shadow-sm border border-gray-100">
@@ -170,7 +168,7 @@ export default function SystemSettingsModal() {
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange} modal>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" className="flex items-center gap-2">
           <Settings className="w-4 h-4" />

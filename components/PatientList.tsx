@@ -49,7 +49,7 @@ export default function PatientList({ date, patients = SAMPLE_PATIENTS }: Props)
       initialExpandedState[doctor] = true;
     });
     setExpandedDoctors(initialExpandedState);
-  }, [doctorNames]);
+  }, [patients]);
   
   const toggleDoctorExpand = (doctor: string) => {
     setExpandedDoctors(prev => ({

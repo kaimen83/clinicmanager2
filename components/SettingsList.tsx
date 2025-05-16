@@ -45,17 +45,17 @@ export default function SettingsList({ title, type, includesFeeRate = false }: S
   const [newValue, setNewValue] = useState('');
   const [newFeeRate, setNewFeeRate] = useState<number | undefined>(undefined);
 
-  // useCallback으로 핸들러 함수를 메모이제이션하여 불필요한 재생성 방지
-  const handleAddDialogChange = useCallback((open: boolean) => {
+  // useCallback 대신 일반 함수로 변경
+  const handleAddDialogChange = (open: boolean) => {
     setIsAddDialogOpen(open);
     // 다이얼로그가 닫힐 때 입력값 초기화
     if (!open) {
       setNewValue('');
       setNewFeeRate(undefined);
     }
-  }, []);
+  };
 
-  const handleEditDialogChange = useCallback((open: boolean) => {
+  const handleEditDialogChange = (open: boolean) => {
     setIsEditDialogOpen(open);
     // 다이얼로그가 닫힐 때 입력값 초기화
     if (!open) {
@@ -63,7 +63,7 @@ export default function SettingsList({ title, type, includesFeeRate = false }: S
       setNewValue('');
       setNewFeeRate(undefined);
     }
-  }, []);
+  };
 
   const fetchSettings = useCallback(async () => {
     if (!type) return; // type이 없으면 API 호출 방지
