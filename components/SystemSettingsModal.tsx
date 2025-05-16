@@ -10,6 +10,7 @@ import { Badge } from "./ui/badge";
 import { Separator } from "./ui/separator";
 import { ScrollArea } from "./ui/scroll-area";
 import ExpenseSubTabs from "./ExpenseSubTabs";
+import ImplantSubTabs from "./ImplantSubTabs";
 
 type TabItem = {
   id: string;
@@ -65,14 +66,7 @@ export default function SystemSettingsModal() {
     {
       id: "implants",
       label: "임플란트",
-      icon: <Package className="h-4 w-4" />,
-      settingType: "implantManufacturer"
-    },
-    {
-      id: "implantSpecifications",
-      label: "임플란트 규격",
-      icon: <FileSpreadsheet className="h-4 w-4" />,
-      settingType: "implantFixture"
+      icon: <Package className="h-4 w-4" />
     },
     {
       id: "employees",
@@ -127,6 +121,9 @@ export default function SystemSettingsModal() {
     switch (currentTab.id) {
       case "expenses":
         return <ExpenseSubTabs title={`${currentTab.label} 관리`} />;
+        
+      case "implants":
+        return <ImplantSubTabs title={`${currentTab.label} 관리`} />;
         
       case "dbBackup":
         return (
