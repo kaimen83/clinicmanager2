@@ -12,71 +12,24 @@ import { useDateContext } from '@/lib/context/dateContext';
 import { PatientData } from '@/lib/types';
 import { Check, ChevronLeft, ChevronRight, Loader2, Plus, Trash2 } from 'lucide-react';
 
-type Props = {
-  isOpen: boolean;
-  onClose: () => void;
-  onTransactionAdded?: () => void;
-};
+// 타입 및 컴포넌트 임포트
+import { 
+  PatientTransactionFormProps, 
+  PatientInfoFormData,
+  TreatmentGroup 
+} from '@/types/patient-transaction';
+import { StepIndicator } from './patient-transaction/StepComponents';
+import PatientInfoStep from './patient-transaction/PatientInfoStep';
+import TreatmentInfoStep from './patient-transaction/TreatmentInfoStep';
 
-// 진료 그룹 타입 정의
-type TreatmentGroup = {
-  id: string;
-  doctor: string;
-  treatmentType: string;
-  paymentMethod: string;
-  cardCompany: string;
-  cashReceipt: boolean;
-  paymentAmount: number;
-  notes: string;
-};
-
-// 스텝 인디케이터 컴포넌트
-const StepIndicator = ({ currentStep, totalSteps }: { currentStep: number; totalSteps: number }) => {
-  return (
-    <div className="flex items-center justify-center mb-6 gap-2">
-      {Array.from({ length: totalSteps }).map((_, index) => (
-        <div
-          key={index}
-          className={`
-            flex items-center justify-center w-8 h-8 rounded-full border 
-            ${
-              index + 1 === currentStep
-                ? 'bg-primary text-white border-primary'
-                : index + 1 < currentStep
-                ? 'bg-primary/20 border-primary/20'
-                : 'bg-gray-100 border-gray-200'
-            }
-          `}
-        >
-          {index + 1 < currentStep ? (
-            <Check className="h-4 w-4" />
-          ) : (
-            <span>{index + 1}</span>
-          )}
-        </div>
-      ))}
-    </div>
-  );
-};
-
-// 단계별 제목 컴포넌트
-const StepTitle = ({ step }: { step: number }) => {
-  const titles = [
-    '환자 정보',
-    '진료 및 수납 정보'
-  ];
-  
-  return <h3 className="text-lg font-medium mb-4">{titles[step - 1]}</h3>;
-};
-
-export default function PatientTransactionForm({ isOpen, onClose, onTransactionAdded }: Props) {
+export default function PatientTransactionForm({ isOpen, onClose, onTransactionAdded }: PatientTransactionFormProps) {
   const { selectedDate } = useDateContext();
   const [currentStep, setCurrentStep] = useState(1);
-  const totalSteps = 2; // 단계를 2단계로 줄임
+  const totalSteps = 2;
   
   // 폼 상태 관리
-  const [formData, setFormData] = useState({
-    date: selectedDate.toISOString().split('T')[0], // 내원 날짜 추가
+  const [formData, setFormData] = useState<PatientInfoFormData>({
+    date: selectedDate.toISOString().split('T')[0],
     chartNumber: '',
     patientName: '',
     visitPath: '',
@@ -287,6 +240,15 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
     });
   };
 
+  // 현재 진료 그룹 삭제
+  const removeCurrentTreatmentGroup = () => {
+    resetCurrentTreatmentGroup();
+    toast({
+      title: "입력 초기화",
+      description: "현재 입력 중인 진료 정보가 초기화되었습니다.",
+    });
+  };
+
   // 진료 그룹 추가
   const addTreatmentGroup = () => {
     // 현재 그룹의 유효성 검사
@@ -414,20 +376,28 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
     }
   };
 
+  // Switch 필드 변경 처리
+  const handleSwitchChange = (name: string, checked: boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      [name]: checked
+    }));
+  };
+
+  // 진료 그룹 Switch 필드 변경 처리
+  const handleTreatmentSwitchChange = (name: string, checked: boolean) => {
+    setCurrentTreatmentGroup(prev => ({
+      ...prev,
+      [name]: checked
+    }));
+  };
+
   // Select 필드 변경 처리
   const handleSelectChange = (name: string, value: string) => {
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
-    
-    // 결제 방식이 카드가 아닌 경우 카드사 초기화
-    if (name === 'paymentMethod' && value !== '카드') {
-      setFormData(prev => ({
-        ...prev,
-        cardCompany: ''
-      }));
-    }
     
     // 입력 시 해당 필드의 오류 메시지 삭제
     if (errors[name]) {
@@ -475,22 +445,6 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
     }
   };
 
-  // Switch 필드 변경 처리
-  const handleSwitchChange = (name: string, checked: boolean) => {
-    setFormData(prev => ({
-      ...prev,
-      [name]: checked
-    }));
-  };
-
-  // 진료 그룹 Switch 필드 변경 처리
-  const handleTreatmentSwitchChange = (name: string, checked: boolean) => {
-    setCurrentTreatmentGroup(prev => ({
-      ...prev,
-      [name]: checked
-    }));
-  };
-
   // 현재 단계 유효성 검사
   const validateCurrentStep = () => {
     const newErrors: Record<string, string> = {};
@@ -510,26 +464,6 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
       
       if (!formData.visitPath) {
         newErrors.visitPath = '내원경로는 필수입니다.';
-      }
-    } else if (currentStep === 2) {
-      if (!currentTreatmentGroup.doctor) {
-        newErrors.doctor = '진료의사는 필수입니다.';
-      }
-      
-      if (!currentTreatmentGroup.treatmentType) {
-        newErrors.treatmentType = '진료내용은 필수입니다.';
-      }
-      
-      if (!currentTreatmentGroup.paymentMethod) {
-        newErrors.paymentMethod = '수납방법은 필수입니다.';
-      }
-      
-      if (currentTreatmentGroup.paymentMethod === '카드' && !currentTreatmentGroup.cardCompany) {
-        newErrors.cardCompany = '카드 결제 시 카드사 정보는 필수입니다.';
-      }
-      
-      if (currentTreatmentGroup.paymentMethod !== '수납없음' && currentTreatmentGroup.paymentAmount <= 0) {
-        newErrors.paymentAmount = '수납금액은 0보다 커야 합니다.';
       }
     }
     
@@ -566,10 +500,6 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
     
     // 현재 작업 중인 그룹이 있고 필수 필드가 입력된 경우 자동으로 추가
     const hasCurrentGroup = currentTreatmentGroup.doctor && currentTreatmentGroup.treatmentType && currentTreatmentGroup.paymentMethod;
-    if (hasCurrentGroup) {
-      // 직접 treatmentGroups에 추가 (addTreatmentGroup 함수는 상태 업데이트가 비동기적으로 적용되어 문제 발생)
-      setTreatmentGroups(prev => [...prev, { ...currentTreatmentGroup }]);
-    }
     
     // 진료 그룹이 없는 경우 오류 메시지
     if (treatmentGroups.length === 0 && !hasCurrentGroup) {
@@ -588,8 +518,6 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
       const groupsToProcess = hasCurrentGroup 
         ? [...treatmentGroups, currentTreatmentGroup]
         : treatmentGroups;
-      
-      console.log('저장할 그룹 수:', groupsToProcess.length);
       
       // 각 진료 그룹마다 API 호출을 수행
       const promises = groupsToProcess.map(async (group) => {
@@ -612,8 +540,6 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
           notes: group.notes
         };
         
-        console.log('저장 중인 데이터:', transactionData);
-        
         const response = await fetch('/api/transactions', {
           method: 'POST',
           headers: {
@@ -631,9 +557,7 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
       });
       
       // 모든 Promise 실행
-      const results = await Promise.all(promises);
-      
-      console.log('저장 결과:', results);
+      await Promise.all(promises);
       
       toast({
         title: "내원정보가 등록되었습니다.",
@@ -659,294 +583,40 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
     }
   };
 
-  // 1단계: 환자 정보 입력 단계
-  const renderPatientInfoStep = () => (
-    <div className="space-y-4">
-      <StepTitle step={1} />
-      
-      <div className="space-y-2">
-        <Label htmlFor="date">내원 날짜</Label>
-        <Input
-          id="date"
-          name="date"
-          type="date"
-          value={formData.date}
-          onChange={handleInputChange}
-          className={errors.date ? "border-red-500" : ""}
-        />
-        {errors.date && (
-          <p className="text-red-500 text-xs">{errors.date}</p>
-        )}
-      </div>
-      
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="chartNumber">차트번호</Label>
-          <div className="relative">
-            <Input
-              id="chartNumber"
-              name="chartNumber"
-              value={formData.chartNumber}
-              onChange={handleInputChange}
-              onBlur={handleChartNumberBlur}
-              className={errors.chartNumber ? "border-red-500" : ""}
-              disabled={isLoading}
-            />
-            {isLoading && (
-              <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
-                <Loader2 className="h-4 w-4 animate-spin" />
-              </div>
-            )}
-          </div>
-          {errors.chartNumber && (
-            <p className="text-red-500 text-xs">{errors.chartNumber}</p>
-          )}
-          {patientNotFound && !isNewPatientPrompt && (
-            <p className="text-amber-500 text-xs">등록되지 않은 환자입니다.</p>
-          )}
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="patientName">환자명</Label>
-          <Input
-            id="patientName"
-            name="patientName"
-            value={formData.patientName}
-            onChange={handleInputChange}
-            className={errors.patientName ? "border-red-500" : ""}
-            disabled={true} // 차트번호 검색으로만 입력 가능하도록 비활성화
-            readOnly
-          />
-          {errors.patientName && (
-            <p className="text-red-500 text-xs">{errors.patientName}</p>
-          )}
-        </div>
-      </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="visitPath">내원경로</Label>
-        <Input
-          id="visitPath"
-          name="visitPath"
-          value={formData.visitPath}
-          onChange={handleInputChange}
-          className={errors.visitPath ? "border-red-500" : ""}
-          disabled={true} // 차트번호 검색으로만 입력 가능하도록 비활성화
-          readOnly
-        />
-        {errors.visitPath && (
-          <p className="text-red-500 text-xs">{errors.visitPath}</p>
-        )}
-      </div>
-      
-      <div className="space-y-2 flex items-center">
-        <div className="flex-1">
-          <Label htmlFor="isNew">신환</Label>
-        </div>
-        <Switch
-          id="isNew"
-          checked={formData.isNew}
-          onCheckedChange={(checked) => handleSwitchChange('isNew', checked)}
-          disabled={true} // 차트번호 검색 결과에 따라 자동으로 설정되도록 비활성화
-        />
-      </div>
-    </div>
-  );
-
-  // 2단계: 진료 및 수납 정보 입력 단계 (기존 2,3단계 통합)
-  const renderTreatmentInfoStep = () => (
-    <div className="space-y-4">
-      <StepTitle step={2} />
-      
-      {/* 진료 그룹 목록 */}
-      {treatmentGroups.length > 0 && (
-        <div className="mb-6">
-          <h4 className="font-medium mb-2">추가된 진료 정보 ({treatmentGroups.length}건)</h4>
-          <div className="space-y-2 max-h-40 overflow-y-auto p-2 border rounded-md">
-            {treatmentGroups.map(group => (
-              <div key={group.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-md border-l-4 border-primary">
-                <div className="flex-1">
-                  <p className="text-sm font-medium">
-                    {group.doctor} - {group.treatmentType}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {group.paymentMethod === '카드' 
-                      ? `${group.paymentMethod}(${group.cardCompany})` 
-                      : group.paymentMethod} | 
-                    {group.paymentAmount.toLocaleString()}원
-                  </p>
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => removeTreatmentGroup(group.id)}
-                  className="text-destructive"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-      
-      {/* 현재 진료 그룹 입력 폼 */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="doctor">진료의</Label>
-          {treatmentGroups.length > 0 && (
-            <span className="text-xs text-muted-foreground">
-              새 진료 정보 입력 중
-            </span>
-          )}
-        </div>
-        <Select 
-          onValueChange={(value) => handleTreatmentSelectChange('doctor', value)}
-          value={currentTreatmentGroup.doctor}
-        >
-          <SelectTrigger className={errors.doctor ? "border-red-500" : ""}>
-            <SelectValue placeholder="선택하세요" />
-          </SelectTrigger>
-          <SelectContent>
-            {doctors.map((doctor, index) => (
-              <SelectItem key={index} value={doctor.value}>{doctor.value}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {errors.doctor && (
-          <p className="text-red-500 text-xs">{errors.doctor}</p>
-        )}
-      </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="treatmentType">진료내용</Label>
-        <Select 
-          onValueChange={(value) => handleTreatmentSelectChange('treatmentType', value)}
-          value={currentTreatmentGroup.treatmentType}
-        >
-          <SelectTrigger className={errors.treatmentType ? "border-red-500" : ""}>
-            <SelectValue placeholder="선택하세요" />
-          </SelectTrigger>
-          <SelectContent>
-            {treatmentTypes.map((treatment, index) => (
-              <SelectItem key={index} value={treatment.value}>{treatment.value}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {errors.treatmentType && (
-          <p className="text-red-500 text-xs">{errors.treatmentType}</p>
-        )}
-      </div>
-      
-      <div className="border-t pt-4 mt-4">
-        <h4 className="font-medium mb-4">수납 정보</h4>
-        
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="paymentMethod">수납방법</Label>
-            <Select 
-              onValueChange={(value) => handleTreatmentSelectChange('paymentMethod', value)}
-              value={currentTreatmentGroup.paymentMethod}
-            >
-              <SelectTrigger className={errors.paymentMethod ? "border-red-500" : ""}>
-                <SelectValue placeholder="선택하세요" />
-              </SelectTrigger>
-              <SelectContent>
-                {paymentMethods.map((method, index) => (
-                  <SelectItem key={index} value={method.value}>{method.value}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.paymentMethod && (
-              <p className="text-red-500 text-xs">{errors.paymentMethod}</p>
-            )}
-          </div>
-          
-          {currentTreatmentGroup.paymentMethod === '카드' && (
-            <div className="space-y-2">
-              <Label htmlFor="cardCompany">카드사</Label>
-              <Select 
-                onValueChange={(value) => handleTreatmentSelectChange('cardCompany', value)}
-                value={currentTreatmentGroup.cardCompany}
-              >
-                <SelectTrigger className={errors.cardCompany ? "border-red-500" : ""}>
-                  <SelectValue placeholder="선택하세요" />
-                </SelectTrigger>
-                <SelectContent>
-                  {cardCompanies.map((company, index) => (
-                    <SelectItem key={index} value={company.value}>{company.value}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.cardCompany && (
-                <p className="text-red-500 text-xs">{errors.cardCompany}</p>
-              )}
-            </div>
-          )}
-          
-          {(currentTreatmentGroup.paymentMethod === '현금' || currentTreatmentGroup.paymentMethod === '계좌이체') && (
-            <div className="space-y-2 flex items-center">
-              <div className="flex-1">
-                <Label htmlFor="cashReceipt">현금영수증</Label>
-              </div>
-              <Switch
-                id="cashReceipt"
-                checked={currentTreatmentGroup.cashReceipt}
-                onCheckedChange={(checked) => handleTreatmentSwitchChange('cashReceipt', checked)}
-              />
-            </div>
-          )}
-          
-          <div className="space-y-2">
-            <Label htmlFor="paymentAmount">수납금액</Label>
-            <Input
-              id="paymentAmount"
-              name="paymentAmount"
-              type="number"
-              value={currentTreatmentGroup.paymentAmount}
-              onChange={handleTreatmentInputChange}
-              className={errors.paymentAmount ? "border-red-500" : ""}
-              disabled={currentTreatmentGroup.paymentMethod === '수납없음'}
-            />
-            {errors.paymentAmount && (
-              <p className="text-red-500 text-xs">{errors.paymentAmount}</p>
-            )}
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="notes">메모</Label>
-            <Input
-              id="notes"
-              name="notes"
-              value={currentTreatmentGroup.notes || ''}
-              onChange={handleTreatmentInputChange}
-            />
-          </div>
-        </div>
-      </div>
-      
-      {/* 진료 그룹 추가 버튼 */}
-      <div className="flex justify-end mt-4 pt-4 border-t">
-        <Button
-          type="button"
-          onClick={addTreatmentGroup}
-          className="gap-1"
-        >
-          <Plus className="h-4 w-4" />
-          진료정보 추가
-        </Button>
-      </div>
-    </div>
-  );
-
   // 단계별 컨텐츠 렌더링
   const renderStepContent = () => {
     switch (currentStep) {
       case 1:
-        return renderPatientInfoStep();
+        return (
+          <PatientInfoStep
+            formData={formData}
+            errors={errors}
+            isLoading={isLoading}
+            patientNotFound={patientNotFound}
+            isNewPatientPrompt={isNewPatientPrompt}
+            handleInputChange={handleInputChange}
+            handleChartNumberBlur={handleChartNumberBlur}
+            handleSwitchChange={handleSwitchChange}
+          />
+        );
       case 2:
-        return renderTreatmentInfoStep();
+        return (
+          <TreatmentInfoStep
+            treatmentGroups={treatmentGroups}
+            currentTreatmentGroup={currentTreatmentGroup}
+            errors={errors}
+            doctors={doctors}
+            treatmentTypes={treatmentTypes}
+            paymentMethods={paymentMethods}
+            cardCompanies={cardCompanies}
+            handleTreatmentInputChange={handleTreatmentInputChange}
+            handleTreatmentSelectChange={handleTreatmentSelectChange}
+            handleTreatmentSwitchChange={handleTreatmentSwitchChange}
+            addTreatmentGroup={addTreatmentGroup}
+            removeTreatmentGroup={removeTreatmentGroup}
+            removeCurrentTreatmentGroup={removeCurrentTreatmentGroup}
+          />
+        );
       default:
         return null;
     }
