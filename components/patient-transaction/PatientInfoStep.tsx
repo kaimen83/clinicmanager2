@@ -1,0 +1,113 @@
+import { Loader2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { PatientInfoStepProps } from '@/types/patient-transaction';
+import { StepTitle } from './StepComponents';
+
+export default function PatientInfoStep({
+  formData,
+  errors,
+  isLoading,
+  patientNotFound,
+  isNewPatientPrompt,
+  handleInputChange,
+  handleChartNumberBlur,
+  handleSwitchChange,
+}: PatientInfoStepProps) {
+  return (
+    <div className="space-y-4">
+      <StepTitle step={1} />
+      
+      <div className="space-y-2">
+        <Label htmlFor="date">
+          내원 날짜 <span className="text-red-500">*</span>
+        </Label>
+        <Input
+          id="date"
+          name="date"
+          type="date"
+          value={formData.date}
+          onChange={handleInputChange}
+          className={errors.date ? "border-red-500" : ""}
+        />
+        {errors.date && (
+          <p className="text-red-500 text-xs">{errors.date}</p>
+        )}
+      </div>
+      
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="chartNumber">
+            차트번호 <span className="text-red-500">*</span>
+          </Label>
+          <div className="relative">
+            <Input
+              id="chartNumber"
+              name="chartNumber"
+              value={formData.chartNumber}
+              onChange={handleInputChange}
+              onBlur={handleChartNumberBlur}
+              className={errors.chartNumber ? "border-red-500" : ""}
+              disabled={isLoading}
+            />
+            {isLoading && (
+              <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+              </div>
+            )}
+          </div>
+          {errors.chartNumber && (
+            <p className="text-red-500 text-xs">{errors.chartNumber}</p>
+          )}
+          {patientNotFound && !isNewPatientPrompt && (
+            <p className="text-amber-500 text-xs">등록되지 않은 환자입니다.</p>
+          )}
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="patientName">
+            환자명 <span className="text-red-500">*</span>
+          </Label>
+          <Input
+            id="patientName"
+            name="patientName"
+            value={formData.patientName}
+            onChange={handleInputChange}
+            className={errors.patientName ? "border-red-500" : ""}
+          />
+          {errors.patientName && (
+            <p className="text-red-500 text-xs">{errors.patientName}</p>
+          )}
+        </div>
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="visitPath">
+          내원경로 <span className="text-red-500">*</span>
+        </Label>
+        <Input
+          id="visitPath"
+          name="visitPath"
+          value={formData.visitPath}
+          onChange={handleInputChange}
+          className={errors.visitPath ? "border-red-500" : ""}
+        />
+        {errors.visitPath && (
+          <p className="text-red-500 text-xs">{errors.visitPath}</p>
+        )}
+      </div>
+      
+      <div className="space-y-2 flex items-center">
+        <div className="flex-1">
+          <Label htmlFor="isNew">신환</Label>
+        </div>
+        <Switch
+          id="isNew"
+          checked={formData.isNew}
+          onCheckedChange={(checked) => handleSwitchChange('isNew', checked)}
+        />
+      </div>
+    </div>
+  );
+} 
