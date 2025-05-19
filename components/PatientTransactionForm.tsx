@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -9,8 +9,8 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
 import { useDateContext } from '@/lib/context/dateContext';
-import { Consultation, Payment } from '@/lib/types';
-import { Check, ChevronLeft, ChevronRight, Plus, Trash } from 'lucide-react';
+import { PatientData } from '@/lib/types';
+import { Check, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 
 type Props = {
   isOpen: boolean;
@@ -51,207 +51,26 @@ const StepIndicator = ({ currentStep, totalSteps }: { currentStep: number; total
 const StepTitle = ({ step }: { step: number }) => {
   const titles = [
     '환자 정보',
-    '진료 정보',
-    '수납 정보'
+    '진료 및 수납 정보'
   ];
   
   return <h3 className="text-lg font-medium mb-4">{titles[step - 1]}</h3>;
 };
 
-// 상담 내역 입력 폼 컴포넌트
-const ConsultationForm = ({ 
-  onAdd,
-  chartNumber,
-  patientName,
-  doctor
-}: { 
-  onAdd: (consultation: Omit<Consultation, '_id' | 'createdAt' | 'updatedAt'>) => void;
-  chartNumber: string;
-  patientName: string;
-  doctor: string;
-}) => {
-  const { selectedDate } = useDateContext();
-  const [formData, setFormData] = useState({
-    date: selectedDate.toISOString().split('T')[0],
-    chartNumber,
-    patientName,
-    doctor,
-    staff: '',
-    amount: 0,
-    agreed: false,
-    notes: ''
-  });
-
-  useEffect(() => {
-    setFormData(prev => ({
-      ...prev,
-      chartNumber,
-      patientName,
-      doctor
-    }));
-  }, [chartNumber, patientName, doctor]);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : type === 'number' ? Number(value) : value
-    }));
-  };
-
-  const handleSelectChange = (name: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onAdd({
-      ...formData,
-      date: new Date(formData.date),
-      confirmedDate: formData.agreed ? new Date(formData.date) : null
-    });
-    
-    // 일부 필드 초기화
-    setFormData(prev => ({
-      ...prev,
-      staff: '',
-      amount: 0,
-      agreed: false,
-      notes: ''
-    }));
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4 border p-4 rounded-md">
-      <h4 className="font-medium">상담 내역 추가</h4>
-      
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="staff">상담직원</Label>
-          <Input
-            id="staff"
-            name="staff"
-            value={formData.staff}
-            onChange={handleChange}
-            required
-          />
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="amount">상담금액</Label>
-          <Input
-            id="amount"
-            name="amount"
-            type="number"
-            value={formData.amount}
-            onChange={handleChange}
-            required
-          />
-        </div>
-      </div>
-      
-      <div className="flex items-center space-x-2">
-        <Switch
-          id="agreed"
-          name="agreed"
-          checked={formData.agreed}
-          onCheckedChange={(checked) => setFormData(prev => ({ ...prev, agreed: checked }))}
-        />
-        <Label htmlFor="agreed">동의 여부</Label>
-      </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="notes">메모</Label>
-        <Input
-          id="notes"
-          name="notes"
-          value={formData.notes}
-          onChange={handleChange}
-        />
-      </div>
-      
-      <Button type="submit" className="w-full">추가</Button>
-    </form>
-  );
-};
-
-// 상담 내역 목록 컴포넌트
-const ConsultationList = ({ 
-  consultations,
-  onToggleAgreed,
-  onDelete
-}: { 
-  consultations: Omit<Consultation, '_id' | 'createdAt' | 'updatedAt'>[];
-  onToggleAgreed: (index: number) => void;
-  onDelete: (index: number) => void;
-}) => {
-  if (consultations.length === 0) {
-    return <p className="text-gray-500 text-center py-4">상담 내역이 없습니다.</p>;
-  }
-  
-  return (
-    <div className="mt-4 border rounded-md overflow-hidden">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
-          <tr>
-            <th className="px-4 py-2 text-xs font-medium text-gray-500 text-left">상담일자</th>
-            <th className="px-4 py-2 text-xs font-medium text-gray-500 text-left">상담직원</th>
-            <th className="px-4 py-2 text-xs font-medium text-gray-500 text-left">금액</th>
-            <th className="px-4 py-2 text-xs font-medium text-gray-500 text-left">동의여부</th>
-            <th className="px-4 py-2 text-xs font-medium text-gray-500 text-left">관리</th>
-          </tr>
-        </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
-          {consultations.map((consultation, index) => (
-            <tr key={index}>
-              <td className="px-4 py-2 text-sm">{new Date(consultation.date).toLocaleDateString()}</td>
-              <td className="px-4 py-2 text-sm">{consultation.staff}</td>
-              <td className="px-4 py-2 text-sm">{consultation.amount.toLocaleString()}원</td>
-              <td className="px-4 py-2 text-sm">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  className={consultation.agreed ? "bg-green-100" : "bg-gray-100"}
-                  onClick={() => onToggleAgreed(index)}
-                >
-                  {consultation.agreed ? "동의" : "미동의"}
-                </Button>
-              </td>
-              <td className="px-4 py-2 text-sm">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onDelete(index)}
-                  className="text-red-500 hover:text-red-700"
-                >
-                  <Trash className="h-4 w-4" />
-                </Button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-};
-
 export default function PatientTransactionForm({ isOpen, onClose, onTransactionAdded }: Props) {
   const { selectedDate } = useDateContext();
   const [currentStep, setCurrentStep] = useState(1);
-  const totalSteps = 3;
+  const totalSteps = 2; // 단계를 2단계로 줄임
   
   // 폼 상태 관리
   const [formData, setFormData] = useState({
+    date: selectedDate.toISOString().split('T')[0], // 내원 날짜 추가
     chartNumber: '',
     patientName: '',
     visitPath: '',
     doctor: '',
     treatmentType: '',
     isNew: false,
-    isConsultation: false,
     paymentMethod: '현금',
     cardCompany: '',
     cashReceipt: false,
@@ -259,31 +78,155 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
     notes: ''
   });
 
-  // 상담 내역 상태 관리
-  const [consultations, setConsultations] = useState<Omit<Consultation, '_id' | 'createdAt' | 'updatedAt'>[]>([]);
+  // 추가 상태 변수
+  const [isLoading, setIsLoading] = useState(false);
+  const [isNewPatientPrompt, setIsNewPatientPrompt] = useState(false);
+  const [patientNotFound, setPatientNotFound] = useState(false);
+  
+  // 시스템 설정 데이터
+  const [doctors, setDoctors] = useState<{value: string}[]>([]);
+  const [treatmentTypes, setTreatmentTypes] = useState<{value: string}[]>([]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // 시스템 설정 데이터 가져오기
+  const fetchSettings = async () => {
+    try {
+      // 진료의 데이터 가져오기
+      const doctorResponse = await fetch('/api/settings?type=doctor');
+      if (doctorResponse.ok) {
+        const data = await doctorResponse.json();
+        setDoctors(data.settings || []);
+      }
+      
+      // 진료내용 데이터 가져오기
+      const treatmentResponse = await fetch('/api/settings?type=treatmentType');
+      if (treatmentResponse.ok) {
+        const data = await treatmentResponse.json();
+        setTreatmentTypes(data.settings || []);
+      }
+    } catch (error) {
+      console.error('설정 데이터 조회 오류:', error);
+      toast({
+        title: "오류",
+        description: "설정 데이터를 불러오는 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  // 모달이 열릴 때 설정 데이터 가져오기
+  useEffect(() => {
+    if (isOpen) {
+      fetchSettings();
+    }
+  }, [isOpen]);
+
+  // 환자 정보 조회 함수
+  const fetchPatientInfo = async (chartNumber: string) => {
+    if (!chartNumber.trim()) return;
+    
+    setIsLoading(true);
+    setPatientNotFound(false);
+    
+    try {
+      const response = await fetch(`/api/patients/${chartNumber}`);
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          // 환자 정보가 없는 경우
+          setPatientNotFound(true);
+          setIsNewPatientPrompt(true);
+          
+          // 신규 환자로 설정
+          setFormData(prev => ({
+            ...prev,
+            isNew: true,
+            patientName: '',
+            visitPath: ''
+          }));
+        } else {
+          throw new Error('환자 정보 조회 중 오류가 발생했습니다.');
+        }
+        return;
+      }
+      
+      // 환자 정보 가져오기 성공
+      const patientData: PatientData = await response.json();
+      
+      // 폼 데이터 자동 입력
+      setFormData(prev => ({
+        ...prev,
+        patientName: patientData.name,
+        visitPath: patientData.visitPath || '',
+        isNew: false
+      }));
+      
+      toast({
+        title: "환자 정보 조회 완료",
+        description: `${patientData.name} 환자의 정보가 자동으로 입력되었습니다.`,
+      });
+    } catch (err) {
+      console.error('환자 정보 조회 오류:', err);
+      toast({
+        title: "오류",
+        description: err instanceof Error ? err.message : "환자 정보 조회 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 차트번호 입력 후 실행되는 함수
+  const handleChartNumberBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const chartNumber = e.target.value.trim();
+    if (chartNumber) {
+      fetchPatientInfo(chartNumber);
+    }
+  };
+
+  // 신규 환자 등록 확인
+  const handleConfirmNewPatient = () => {
+    setIsNewPatientPrompt(false);
+    toast({
+      title: "신규 환자",
+      description: "새 환자로 등록됩니다. 환자 정보를 입력해주세요.",
+    });
+  };
+
+  // 신규 환자 등록 취소
+  const handleCancelNewPatient = () => {
+    setIsNewPatientPrompt(false);
+    setFormData(prev => ({
+      ...prev,
+      chartNumber: '',
+      patientName: '',
+      visitPath: '',
+      isNew: false
+    }));
+  };
 
   // 폼 초기화
   const resetForm = () => {
     setFormData({
+      date: selectedDate.toISOString().split('T')[0],
       chartNumber: '',
       patientName: '',
       visitPath: '',
       doctor: '',
       treatmentType: '',
       isNew: false,
-      isConsultation: false,
       paymentMethod: '현금',
       cardCompany: '',
       cashReceipt: false,
       paymentAmount: 0,
       notes: ''
     });
-    setConsultations([]);
     setErrors({});
     setCurrentStep(1);
+    setPatientNotFound(false);
   };
 
   // 모달이 닫힐 때 폼 초기화
@@ -362,6 +305,10 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
     const newErrors: Record<string, string> = {};
     
     if (currentStep === 1) {
+      if (!formData.date) {
+        newErrors.date = '내원 날짜는 필수입니다.';
+      }
+      
       if (!formData.chartNumber) {
         newErrors.chartNumber = '차트번호는 필수입니다.';
       }
@@ -381,7 +328,7 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
       if (!formData.treatmentType) {
         newErrors.treatmentType = '진료내용은 필수입니다.';
       }
-    } else if (currentStep === 3) {
+      
       if (!formData.paymentMethod) {
         newErrors.paymentMethod = '수납방법은 필수입니다.';
       }
@@ -413,30 +360,6 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
     }
   };
 
-  // 상담 내역 추가
-  const handleAddConsultation = (consultation: Omit<Consultation, '_id' | 'createdAt' | 'updatedAt'>) => {
-    setConsultations(prev => [...prev, consultation]);
-  };
-
-  // 상담 내역 동의 여부 토글
-  const handleToggleConsultationAgreed = (index: number) => {
-    setConsultations(prev => prev.map((consultation, i) => {
-      if (i === index) {
-        return {
-          ...consultation,
-          agreed: !consultation.agreed,
-          confirmedDate: !consultation.agreed ? new Date() : null
-        };
-      }
-      return consultation;
-    }));
-  };
-
-  // 상담 내역 삭제
-  const handleDeleteConsultation = (index: number) => {
-    setConsultations(prev => prev.filter((_, i) => i !== index));
-  };
-
   // 폼 제출 처리
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -449,13 +372,10 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
     setIsSubmitting(true);
     
     try {
-      const dateStr = selectedDate.toISOString().split('T')[0];
-      
       // 서버에 전송할 데이터
       const transactionData = {
         ...formData,
-        date: dateStr,
-        consultations: consultations
+        date: formData.date,
       };
       
       const response = await fetch('/api/transactions', {
@@ -500,18 +420,45 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
     <div className="space-y-4">
       <StepTitle step={1} />
       
+      <div className="space-y-2">
+        <Label htmlFor="date">내원 날짜</Label>
+        <Input
+          id="date"
+          name="date"
+          type="date"
+          value={formData.date}
+          onChange={handleInputChange}
+          className={errors.date ? "border-red-500" : ""}
+        />
+        {errors.date && (
+          <p className="text-red-500 text-xs">{errors.date}</p>
+        )}
+      </div>
+      
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="chartNumber">차트번호</Label>
-          <Input
-            id="chartNumber"
-            name="chartNumber"
-            value={formData.chartNumber}
-            onChange={handleInputChange}
-            className={errors.chartNumber ? "border-red-500" : ""}
-          />
+          <div className="relative">
+            <Input
+              id="chartNumber"
+              name="chartNumber"
+              value={formData.chartNumber}
+              onChange={handleInputChange}
+              onBlur={handleChartNumberBlur}
+              className={errors.chartNumber ? "border-red-500" : ""}
+              disabled={isLoading}
+            />
+            {isLoading && (
+              <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+              </div>
+            )}
+          </div>
           {errors.chartNumber && (
             <p className="text-red-500 text-xs">{errors.chartNumber}</p>
+          )}
+          {patientNotFound && !isNewPatientPrompt && (
+            <p className="text-amber-500 text-xs">등록되지 않은 환자입니다.</p>
           )}
         </div>
         
@@ -523,6 +470,8 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
             value={formData.patientName}
             onChange={handleInputChange}
             className={errors.patientName ? "border-red-500" : ""}
+            disabled={true} // 차트번호 검색으로만 입력 가능하도록 비활성화
+            readOnly
           />
           {errors.patientName && (
             <p className="text-red-500 text-xs">{errors.patientName}</p>
@@ -532,21 +481,15 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
       
       <div className="space-y-2">
         <Label htmlFor="visitPath">내원경로</Label>
-        <Select 
-          onValueChange={(value) => handleSelectChange('visitPath', value)}
+        <Input
+          id="visitPath"
+          name="visitPath"
           value={formData.visitPath}
-        >
-          <SelectTrigger className={errors.visitPath ? "border-red-500" : ""}>
-            <SelectValue placeholder="선택하세요" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="지인소개">지인소개</SelectItem>
-            <SelectItem value="네이버">네이버</SelectItem>
-            <SelectItem value="구글">구글</SelectItem>
-            <SelectItem value="인스타그램">인스타그램</SelectItem>
-            <SelectItem value="기타">기타</SelectItem>
-          </SelectContent>
-        </Select>
+          onChange={handleInputChange}
+          className={errors.visitPath ? "border-red-500" : ""}
+          disabled={true} // 차트번호 검색으로만 입력 가능하도록 비활성화
+          readOnly
+        />
         {errors.visitPath && (
           <p className="text-red-500 text-xs">{errors.visitPath}</p>
         )}
@@ -560,12 +503,13 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
           id="isNew"
           checked={formData.isNew}
           onCheckedChange={(checked) => handleSwitchChange('isNew', checked)}
+          disabled={true} // 차트번호 검색 결과에 따라 자동으로 설정되도록 비활성화
         />
       </div>
     </div>
   );
 
-  // 2단계: 진료 정보 입력 단계
+  // 2단계: 진료 및 수납 정보 입력 단계 (기존 2,3단계 통합)
   const renderTreatmentInfoStep = () => (
     <div className="space-y-4">
       <StepTitle step={2} />
@@ -580,9 +524,9 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
             <SelectValue placeholder="선택하세요" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="김원장">김원장</SelectItem>
-            <SelectItem value="이원장">이원장</SelectItem>
-            <SelectItem value="박원장">박원장</SelectItem>
+            {doctors.map((doctor, index) => (
+              <SelectItem key={index} value={doctor.value}>{doctor.value}</SelectItem>
+            ))}
           </SelectContent>
         </Select>
         {errors.doctor && (
@@ -592,139 +536,115 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
       
       <div className="space-y-2">
         <Label htmlFor="treatmentType">진료내용</Label>
-        <Input
-          id="treatmentType"
-          name="treatmentType"
+        <Select 
+          onValueChange={(value) => handleSelectChange('treatmentType', value)}
           value={formData.treatmentType}
-          onChange={handleInputChange}
-          className={errors.treatmentType ? "border-red-500" : ""}
-        />
+        >
+          <SelectTrigger className={errors.treatmentType ? "border-red-500" : ""}>
+            <SelectValue placeholder="선택하세요" />
+          </SelectTrigger>
+          <SelectContent>
+            {treatmentTypes.map((treatment, index) => (
+              <SelectItem key={index} value={treatment.value}>{treatment.value}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         {errors.treatmentType && (
           <p className="text-red-500 text-xs">{errors.treatmentType}</p>
         )}
       </div>
       
-      <div className="space-y-2 flex items-center">
-        <div className="flex-1">
-          <Label htmlFor="isConsultation">상담수납</Label>
-        </div>
-        <Switch
-          id="isConsultation"
-          checked={formData.isConsultation}
-          onCheckedChange={(checked) => handleSwitchChange('isConsultation', checked)}
-        />
-      </div>
-      
-      {/* 상담 내역 섹션 */}
-      <div className="mt-6 border-t pt-4">
-        <h4 className="font-medium mb-4">상담 내역</h4>
+      <div className="border-t pt-4 mt-4">
+        <h4 className="font-medium mb-4">수납 정보</h4>
         
-        <ConsultationForm
-          onAdd={handleAddConsultation}
-          chartNumber={formData.chartNumber}
-          patientName={formData.patientName}
-          doctor={formData.doctor}
-        />
-        
-        <ConsultationList
-          consultations={consultations}
-          onToggleAgreed={handleToggleConsultationAgreed}
-          onDelete={handleDeleteConsultation}
-        />
-      </div>
-    </div>
-  );
-
-  // 3단계: 수납 정보 입력 단계
-  const renderPaymentInfoStep = () => (
-    <div className="space-y-4">
-      <StepTitle step={3} />
-      
-      <div className="space-y-2">
-        <Label htmlFor="paymentMethod">수납방법</Label>
-        <Select 
-          onValueChange={(value) => handleSelectChange('paymentMethod', value)}
-          value={formData.paymentMethod}
-        >
-          <SelectTrigger className={errors.paymentMethod ? "border-red-500" : ""}>
-            <SelectValue placeholder="선택하세요" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="현금">현금</SelectItem>
-            <SelectItem value="카드">카드</SelectItem>
-            <SelectItem value="계좌이체">계좌이체</SelectItem>
-          </SelectContent>
-        </Select>
-        {errors.paymentMethod && (
-          <p className="text-red-500 text-xs">{errors.paymentMethod}</p>
-        )}
-      </div>
-      
-      {formData.paymentMethod === '카드' && (
-        <div className="space-y-2">
-          <Label htmlFor="cardCompany">카드사</Label>
-          <Select 
-            onValueChange={(value) => handleSelectChange('cardCompany', value)}
-            value={formData.cardCompany}
-          >
-            <SelectTrigger className={errors.cardCompany ? "border-red-500" : ""}>
-              <SelectValue placeholder="선택하세요" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="신한">신한</SelectItem>
-              <SelectItem value="삼성">삼성</SelectItem>
-              <SelectItem value="현대">현대</SelectItem>
-              <SelectItem value="BC">BC</SelectItem>
-              <SelectItem value="국민">국민</SelectItem>
-              <SelectItem value="롯데">롯데</SelectItem>
-              <SelectItem value="우리">우리</SelectItem>
-              <SelectItem value="하나">하나</SelectItem>
-              <SelectItem value="농협">농협</SelectItem>
-              <SelectItem value="기타">기타</SelectItem>
-            </SelectContent>
-          </Select>
-          {errors.cardCompany && (
-            <p className="text-red-500 text-xs">{errors.cardCompany}</p>
-          )}
-        </div>
-      )}
-      
-      {(formData.paymentMethod === '현금' || formData.paymentMethod === '계좌이체') && (
-        <div className="space-y-2 flex items-center">
-          <div className="flex-1">
-            <Label htmlFor="cashReceipt">현금영수증</Label>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="paymentMethod">수납방법</Label>
+            <Select 
+              onValueChange={(value) => handleSelectChange('paymentMethod', value)}
+              value={formData.paymentMethod}
+            >
+              <SelectTrigger className={errors.paymentMethod ? "border-red-500" : ""}>
+                <SelectValue placeholder="선택하세요" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="현금">현금</SelectItem>
+                <SelectItem value="카드">카드</SelectItem>
+                <SelectItem value="계좌이체">계좌이체</SelectItem>
+              </SelectContent>
+            </Select>
+            {errors.paymentMethod && (
+              <p className="text-red-500 text-xs">{errors.paymentMethod}</p>
+            )}
           </div>
-          <Switch
-            id="cashReceipt"
-            checked={formData.cashReceipt}
-            onCheckedChange={(checked) => handleSwitchChange('cashReceipt', checked)}
-          />
+          
+          {formData.paymentMethod === '카드' && (
+            <div className="space-y-2">
+              <Label htmlFor="cardCompany">카드사</Label>
+              <Select 
+                onValueChange={(value) => handleSelectChange('cardCompany', value)}
+                value={formData.cardCompany}
+              >
+                <SelectTrigger className={errors.cardCompany ? "border-red-500" : ""}>
+                  <SelectValue placeholder="선택하세요" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="신한">신한</SelectItem>
+                  <SelectItem value="삼성">삼성</SelectItem>
+                  <SelectItem value="현대">현대</SelectItem>
+                  <SelectItem value="BC">BC</SelectItem>
+                  <SelectItem value="국민">국민</SelectItem>
+                  <SelectItem value="롯데">롯데</SelectItem>
+                  <SelectItem value="우리">우리</SelectItem>
+                  <SelectItem value="하나">하나</SelectItem>
+                  <SelectItem value="농협">농협</SelectItem>
+                  <SelectItem value="기타">기타</SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.cardCompany && (
+                <p className="text-red-500 text-xs">{errors.cardCompany}</p>
+              )}
+            </div>
+          )}
+          
+          {(formData.paymentMethod === '현금' || formData.paymentMethod === '계좌이체') && (
+            <div className="space-y-2 flex items-center">
+              <div className="flex-1">
+                <Label htmlFor="cashReceipt">현금영수증</Label>
+              </div>
+              <Switch
+                id="cashReceipt"
+                checked={formData.cashReceipt}
+                onCheckedChange={(checked) => handleSwitchChange('cashReceipt', checked)}
+              />
+            </div>
+          )}
+          
+          <div className="space-y-2">
+            <Label htmlFor="paymentAmount">수납금액</Label>
+            <Input
+              id="paymentAmount"
+              name="paymentAmount"
+              type="number"
+              value={formData.paymentAmount}
+              onChange={handleInputChange}
+              className={errors.paymentAmount ? "border-red-500" : ""}
+            />
+            {errors.paymentAmount && (
+              <p className="text-red-500 text-xs">{errors.paymentAmount}</p>
+            )}
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="notes">메모</Label>
+            <Input
+              id="notes"
+              name="notes"
+              value={formData.notes || ''}
+              onChange={handleInputChange}
+            />
+          </div>
         </div>
-      )}
-      
-      <div className="space-y-2">
-        <Label htmlFor="paymentAmount">수납금액</Label>
-        <Input
-          id="paymentAmount"
-          name="paymentAmount"
-          type="number"
-          value={formData.paymentAmount}
-          onChange={handleInputChange}
-          className={errors.paymentAmount ? "border-red-500" : ""}
-        />
-        {errors.paymentAmount && (
-          <p className="text-red-500 text-xs">{errors.paymentAmount}</p>
-        )}
-      </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="notes">메모</Label>
-        <Input
-          id="notes"
-          name="notes"
-          value={formData.notes || ''}
-          onChange={handleInputChange}
-        />
       </div>
     </div>
   );
@@ -736,71 +656,92 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
         return renderPatientInfoStep();
       case 2:
         return renderTreatmentInfoStep();
-      case 3:
-        return renderPaymentInfoStep();
       default:
         return null;
     }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>내원정보 등록</DialogTitle>
-        </DialogHeader>
-        
-        <form onSubmit={handleSubmit} className="space-y-4 py-4">
-          <StepIndicator currentStep={currentStep} totalSteps={totalSteps} />
+    <>
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>내원정보 등록</DialogTitle>
+          </DialogHeader>
           
-          {renderStepContent()}
-          
-          <DialogFooter className="flex justify-between items-center mt-6 pt-4 border-t">
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onClose}
-                disabled={isSubmitting}
-              >
-                취소
-              </Button>
-              
-              {currentStep > 1 && (
+          <form onSubmit={handleSubmit} className="space-y-4 py-4">
+            <StepIndicator currentStep={currentStep} totalSteps={totalSteps} />
+            
+            {renderStepContent()}
+            
+            <DialogFooter className="flex justify-between items-center mt-6 pt-4 border-t">
+              <div className="flex gap-2">
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={goToPreviousStep}
-                  disabled={isSubmitting}
+                  onClick={onClose}
+                  disabled={isSubmitting || isLoading}
                 >
-                  <ChevronLeft className="mr-1 h-4 w-4" />
-                  이전
+                  취소
                 </Button>
-              )}
-            </div>
-            
-            <div>
-              {currentStep < totalSteps ? (
-                <Button
-                  type="button"
-                  onClick={goToNextStep}
-                  disabled={isSubmitting}
-                >
-                  다음
-                  <ChevronRight className="ml-1 h-4 w-4" />
-                </Button>
-              ) : (
-                <Button
-                  type="submit"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? '처리 중...' : '등록'}
-                </Button>
-              )}
-            </div>
+                
+                {currentStep > 1 && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={goToPreviousStep}
+                    disabled={isSubmitting || isLoading}
+                  >
+                    <ChevronLeft className="mr-1 h-4 w-4" />
+                    이전
+                  </Button>
+                )}
+              </div>
+              
+              <div>
+                {currentStep < totalSteps ? (
+                  <Button
+                    type="button"
+                    onClick={goToNextStep}
+                    disabled={isSubmitting || isLoading}
+                  >
+                    다음
+                    <ChevronRight className="ml-1 h-4 w-4" />
+                  </Button>
+                ) : (
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting || isLoading}
+                  >
+                    {isSubmitting ? '처리 중...' : '등록'}
+                  </Button>
+                )}
+              </div>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* 신규 환자 등록 확인 다이얼로그 */}
+      <Dialog open={isNewPatientPrompt} onOpenChange={setIsNewPatientPrompt}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>신규 환자 등록</DialogTitle>
+            <DialogDescription>
+              입력하신 차트번호({formData.chartNumber})로 등록된 환자 정보를 찾을 수 없습니다. 
+              새로운 환자로 등록하시겠습니까?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex justify-between sm:justify-between">
+            <Button variant="outline" onClick={handleCancelNewPatient}>
+              취소
+            </Button>
+            <Button onClick={handleConfirmNewPatient}>
+              신규 환자로 등록
+            </Button>
           </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 } 

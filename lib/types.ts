@@ -9,6 +9,22 @@ export type Patient = {
   doctor: string;
 };
 
+// 환자 정보 타입 (MongoDB Patient 컬렉션)
+export interface PatientData {
+  _id?: string;
+  chartNumber: string;
+  name: string;
+  visitPath?: string;
+  createdBy?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+  birthDate?: string;
+  gender?: string;
+  phoneNumber?: string;
+  address?: string;
+  memo?: string;
+}
+
 // Consultation 타입 (상담 내역)
 export interface Consultation {
   _id: string;
