@@ -64,7 +64,8 @@ export default function PatientList({ date }: Props) {
         setLoading(true);
         const dateString = date.toISOString().split('T')[0]; // YYYY-MM-DD 형식
         
-        const response = await fetch(`/api/transactions?date=${dateString}`);
+        // 시작 날짜와 종료 날짜를 같은 날짜로 설정하여 정확한 날짜 필터링
+        const response = await fetch(`/api/transactions?dateStart=${dateString}&dateEnd=${dateString}`);
         
         if (!response.ok) {
           throw new Error('데이터를 가져오는데 실패했습니다.');
@@ -74,6 +75,8 @@ export default function PatientList({ date }: Props) {
         // MongoDB ObjectId 처리
         const normalizedTransactions = data.transactions.map(normalizeId);
         setTransactions(normalizedTransactions);
+        
+        console.log(`${dateString} 날짜로 데이터 조회 완료:`, normalizedTransactions.length);
       } catch (err) {
         setError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.');
         console.error('트랜잭션 데이터 조회 오류:', err);
