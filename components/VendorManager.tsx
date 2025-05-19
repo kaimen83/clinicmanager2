@@ -44,7 +44,9 @@ export default function VendorManager({ title }: VendorManagerProps) {
       setLoading(true);
       setError(null);
       
-      const response = await fetch('/api/vendors?onlyActive=true');
+      const response = await fetch('/api/vendors?onlyActive=true', {
+        cache: 'no-store'
+      });
       
       if (!response.ok) {
         const errorData = await response.json();
@@ -123,6 +125,7 @@ export default function VendorManager({ title }: VendorManagerProps) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(payload),
+        cache: 'no-store'
       });
 
       if (!response.ok) {
@@ -130,7 +133,13 @@ export default function VendorManager({ title }: VendorManagerProps) {
         throw new Error(errorData.error || '거래처를 추가하는데 실패했습니다');
       }
 
-      await fetchVendors();
+      // 새로 추가된 거래처 데이터 가져오기
+      const newVendor = await response.json();
+      
+      // 로컬 상태 업데이트
+      setVendors(prevVendors => [...prevVendors, newVendor]);
+      setFilteredVendors(prevFilteredVendors => [...prevFilteredVendors, newVendor]);
+      
       resetForm();
       setIsAddDialogOpen(false);
     } catch (err) {
@@ -156,6 +165,7 @@ export default function VendorManager({ title }: VendorManagerProps) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(payload),
+        cache: 'no-store'
       });
 
       if (!response.ok) {
@@ -163,7 +173,27 @@ export default function VendorManager({ title }: VendorManagerProps) {
         throw new Error(errorData.error || '거래처를 수정하는데 실패했습니다');
       }
 
-      await fetchVendors();
+      // 수정된 거래처 객체 생성
+      const updatedVendor = {
+        ...currentVendor,
+        name: newName.trim(),
+        businessNumber: newBusinessNumber.trim() || null,
+        phoneNumber: newPhoneNumber.trim() || null
+      };
+      
+      // 로컬 상태 업데이트
+      setVendors(prevVendors => 
+        prevVendors.map(vendor => 
+          vendor._id === currentVendor._id ? updatedVendor : vendor
+        )
+      );
+      
+      setFilteredVendors(prevFilteredVendors => 
+        prevFilteredVendors.map(vendor => 
+          vendor._id === currentVendor._id ? updatedVendor : vendor
+        )
+      );
+      
       resetForm();
       setIsEditDialogOpen(false);
     } catch (err) {
@@ -178,6 +208,7 @@ export default function VendorManager({ title }: VendorManagerProps) {
     try {
       const response = await fetch(`/api/vendors?id=${id}`, {
         method: 'DELETE',
+        cache: 'no-store'
       });
 
       if (!response.ok) {
@@ -185,7 +216,9 @@ export default function VendorManager({ title }: VendorManagerProps) {
         throw new Error(errorData.error || '거래처를 삭제하는데 실패했습니다');
       }
 
-      await fetchVendors();
+      // 로컬 상태에서 삭제된 거래처 제거
+      setVendors(prevVendors => prevVendors.filter(vendor => vendor._id !== id));
+      setFilteredVendors(prevFilteredVendors => prevFilteredVendors.filter(vendor => vendor._id !== id));
     } catch (err) {
       setError(err instanceof Error ? err.message : '거래처를 삭제하는데 오류가 발생했습니다');
     }

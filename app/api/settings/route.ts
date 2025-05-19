@@ -18,7 +18,14 @@ export async function GET(request: NextRequest) {
       type: type,
     }).sort({ order: 1 }).toArray();
     
-    return NextResponse.json({ settings });
+    // 캐싱 비활성화 헤더 추가
+    return NextResponse.json({ settings }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      }
+    });
   } catch (error) {
     console.error('설정 조회 오류:', error);
     return NextResponse.json({ error: '설정을 조회하는 중 오류가 발생했습니다.' }, { status: 500 });

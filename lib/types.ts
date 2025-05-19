@@ -9,6 +9,54 @@ export type Patient = {
   doctor: string;
 };
 
+// Consultation 타입 (상담 내역)
+export interface Consultation {
+  _id: string;
+  date: Date;
+  chartNumber: string;
+  patientName: string;
+  doctor: string;
+  staff: string;
+  amount: number;
+  agreed: boolean;
+  confirmedDate?: Date | null;
+  notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Payment 타입 (수납 내역)
+export interface Payment {
+  _id?: string;
+  date: Date;
+  method: string;
+  cardCompany?: string;
+  amount: number;
+}
+
+// Transaction 타입 (MongoDB 데이터 모델)
+export interface Transaction {
+  _id: string;
+  date: Date;
+  chartNumber: string;
+  patientName: string;
+  visitPath: string;
+  doctor: string;
+  treatmentType: string;
+  isNew: boolean;
+  isConsultation: boolean;
+  paymentMethod: string;
+  cardCompany?: string;
+  paymentAmount: number;
+  notes: string;
+  createdBy: string;
+  consultations: Consultation[];
+  payments: Payment[];
+  updatedAt: Date;
+  cashReceipt: boolean;
+  cashRecordId?: string;
+}
+
 // 일별 통계 타입
 export type DailyStats = {
   totalPatients: number;

@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from "react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Calendar } from "./ui/calendar";
@@ -12,28 +13,60 @@ import {
   ShoppingCart, 
   ClipboardList, 
   Star, 
-  Calendar as CalendarIcon 
+  Calendar as CalendarIcon,
+  ChevronLeft,
+  ChevronRight 
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
+import { format, addDays, subDays } from "date-fns";
 import { ko } from "date-fns/locale";
 import { useDateContext } from "@/lib/context/dateContext";
 import SystemSettingsModal from "./SystemSettingsModal";
+import PatientTransactionForm from "./PatientTransactionForm";
 
 export default function ClinicNavigation() {
   const { selectedDate, setSelectedDate } = useDateContext();
+  const [isPatientFormOpen, setIsPatientFormOpen] = useState(false);
 
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
       setSelectedDate(date);
     }
   };
+  
+  const goToPreviousDay = () => {
+    setSelectedDate(subDays(selectedDate, 1));
+  };
+  
+  const goToNextDay = () => {
+    setSelectedDate(addDays(selectedDate, 1));
+  };
+
+  const goToToday = () => {
+    setSelectedDate(new Date());
+  };
+
+  const handlePatientFormOpen = () => {
+    setIsPatientFormOpen(true);
+  };
+
+  const handlePatientFormClose = () => {
+    setIsPatientFormOpen(false);
+  };
+
+  const handleTransactionAdded = () => {
+    // 트랜잭션이 추가된 후 필요한 작업 (예: 데이터 새로고침)
+  };
 
   return (
     <Card className="p-4 mt-4">
       <div className="flex flex-col md:flex-row justify-between gap-4">
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            className="flex items-center gap-2"
+            onClick={handlePatientFormOpen}
+          >
             <UserPlus className="w-4 h-4" />
             <span>내원정보등록</span>
           </Button>
@@ -72,6 +105,10 @@ export default function ClinicNavigation() {
         </div>
         
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="icon" onClick={goToPreviousDay} title="이전 날짜">
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          
           <div className="grid gap-2">
             <Popover>
               <PopoverTrigger asChild>
@@ -84,7 +121,7 @@ export default function ClinicNavigation() {
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {selectedDate ? (
-                    format(selectedDate, "PPP", { locale: ko })
+                    <span>{format(selectedDate, "PPP (EEEE)", { locale: ko })}</span>
                   ) : (
                     <span>날짜 선택</span>
                   )}
@@ -97,13 +134,26 @@ export default function ClinicNavigation() {
                   onSelect={handleDateSelect}
                   initialFocus
                   locale={ko}
+                  defaultMonth={selectedDate}
                 />
               </PopoverContent>
             </Popover>
           </div>
-          <Button>이동</Button>
+          
+          <Button variant="outline" size="icon" onClick={goToNextDay} title="다음 날짜">
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+          
+          <Button onClick={goToToday}>오늘</Button>
         </div>
       </div>
+
+      {/* 내원정보 등록 폼 */}
+      <PatientTransactionForm 
+        isOpen={isPatientFormOpen}
+        onClose={handlePatientFormClose}
+        onTransactionAdded={handleTransactionAdded}
+      />
     </Card>
   );
 } 

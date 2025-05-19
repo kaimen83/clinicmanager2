@@ -91,7 +91,9 @@ export default function ImplantSpecificationList({ title }: ImplantSpecification
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/implantProducts');
+      const response = await fetch('/api/implantProducts', {
+        cache: 'no-store'
+      });
       if (!response.ok) {
         throw new Error('임플란트 규격 데이터를 불러오는데 실패했습니다');
       }
@@ -107,7 +109,9 @@ export default function ImplantSpecificationList({ title }: ImplantSpecification
   // Fixture 옵션을 가져오는 함수
   const fetchFixtureOptions = async () => {
     try {
-      const response = await fetch('/api/settings?type=implantManufacturer');
+      const response = await fetch('/api/settings?type=implantManufacturer', {
+        cache: 'no-store'
+      });
       if (!response.ok) {
         throw new Error('Fixture 데이터를 불러오는데 실패했습니다');
       }
@@ -122,7 +126,9 @@ export default function ImplantSpecificationList({ title }: ImplantSpecification
   // 이식재 옵션을 가져오는 함수
   const fetchImplantOptions = async () => {
     try {
-      const response = await fetch('/api/settings?type=implantFixture');
+      const response = await fetch('/api/settings?type=implantFixture', {
+        cache: 'no-store'
+      });
       if (!response.ok) {
         throw new Error('이식재 데이터를 불러오는데 실패했습니다');
       }
@@ -165,6 +171,7 @@ export default function ImplantSpecificationList({ title }: ImplantSpecification
           price: newPrice,
           usage: newUsage,
         }),
+        cache: 'no-store'
       });
 
       if (!response.ok) {
@@ -172,7 +179,11 @@ export default function ImplantSpecificationList({ title }: ImplantSpecification
         throw new Error(errorData.error || '임플란트 규격을 추가하는데 실패했습니다');
       }
 
-      await fetchProducts();
+      // 새로 추가된 제품 데이터 가져오기
+      const data = await response.json();
+      // 로컬 상태 업데이트
+      setProducts(prevProducts => [...prevProducts, data]);
+      
       resetNewProductFields();
       setIsAddDialogOpen(false);
       toast.success('임플란트 규격이 추가되었습니다');
@@ -197,6 +208,7 @@ export default function ImplantSpecificationList({ title }: ImplantSpecification
           price: currentProduct.price,
           usage: currentProduct.usage,
         }),
+        cache: 'no-store'
       });
 
       if (!response.ok) {
@@ -204,7 +216,13 @@ export default function ImplantSpecificationList({ title }: ImplantSpecification
         throw new Error(errorData.error || '임플란트 규격을 수정하는데 실패했습니다');
       }
 
-      await fetchProducts();
+      // 로컬 상태 업데이트
+      setProducts(prevProducts => 
+        prevProducts.map(product => 
+          product._id === currentProduct._id ? currentProduct : product
+        )
+      );
+      
       setCurrentProduct(null);
       setIsEditDialogOpen(false);
       toast.success('임플란트 규격이 수정되었습니다');
@@ -219,6 +237,7 @@ export default function ImplantSpecificationList({ title }: ImplantSpecification
     try {
       const response = await fetch(`/api/implantProducts/${id}`, {
         method: 'DELETE',
+        cache: 'no-store'
       });
 
       if (!response.ok) {
@@ -226,7 +245,9 @@ export default function ImplantSpecificationList({ title }: ImplantSpecification
         throw new Error(errorData.error || '임플란트 규격을 삭제하는데 실패했습니다');
       }
 
-      await fetchProducts();
+      // 로컬 상태에서 삭제된 항목 제거
+      setProducts(prevProducts => prevProducts.filter(product => product._id !== id));
+      
       toast.success('임플란트 규격이 삭제되었습니다');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : '임플란트 규격을 삭제하는데 오류가 발생했습니다');

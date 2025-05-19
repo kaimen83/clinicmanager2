@@ -11,6 +11,9 @@ import { Separator } from "./ui/separator";
 import { ScrollArea } from "./ui/scroll-area";
 import ExpenseSubTabs from "./ExpenseSubTabs";
 import ImplantSubTabs from "./ImplantSubTabs";
+import DentalProductsList from "./DentalProductsList";
+import DatabaseBackup from "./DatabaseBackup";
+import ExcelImporter from "./ExcelImporter";
 
 type TabItem = {
   id: string;
@@ -126,37 +129,14 @@ export default function SystemSettingsModal() {
         return <ImplantSubTabs title={`${currentTab.label} 관리`} />;
         
       case "dbBackup":
-        return (
-          <div className="p-6 bg-white rounded-lg shadow-sm border border-gray-100">
-            <h3 className="text-lg font-semibold mb-4">데이터베이스 백업</h3>
-            <p className="mb-6 text-gray-600">데이터베이스 백업을 수행하려면 아래 버튼을 클릭하세요. 백업 파일은 자동으로 다운로드됩니다.</p>
-            <Button className="w-full sm:w-auto gap-2">
-              <HardDrive className="h-4 w-4" />
-              백업 시작
-            </Button>
-          </div>
-        );
+        return <DatabaseBackup title="데이터베이스 백업" />;
         
       case "excelImport":
-        return (
-          <div className="p-6 bg-white rounded-lg shadow-sm border border-gray-100">
-            <h3 className="text-lg font-semibold mb-4">엑셀 파일 불러오기</h3>
-            <p className="mb-3 text-gray-600">엑셀 파일에서 데이터를 가져옵니다. 다음 유형의 데이터를 지원합니다:</p>
-            <ul className="list-disc pl-5 mb-6 text-gray-600 space-y-1">
-              <li>환자 데이터</li>
-              <li>진료 기록</li>
-              <li>결제 내역</li>
-            </ul>
-            <Button className="w-full sm:w-auto gap-2">
-              <FileUp className="h-4 w-4" />
-              파일 선택
-            </Button>
-          </div>
-        );
+        return <ExcelImporter title="엑셀 파일 불러오기" />;
         
       case "oralProducts":
         return (
-          <div className="p-4">구강용품 설정 내용</div>
+          <DentalProductsList title="구강용품 관리" />
         );
         
       default:

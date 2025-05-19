@@ -70,7 +70,10 @@ export default function SettingsList({ title, type, includesFeeRate = false }: S
     
     setLoading(true);
     try {
-      const response = await fetch(`/api/settings?type=${type}`);
+      const response = await fetch(`/api/settings?type=${type}`, {
+        // 캐싱 사용 안함으로 변경하여 항상 최신 데이터 가져오기
+        cache: 'no-store'
+      });
       if (!response.ok) {
         throw new Error('설정 데이터를 불러오는데 실패했습니다');
       }
@@ -83,6 +86,7 @@ export default function SettingsList({ title, type, includesFeeRate = false }: S
     }
   }, [type]);
 
+  // 컴포넌트 마운트 시 한 번만 데이터 로드
   useEffect(() => {
     fetchSettings();
   }, [fetchSettings]);
@@ -106,6 +110,7 @@ export default function SettingsList({ title, type, includesFeeRate = false }: S
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(payload),
+        cache: 'no-store'
       });
 
       if (!response.ok) {
@@ -113,7 +118,12 @@ export default function SettingsList({ title, type, includesFeeRate = false }: S
         throw new Error(errorData.error || '설정을 추가하는데 실패했습니다');
       }
 
-      await fetchSettings();
+      // 응답에서 새로 추가된 설정 데이터 가져오기
+      const data = await response.json();
+      
+      // 로컬 상태에 추가
+      setSettings(prevSettings => [...prevSettings, data.setting]);
+      
       setNewValue('');
       setNewFeeRate(undefined);
       setIsAddDialogOpen(false);
@@ -141,6 +151,7 @@ export default function SettingsList({ title, type, includesFeeRate = false }: S
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(payload),
+        cache: 'no-store'
       });
 
       if (!response.ok) {
@@ -148,7 +159,19 @@ export default function SettingsList({ title, type, includesFeeRate = false }: S
         throw new Error(errorData.error || '설정을 수정하는데 실패했습니다');
       }
 
-      await fetchSettings();
+      // 로컬 상태 업데이트
+      setSettings(prevSettings => 
+        prevSettings.map(setting => 
+          setting._id === currentSetting._id 
+            ? {
+                ...currentSetting,
+                value: newValue,
+                feeRate: includesFeeRate ? newFeeRate : setting.feeRate
+              } 
+            : setting
+        )
+      );
+      
       setCurrentSetting(null);
       setNewValue('');
       setNewFeeRate(undefined);
@@ -169,6 +192,7 @@ export default function SettingsList({ title, type, includesFeeRate = false }: S
           id: setting._id,
           isActive: !setting.isActive
         }),
+        cache: 'no-store'
       });
 
       if (!response.ok) {
@@ -176,7 +200,14 @@ export default function SettingsList({ title, type, includesFeeRate = false }: S
         throw new Error(errorData.error || '설정을 토글하는데 실패했습니다');
       }
 
-      await fetchSettings();
+      // 로컬 상태 업데이트
+      setSettings(prevSettings => 
+        prevSettings.map(item => 
+          item._id === setting._id
+            ? { ...item, isActive: !item.isActive }
+            : item
+        )
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : '설정을 토글하는데 오류가 발생했습니다');
     }
@@ -188,6 +219,7 @@ export default function SettingsList({ title, type, includesFeeRate = false }: S
     try {
       const response = await fetch(`/api/settings?id=${id}`, {
         method: 'DELETE',
+        cache: 'no-store'
       });
 
       if (!response.ok) {
@@ -195,7 +227,8 @@ export default function SettingsList({ title, type, includesFeeRate = false }: S
         throw new Error(errorData.error || '설정을 삭제하는데 실패했습니다');
       }
 
-      await fetchSettings();
+      // 로컬 상태에서 삭제된 항목 제거
+      setSettings(prevSettings => prevSettings.filter(setting => setting._id !== id));
     } catch (err) {
       setError(err instanceof Error ? err.message : '설정을 삭제하는데 오류가 발생했습니다');
     }
