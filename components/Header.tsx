@@ -5,13 +5,14 @@ import Link from 'next/link';
 import { UserButton } from '@clerk/nextjs';
 import { LogOut, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { getCurrentKstDate } from '@/lib/utils';
 
 export default function Header() {
   const [currentDateTime, setCurrentDateTime] = useState<string>('');
   
   useEffect(() => {
     const updateDateTime = () => {
-      const now = new Date();
+      const now = getCurrentKstDate();
       const options: Intl.DateTimeFormatOptions = {
         year: 'numeric',
         month: 'long',

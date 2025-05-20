@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useState, useContext, ReactNode } from 'react';
+import { getCurrentKstDate } from '../utils';
 
 type DateContextType = {
   selectedDate: Date;
@@ -10,7 +11,7 @@ type DateContextType = {
 const DateContext = createContext<DateContextType | undefined>(undefined);
 
 export function DateProvider({ children }: { children: ReactNode }) {
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date>(getCurrentKstDate());
 
   return (
     <DateContext.Provider value={{ selectedDate, setSelectedDate }}>

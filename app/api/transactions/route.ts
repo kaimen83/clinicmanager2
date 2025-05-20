@@ -1,25 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
-
-// 한국 시간대(UTC+9)로 날짜 조정하는 함수
-function adjustToKoreanTime(date: Date): Date {
-  // 입력 날짜가 로컬 시간대로 해석되므로, UTC 기준으로 변환한 후 한국 시간대(+9시간)로 조정
-  const utcDate = new Date(Date.UTC(
-    date.getFullYear(),
-    date.getMonth(),
-    date.getDate(),
-    date.getHours(),
-    date.getMinutes(),
-    date.getSeconds(),
-    date.getMilliseconds()
-  ));
-  
-  // UTC+9시간 조정 (밀리초 단위)
-  utcDate.setTime(utcDate.getTime() - 9 * 60 * 60 * 1000);
-  
-  return utcDate;
-}
+import { createNewDate, toKstDate } from '@/lib/utils';
 
 // GET 요청 처리 - 내원정보(트랜잭션) 목록 조회 (필터링, 페이지네이션 지원)
 export async function GET(request: NextRequest) {
@@ -48,13 +30,13 @@ export async function GET(request: NextRequest) {
     // 날짜 필터 추가
     if (dateStart && dateEnd) {
       searchQuery['date'] = {
-        $gte: new Date(dateStart),
-        $lte: new Date(dateEnd)
+        $gte: toKstDate(dateStart),
+        $lte: toKstDate(dateEnd)
       };
     } else if (dateStart) {
-      searchQuery['date'] = { $gte: new Date(dateStart) };
+      searchQuery['date'] = { $gte: toKstDate(dateStart) };
     } else if (dateEnd) {
-      searchQuery['date'] = { $lte: new Date(dateEnd) };
+      searchQuery['date'] = { $lte: toKstDate(dateEnd) };
     }
     
     // 의사 필터 추가
@@ -113,7 +95,7 @@ export async function POST(request: NextRequest) {
     
     // 환자가 존재하지 않으면 환자 정보 생성
     if (!existingPatient) {
-      const now = new Date();
+      const now = createNewDate();
       const newPatient = {
         chartNumber,
         name: patientName,
@@ -127,10 +109,10 @@ export async function POST(request: NextRequest) {
     }
 
     // 현재 시간 및 사용자 정보 추가
-    const now = new Date();
+    const now = createNewDate();
     const newTransaction = {
       ...data,
-      date: new Date(date),
+      date: toKstDate(date),
       createdAt: now,
       updatedAt: now,
       createdBy: data.createdBy ? new ObjectId(data.createdBy) : null,
@@ -139,8 +121,8 @@ export async function POST(request: NextRequest) {
         ? data.consultations.map((consultation: any) => ({
             ...consultation,
             _id: new ObjectId(),
-            date: new Date(consultation.date),
-            confirmedDate: consultation.confirmedDate ? new Date(consultation.confirmedDate) : null,
+            date: toKstDate(consultation.date),
+            confirmedDate: consultation.confirmedDate ? toKstDate(consultation.confirmedDate) : null,
             createdAt: now,
             updatedAt: now
           }))
@@ -150,7 +132,7 @@ export async function POST(request: NextRequest) {
         ? data.payments.map((payment: any) => ({
             ...payment,
             _id: new ObjectId(),
-            date: new Date(payment.date)
+            date: toKstDate(payment.date)
           }))
         : []
     };

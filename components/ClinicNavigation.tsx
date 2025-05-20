@@ -17,7 +17,7 @@ import {
   ChevronLeft,
   ChevronRight 
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, getCurrentKstDate } from "@/lib/utils";
 import { format, addDays, subDays } from "date-fns";
 import { ko } from "date-fns/locale";
 import { useDateContext } from "@/lib/context/dateContext";
@@ -43,7 +43,7 @@ export default function ClinicNavigation() {
   };
 
   const goToToday = () => {
-    setSelectedDate(new Date());
+    setSelectedDate(getCurrentKstDate());
   };
 
   const handlePatientFormOpen = () => {

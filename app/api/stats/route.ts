@@ -1,12 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
-
-// 한국 시간대로 날짜 변환
-function toKoreanDate(date: Date): Date {
-  const koreanDate = new Date(date);
-  koreanDate.setHours(koreanDate.getHours() + 9);
-  return koreanDate;
-}
+import { toKstDate } from '@/lib/utils';
 
 // GET 요청 처리 - 통계 정보 조회 (일별 또는 월별)
 export async function GET(request: NextRequest) {
@@ -29,7 +23,7 @@ export async function GET(request: NextRequest) {
     
     if (type === 'daily') {
       // 일별 통계 - 하루 동안의 데이터
-      const selectedDate = new Date(date);
+      const selectedDate = toKstDate(date);
       startDate = new Date(selectedDate);
       startDate.setHours(0, 0, 0, 0);
       
@@ -39,10 +33,10 @@ export async function GET(request: NextRequest) {
       // 월별 통계 - 한 달 동안의 데이터
       const [year, month] = date.split('-').map(Number);
       
-      startDate = new Date(year, month - 1, 1);
+      startDate = toKstDate(new Date(year, month - 1, 1));
       startDate.setHours(0, 0, 0, 0);
       
-      endDate = new Date(year, month, 0);
+      endDate = toKstDate(new Date(year, month, 0));
       endDate.setHours(23, 59, 59, 999);
     } else {
       return NextResponse.json(

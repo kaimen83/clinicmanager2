@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Button } from './ui/button';
 import { HardDrive } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { toISODateString } from '@/lib/utils';
 
 type DatabaseBackupProps = {
   title: string;
@@ -30,7 +31,7 @@ export default function DatabaseBackup({ title }: DatabaseBackupProps) {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `clinic_backup_${new Date().toISOString().split('T')[0]}.zip`;
+      a.download = `clinic_backup_${toISODateString(null)}.zip`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);

@@ -1,0 +1,35 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+## 시간 관련 유틸리티 함수 설명 및 사용법
+
+### 유틸리티 함수 (lib/utils.ts)
+- `getCurrentKstDate()` - 현재 시간을 한국 시간(KST)으로 반환
+- `toKstDate(date)` - 날짜 문자열/객체를 한국 시간으로 변환
+- `toISODateString(date)` - 한국 시간으로 변환 후 YYYY-MM-DD 형식 반환
+- `toKoreanDateString(date, options)` - 한국어 날짜 형식(YYYY년 MM월 DD일)으로 반환
+- `createNewDate()` - MongoDB 저장용 KST 기준 Date 객체 생성
+
+### 주요 적용 영역
+1. **컴포넌트**
+   - `DateContext` - 글로벌 날짜 상태 (getCurrentKstDate 사용)
+   - `ClinicNavigation` - 달력/날짜 탐색 (getCurrentKstDate 사용)
+   - `Header` - 현재 시간 표시 (getCurrentKstDate 사용)
+   - `DatabaseBackup` - 백업 파일명 생성 (toISODateString 사용)
+
+2. **API 엔드포인트**
+   - `stats/route.ts` - 통계 조회 시 날짜 필터링 (toKstDate 사용)
+   - `transactions/route.ts` - 내원정보 처리 (createNewDate, toKstDate 사용)
+
+### 사용 방법
+- 현재 시간 가져올 때: `getCurrentKstDate()`
+- DB에 저장할 시간 생성: `createNewDate()`
+- 날짜 문자열 변환: `toISODateString(date)`
+- 사용자에게 보여줄 한글 날짜: `toKoreanDateString(date)`
+- 외부 시간 데이터 변환: `toKstDate(externalDate)`
+
+### 주의 사항
+- 모든 시간 관련 코드는 직접 `new Date()`를 사용하지 말고 위 유틸리티 함수를 사용해야 함
+- MongoDB와 시간 동기화를 위해 항상 KST 기준으로 시간 처리
