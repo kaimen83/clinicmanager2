@@ -496,20 +496,6 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // 현재 입력 중인 진료 정보가 있고, 유효한 경우 추가
-    if (
-      currentTreatmentGroup.doctor || 
-      currentTreatmentGroup.treatmentType || 
-      (currentTreatmentGroup.paymentMethod !== '수납없음' && currentTreatmentGroup.paymentAmount > 0)
-    ) {
-      // 자동으로 현재 진료 정보 추가
-      const added = addTreatmentGroup();
-      if (!added) {
-        // 추가 실패 시 제출 중단
-        return;
-      }
-    }
-    
     // 최종 유효성 검사
     if (!formData.chartNumber || !formData.patientName || !formData.date) {
       toast({
@@ -521,8 +507,37 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
       setCurrentStep(1);
       return;
     }
+
+    // 현재 입력 중인 진료 정보가 있고, 필수 요소가 채워진 경우에만 추가
+    const isCurrentGroupValid = 
+      currentTreatmentGroup.doctor && 
+      currentTreatmentGroup.treatmentType && 
+      ((currentTreatmentGroup.paymentMethod !== '수납없음' && currentTreatmentGroup.paymentAmount > 0) || 
+       currentTreatmentGroup.paymentMethod === '수납없음') &&
+      (currentTreatmentGroup.paymentMethod !== '카드' || 
+       (currentTreatmentGroup.paymentMethod === '카드' && currentTreatmentGroup.cardCompany));
+       
+    // 제출을 위한 최종 진료 그룹 목록 생성
+    let finalTreatmentGroups = [...treatmentGroups];
     
-    if (treatmentGroups.length === 0) {
+    // 필수 요소가 모두 채워진 경우 최종 목록에 추가
+    if (isCurrentGroupValid) {
+      finalTreatmentGroups.push({ ...currentTreatmentGroup });
+    } else if (
+      currentTreatmentGroup.doctor || 
+      currentTreatmentGroup.treatmentType || 
+      (currentTreatmentGroup.paymentMethod !== '수납없음' && currentTreatmentGroup.paymentAmount > 0)
+    ) {
+      // 일부만 입력된 경우 오류 메시지 표시
+      toast({
+        title: "진료 정보 불완전",
+        description: "현재 입력 중인 진료 정보가 불완전합니다. 필수 항목을 모두 입력하거나 초기화해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (finalTreatmentGroups.length === 0) {
       toast({
         title: "진료 정보 누락",
         description: "최소 하나 이상의 진료 정보가 필요합니다.",
@@ -539,7 +554,7 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
       let hasError = false;
       
       // 각 진료 그룹에 대해 개별 트랜잭션 생성 및 저장
-      for (const group of treatmentGroups) {
+      for (const group of finalTreatmentGroups) {
         // 각 진료 그룹에 대한 트랜잭션 데이터 생성
         const transactionData = {
           date: formData.date,
@@ -593,7 +608,7 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
       // 성공 메시지
       toast({
         title: "내원 정보 등록 완료",
-        description: `${treatmentGroups.length}건의 환자 내원 정보가 성공적으로 등록되었습니다.`,
+        description: `${finalTreatmentGroups.length}건의 환자 내원 정보가 성공적으로 등록되었습니다.`,
       });
       
       // 성공 콜백 호출 - 마지막으로 추가된 트랜잭션 또는 전체 결과 전달
