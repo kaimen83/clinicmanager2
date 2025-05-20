@@ -2,7 +2,7 @@
 export type PatientTransactionFormProps = {
   isOpen: boolean;
   onClose: () => void;
-  onTransactionAdded?: () => void;
+  onTransactionAdded?: (data?: any) => void;
 };
 
 // 진료 그룹 타입 정의

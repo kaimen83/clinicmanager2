@@ -34,6 +34,17 @@ export default function CardCompanyStatsModal({ isOpen, onClose, title, date, ty
   const [isLoading, setIsLoading] = useState(false);
   const [cardStats, setCardStats] = useState<CardCompanyStats[]>([]);
   const [totalAmount, setTotalAmount] = useState(0);
+  const [displayMonth, setDisplayMonth] = useState('');
+
+  // 모달이 열릴 때 월 표시 설정
+  useEffect(() => {
+    if (isOpen && type === 'monthly') {
+      // YYYY년 MM월 형식으로 표시
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+      setDisplayMonth(`${year}년 ${month}월`);
+    }
+  }, [isOpen, date, type]);
 
   // 카드사별 통계 정보 가져오기
   const fetchCardStats = async () => {
@@ -85,7 +96,14 @@ export default function CardCompanyStatsModal({ isOpen, onClose, title, date, ty
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
+          <DialogTitle>
+            {title}
+            {type === 'monthly' && displayMonth && (
+              <span className="ml-2 text-sm font-normal text-muted-foreground">
+                ({displayMonth})
+              </span>
+            )}
+          </DialogTitle>
         </DialogHeader>
         
         <div>

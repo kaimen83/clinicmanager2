@@ -15,6 +15,32 @@ function Calendar({
   showOutsideDays = true,
   ...props
 }: CalendarProps) {
+  // 캘린더가 렌더링된 후 실행될 이펙트
+  React.useEffect(() => {
+    // 날짜 선택 시 캘린더가 자동으로 닫히도록 이벤트 핸들러 추가
+    const handleDayClick = () => {
+      // 약간의 지연 후 포커스 제거 (선택이 제대로 처리되도록)
+      setTimeout(() => {
+        if (document.activeElement instanceof HTMLElement) {
+          document.activeElement.blur();
+        }
+      }, 100);
+    };
+
+    // 캘린더의 버튼 요소들에 이벤트 리스너 추가
+    const calendarButtons = document.querySelectorAll('.rdp-button');
+    calendarButtons.forEach(button => {
+      button.addEventListener('click', handleDayClick);
+    });
+
+    return () => {
+      // 정리 함수에서 이벤트 리스너 제거
+      calendarButtons.forEach(button => {
+        button.removeEventListener('click', handleDayClick);
+      });
+    };
+  }, []);
+
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}

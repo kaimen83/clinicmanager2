@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2 } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 
 type PatientInfo = {
   chartNumber: string;
@@ -17,6 +18,7 @@ type PatientInfo = {
   lastVisitDate?: string;
   visitCount?: number;
   registrationDate?: string;
+  isNew?: boolean;
 };
 
 type Props = {
@@ -35,6 +37,7 @@ export default function PatientInfoModal({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [patientInfo, setPatientInfo] = useState<PatientInfo | null>(null);
+  const [isNew, setIsNew] = useState(false);
   
   useEffect(() => {
     if (isOpen && chartNumber) {
@@ -51,6 +54,7 @@ export default function PatientInfoModal({
         })
         .then(data => {
           setPatientInfo(data);
+          setIsNew(data.isNew || false);
         })
         .catch(err => {
           console.error('환자 정보 조회 오류:', err);
@@ -61,12 +65,42 @@ export default function PatientInfoModal({
         });
     }
   }, [isOpen, chartNumber]);
+
+  // 신환 여부 변경 처리
+  const handleIsNewChange = (checked: boolean) => {
+    setIsNew(checked);
+    
+    // API를 통해 신환 여부 업데이트
+    if (chartNumber) {
+      fetch(`/api/patients/${chartNumber}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ isNew: checked }),
+      })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('환자 정보를 업데이트할 수 없습니다.');
+          }
+          return response.json();
+        })
+        .then(data => {
+          setPatientInfo(prev => prev ? { ...prev, isNew: checked } : null);
+        })
+        .catch(err => {
+          console.error('환자 정보 업데이트 오류:', err);
+          // 실패 시 원래 값으로 복원
+          setIsNew(!checked);
+        });
+    }
+  };
   
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>환자 정보</DialogTitle>
+          <DialogTitle>내원 정보 수정</DialogTitle>
         </DialogHeader>
         
         {loading ? (
@@ -116,6 +150,14 @@ export default function PatientInfoModal({
                 <div>
                   <p className="text-sm font-medium text-gray-500">등록일</p>
                   <p>{patientInfo?.registrationDate ? new Date(patientInfo.registrationDate).toLocaleDateString() : '-'}</p>
+                </div>
+                
+                <div className="flex items-center justify-between col-span-2 border-t pt-2">
+                  <p className="text-sm font-medium text-gray-500">신환 여부</p>
+                  <Switch 
+                    checked={isNew}
+                    onCheckedChange={handleIsNewChange}
+                  />
                 </div>
               </div>
               

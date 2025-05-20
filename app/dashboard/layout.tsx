@@ -27,7 +27,7 @@ export default function DashboardLayout({
         
         <footer className="border-t py-4">
           <div className="container mx-auto text-center text-sm text-gray-500">
-            &copy; 2025 클리닉 매니저. All rights reserved.
+            &copy; 2025 인천센터치과. All right reserved.
           </div>
         </footer>
       </div>

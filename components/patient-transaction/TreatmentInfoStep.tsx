@@ -192,9 +192,46 @@ export default function TreatmentInfoStep({
             <Input
               id="paymentAmount"
               name="paymentAmount"
-              type="number"
-              value={currentTreatmentGroup.paymentAmount}
-              onChange={handleTreatmentInputChange}
+              type="text"
+              value={isNaN(currentTreatmentGroup.paymentAmount) 
+                ? "0" 
+                : currentTreatmentGroup.paymentAmount === 0 
+                  ? "0" 
+                  : currentTreatmentGroup.paymentAmount.toLocaleString()}
+              onChange={(e) => {
+                // 입력값에서 콤마(,) 제거
+                const value = e.target.value.replace(/,/g, '');
+                
+                // 숫자 또는 빈 문자열만 허용
+                if (value === '' || /^\d+$/.test(value)) {
+                  // Input 이벤트 생성
+                  const inputEvent = {
+                    target: {
+                      name: 'paymentAmount',
+                      value: value === '' ? '0' : value,
+                      type: 'number'
+                    }
+                  } as React.ChangeEvent<HTMLInputElement>;
+                  
+                  // 기존 핸들러 호출
+                  handleTreatmentInputChange(inputEvent);
+                }
+              }}
+              onFocus={(e) => {
+                if (currentTreatmentGroup.paymentAmount === 0 || isNaN(currentTreatmentGroup.paymentAmount)) {
+                  // Input 이벤트 생성
+                  const inputEvent = {
+                    target: {
+                      name: 'paymentAmount',
+                      value: '',
+                      type: 'number'
+                    }
+                  } as React.ChangeEvent<HTMLInputElement>;
+                  
+                  // 기존 핸들러 호출
+                  handleTreatmentInputChange(inputEvent);
+                }
+              }}
               className={errors.paymentAmount ? "border-red-500" : ""}
               disabled={currentTreatmentGroup.paymentMethod === '수납없음'}
             />

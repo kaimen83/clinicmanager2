@@ -13,22 +13,39 @@ import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
 import { toISODateString } from '@/lib/utils';
 
+// Transaction 타입 확장 (기존 Transaction 타입에 treatments 추가)
+interface ExtendedTransaction extends Transaction {
+  treatments?: Array<{
+    doctor: string;
+    treatmentType: string;
+    paymentMethod: string;
+    paymentAmount: number;
+    cardCompany?: string;
+    cashReceipt?: boolean;
+  }>;
+}
+
 // 의사별로 트랜잭션 목록 그룹화 함수
-const groupTransactionsByDoctor = (transactions: Transaction[]) => {
-  const grouped: Record<string, Transaction[]> = {};
+const groupTransactionsByDoctor = (transactions: ExtendedTransaction[]) => {
+  const grouped: Record<string, ExtendedTransaction[]> = {};
   
   transactions.forEach(transaction => {
-    if (!grouped[transaction.doctor]) {
-      grouped[transaction.doctor] = [];
+    // treatments 배열에서 doctor 정보 가져오기
+    const doctor = transaction.treatments && transaction.treatments.length > 0 
+      ? transaction.treatments[0].doctor 
+      : transaction.doctor;
+      
+    if (!grouped[doctor]) {
+      grouped[doctor] = [];
     }
-    grouped[transaction.doctor].push(transaction);
+    grouped[doctor].push(transaction);
   });
   
   return grouped;
 };
 
 // ObjectId 변환 함수 (MongoDB 객체 처리)
-const normalizeId = (transaction: any): Transaction => {
+const normalizeId = (transaction: any): ExtendedTransaction => {
   // _id가 객체인 경우 문자열로 변환
   if (transaction._id && typeof transaction._id === 'object' && transaction._id.toString) {
     return {
@@ -36,7 +53,7 @@ const normalizeId = (transaction: any): Transaction => {
       _id: transaction._id.toString()
     };
   }
-  return transaction as Transaction;
+  return transaction as ExtendedTransaction;
 };
 
 type Props = {
@@ -47,7 +64,7 @@ type SortField = 'chartNumber' | 'patientName' | 'treatmentType' | 'paymentAmoun
 type SortDirection = 'asc' | 'desc';
 
 export default function PatientList({ date }: Props) {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [transactions, setTransactions] = useState<ExtendedTransaction[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedDoctors, setExpandedDoctors] = useState<Record<string, boolean>>({});
@@ -55,8 +72,8 @@ export default function PatientList({ date }: Props) {
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [isEditDialogOpen, setIsEditDialogOpen] = useState<boolean>(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState<boolean>(false);
-  const [currentTransaction, setCurrentTransaction] = useState<Transaction | null>(null);
-  const [editFormData, setEditFormData] = useState<Partial<Transaction>>({});
+  const [currentTransaction, setCurrentTransaction] = useState<ExtendedTransaction | null>(null);
+  const [editFormData, setEditFormData] = useState<Partial<ExtendedTransaction>>({});
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   
   useEffect(() => {
@@ -90,7 +107,7 @@ export default function PatientList({ date }: Props) {
   }, [date]);
   
   // 정렬 함수
-  const sortTransactions = (transactions: Transaction[], field: SortField | null, direction: SortDirection) => {
+  const sortTransactions = (transactions: ExtendedTransaction[], field: SortField | null, direction: SortDirection) => {
     if (!field) return transactions;
     
     return [...transactions].sort((a, b) => {
@@ -170,7 +187,7 @@ export default function PatientList({ date }: Props) {
   };
   
   // 수정 다이얼로그 열기
-  const openEditDialog = (transaction: Transaction) => {
+  const openEditDialog = (transaction: ExtendedTransaction) => {
     setCurrentTransaction(transaction);
     setEditFormData({
       chartNumber: transaction.chartNumber,
@@ -186,7 +203,7 @@ export default function PatientList({ date }: Props) {
   };
   
   // 삭제 다이얼로그 열기
-  const openDeleteDialog = (transaction: Transaction) => {
+  const openDeleteDialog = (transaction: ExtendedTransaction) => {
     setCurrentTransaction(transaction);
     setIsDeleteDialogOpen(true);
   };
@@ -321,6 +338,9 @@ export default function PatientList({ date }: Props) {
   };
   
   const formatAmount = (amount: number) => {
+    if (isNaN(amount) || amount === null || amount === undefined) {
+      return '0';
+    }
     return new Intl.NumberFormat('ko-KR').format(amount);
   };
   
@@ -348,7 +368,39 @@ export default function PatientList({ date }: Props) {
   };
   
   // 수납방법 포맷팅 함수
-  const formatPaymentMethod = (transaction: Transaction) => {
+  const formatPaymentMethod = (transaction: ExtendedTransaction) => {
+    // treatments 배열이 있는 경우 첫 번째 항목의 정보 사용
+    if (transaction.treatments && transaction.treatments.length > 0) {
+      const treatment = transaction.treatments[0];
+      
+      if (treatment.paymentMethod === '현금' || treatment.paymentMethod === '계좌이체') {
+        return (
+          <div className="flex items-center gap-1">
+            {treatment.paymentMethod}
+            {treatment.cashReceipt ? (
+              <Badge variant="outline" className="ml-1 text-xs">영수증 발행</Badge>
+            ) : (
+              <Badge variant="outline" className="ml-1 text-xs bg-gray-100">미발행</Badge>
+            )}
+          </div>
+        );
+      } else if (treatment.paymentMethod === '카드') {
+        return (
+          <div className="flex items-center gap-1">
+            카드
+            {treatment.cardCompany && (
+              <Badge variant="outline" className="ml-1 text-xs">{treatment.cardCompany}</Badge>
+            )}
+          </div>
+        );
+      } else if (treatment.paymentMethod === '수납없음' || treatment.paymentAmount <= 0) {
+        return <Badge variant="outline" className="bg-gray-100">수납없음</Badge>;
+      }
+      
+      return treatment.paymentMethod;
+    }
+    
+    // 기존 로직 (이전 버전 호환성 유지)
     if (transaction.paymentMethod === '현금' || transaction.paymentMethod === '계좌이체') {
       return (
         <div className="flex items-center gap-1">
@@ -480,8 +532,18 @@ export default function PatientList({ date }: Props) {
                                   )}
                                 </div>
                               </TableCell>
-                              <TableCell>{transaction.treatmentType}</TableCell>
-                              <TableCell className="text-right">{formatAmount(transaction.paymentAmount)}원</TableCell>
+                              <TableCell>
+                                {transaction.treatments && transaction.treatments.length > 0 
+                                  ? transaction.treatments[0].treatmentType
+                                  : transaction.treatmentType
+                                }
+                              </TableCell>
+                              <TableCell className="text-right">
+                                {transaction.treatments && transaction.treatments.length > 0 
+                                  ? `${formatAmount(transaction.treatments[0].paymentAmount)}원`
+                                  : `${formatAmount(transaction.paymentAmount)}원`
+                                }
+                              </TableCell>
                               <TableCell>{formatPaymentMethod(transaction)}</TableCell>
                               <TableCell className="text-right">
                                 <div className="flex justify-end gap-1">

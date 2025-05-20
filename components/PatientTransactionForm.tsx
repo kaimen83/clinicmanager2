@@ -36,10 +36,21 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
     isNew: false,
   });
 
+  // 내원날짜 기본값 설정 - 모달이 열릴 때마다 날짜 업데이트
+  useEffect(() => {
+    if (isOpen) {
+      setFormData(prev => ({
+        ...prev,
+        date: selectedDate.toISOString().split('T')[0],
+      }));
+    }
+  }, [isOpen, selectedDate]);
+  
   // 추가 상태 변수
   const [isLoading, setIsLoading] = useState(false);
   const [patientNotFound, setPatientNotFound] = useState(false);
   const [patientFound, setPatientFound] = useState(false);
+  const [isNewPatientPrompt, setIsNewPatientPrompt] = useState(false);
   
   // 시스템 설정 데이터
   const [doctors, setDoctors] = useState<{value: string}[]>([]);
@@ -208,6 +219,7 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
     setCurrentStep(1);
     setPatientNotFound(false);
     setPatientFound(false);
+    setIsNewPatientPrompt(false);
   };
 
   // 현재 진료 그룹 초기화
@@ -256,7 +268,8 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
       newErrors.cardCompany = '카드 결제 시 카드사 정보는 필수입니다.';
     }
     
-    if (currentTreatmentGroup.paymentMethod !== '수납없음' && currentTreatmentGroup.paymentAmount <= 0) {
+    if (currentTreatmentGroup.paymentMethod !== '수납없음' && 
+        (currentTreatmentGroup.paymentAmount <= 0 || isNaN(currentTreatmentGroup.paymentAmount))) {
       newErrors.paymentAmount = '수납금액은 0보다 커야 합니다.';
     }
     
@@ -264,6 +277,11 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
     
     // 오류가 있으면 추가하지 않음
     if (Object.keys(newErrors).length > 0) {
+      toast({
+        title: "입력 오류",
+        description: "진료 정보에 입력 오류가 있습니다. 확인 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
       return false;
     }
     
@@ -341,9 +359,11 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
         [name]: checked
       }));
     } else if (type === 'number') {
+      // 숫자 값이 아니거나 빈 문자열인 경우 0으로 설정
+      const numValue = value === '' ? 0 : parseFloat(value);
       setCurrentTreatmentGroup(prev => ({
         ...prev,
-        [name]: parseFloat(value)
+        [name]: isNaN(numValue) ? 0 : numValue
       }));
     } else {
       setCurrentTreatmentGroup(prev => ({
@@ -481,17 +501,11 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
       currentTreatmentGroup.treatmentType || 
       (currentTreatmentGroup.paymentMethod !== '수납없음' && currentTreatmentGroup.paymentAmount > 0)
     ) {
-      // 확인 대화상자 표시
-      const confirmAdd = window.confirm(
-        '현재 입력 중인 진료 정보가 있습니다. 이 정보도 포함하시겠습니까?'
-      );
-      
-      if (confirmAdd) {
-        const added = addTreatmentGroup();
-        if (!added) {
-          // 추가 실패 시 제출 중단
-          return;
-        }
+      // 자동으로 현재 진료 정보 추가
+      const added = addTreatmentGroup();
+      if (!added) {
+        // 추가 실패 시 제출 중단
+        return;
       }
     }
     
@@ -522,7 +536,7 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
     try {
       // 트랜잭션 데이터 생성
       const transactionData = {
-        date: new Date(formData.date),
+        date: formData.date,
         chartNumber: formData.chartNumber,
         patientName: formData.patientName,
         visitPath: formData.visitPath,
@@ -588,7 +602,7 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
             errors={errors}
             isLoading={isLoading}
             patientNotFound={patientNotFound}
-            isNewPatientPrompt={false}
+            isNewPatientPrompt={isNewPatientPrompt}
             handleInputChange={handleInputChange}
             handleChartNumberBlur={handleChartNumberBlur}
             handleSwitchChange={handleSwitchChange}

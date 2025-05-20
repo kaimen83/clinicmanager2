@@ -61,8 +61,9 @@ export default function PaymentListModal({ isOpen, onClose, title, date, payment
       }
       
       const data = await response.json();
-      setTransactions(data.transactions || []);
-      setFilteredTransactions(data.transactions || []);
+      const sortedTransactions = sortTransactionsByDate(data.transactions || []);
+      setTransactions(sortedTransactions);
+      setFilteredTransactions(sortedTransactions);
     } catch (error) {
       console.error('트랜잭션 목록 조회 에러:', error);
     } finally {
@@ -78,10 +79,17 @@ export default function PaymentListModal({ isOpen, onClose, title, date, payment
     }
   }, [isOpen, date, paymentMethod, type]);
 
+  // 트랜잭션 정렬 함수
+  const sortTransactionsByDate = (transactions: Transaction[]) => {
+    return [...transactions].sort((a, b) => {
+      return new Date(a.date).getTime() - new Date(b.date).getTime();
+    });
+  };
+
   // 검색어 변경 처리
   useEffect(() => {
     if (searchTerm.trim() === '') {
-      setFilteredTransactions(transactions);
+      setFilteredTransactions(sortTransactionsByDate(transactions));
     } else {
       const term = searchTerm.toLowerCase();
       const filtered = transactions.filter(
@@ -89,7 +97,7 @@ export default function PaymentListModal({ isOpen, onClose, title, date, payment
           tx.chartNumber?.toLowerCase().includes(term) ||
           tx.patientName?.toLowerCase().includes(term)
       );
-      setFilteredTransactions(filtered);
+      setFilteredTransactions(sortTransactionsByDate(filtered));
     }
   }, [searchTerm, transactions]);
 

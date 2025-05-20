@@ -7,6 +7,7 @@ import { DailyStats, MonthlyStats, ExtraIncome } from '@/lib/types';
 import { toISODateString } from '@/lib/utils';
 import PaymentListModal from './PaymentListModal';
 import CardCompanyStatsModal from './CardCompanyStatsModal';
+import ExtraIncomeListModal from './ExtraIncomeListModal';
 
 type Props = {
   date: Date;
@@ -21,6 +22,7 @@ export default function ClinicStats({ date }: Props) {
   const [extraincomes, setextraincomes] = useState<ExtraIncome[]>([]);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isCardStatsModalOpen, setIsCardStatsModalOpen] = useState(false);
+  const [isExtraIncomeModalOpen, setIsExtraIncomeModalOpen] = useState(false);
   const [modalTitle, setModalTitle] = useState('');
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | undefined>(undefined);
   
@@ -87,12 +89,20 @@ export default function ClinicStats({ date }: Props) {
     if (paymentMethod === '카드') {
       setModalTitle(`${label} 통계`);
       setIsCardStatsModalOpen(true);
-    } else {
-      // 다른 결제 방식은 기존 목록 모달 열기
-      setModalTitle(`${label} 내역`);
-      setSelectedPaymentMethod(paymentMethod);
-      setIsPaymentModalOpen(true);
+      return;
     }
+    
+    // 진료외수입인 경우 진료외수입 목록 모달 열기
+    if (label === '진료외수입') {
+      setModalTitle(`${label} 목록`);
+      setIsExtraIncomeModalOpen(true);
+      return;
+    }
+    
+    // 다른 결제 방식은 기존 목록 모달 열기
+    setModalTitle(`${label} 내역`);
+    setSelectedPaymentMethod(paymentMethod);
+    setIsPaymentModalOpen(true);
   };
   
   // 결제 목록 모달 닫기
@@ -103,6 +113,11 @@ export default function ClinicStats({ date }: Props) {
   // 카드사별 통계 모달 닫기
   const handleCloseCardStatsModal = () => {
     setIsCardStatsModalOpen(false);
+  };
+  
+  // 진료외수입 목록 모달 닫기
+  const handleCloseExtraIncomeModal = () => {
+    setIsExtraIncomeModalOpen(false);
   };
   
   // 통계 항목 렌더링 함수 (클릭 가능 여부 추가)
@@ -195,7 +210,7 @@ export default function ClinicStats({ date }: Props) {
       {renderStatItem('현금/계좌이체', currentDailyStats.cashTransferAmount, true, true, '현금')}
       {renderStatItem('카드 수납금액', currentDailyStats.cardAmount, true, true, '카드')}
       {renderStatItem('전체 수납금액', currentDailyStats.totalPaymentAmount, true, true)}
-      {renderStatItem('진료외수입', currentDailyStats.nonMedicalIncome)}
+      {renderStatItem('진료외수입', currentDailyStats.nonMedicalIncome, true, true)}
       {renderStatItem('총수입', currentDailyStats.totalIncome)}
       {renderStatItem('총지출', currentDailyStats.totalExpenses)}
       {renderStatItem('상담 동의금액', currentDailyStats.consultationAgreedAmount)}
@@ -210,7 +225,7 @@ export default function ClinicStats({ date }: Props) {
       {renderStatItem('현금/계좌이체', currentMonthlyStats.cashTransferAmount, true, true, '현금')}
       {renderStatItem('카드 수납금액', currentMonthlyStats.cardAmount, true, true, '카드')}
       {renderStatItem('전체 수납금액', currentMonthlyStats.totalPaymentAmount, true, true)}
-      {renderStatItem('진료외수입', currentMonthlyStats.nonMedicalIncome)}
+      {renderStatItem('진료외수입', currentMonthlyStats.nonMedicalIncome, true, true)}
       {renderStatItem('총수입', currentMonthlyStats.totalIncome)}
       {renderStatItem('총지출', currentMonthlyStats.totalExpenses)}
       {renderStatItem('상담 동의금액', currentMonthlyStats.consultationAgreedAmount)}
@@ -262,6 +277,15 @@ export default function ClinicStats({ date }: Props) {
       <CardCompanyStatsModal
         isOpen={isCardStatsModalOpen}
         onClose={handleCloseCardStatsModal}
+        title={modalTitle}
+        date={date}
+        type={activeTab as 'daily' | 'monthly'}
+      />
+      
+      {/* 진료외수입 목록 모달 */}
+      <ExtraIncomeListModal
+        isOpen={isExtraIncomeModalOpen}
+        onClose={handleCloseExtraIncomeModal}
         title={modalTitle}
         date={date}
         type={activeTab as 'daily' | 'monthly'}

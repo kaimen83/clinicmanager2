@@ -103,12 +103,20 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json();
-    const { chartNumber, patientName, date, doctor } = data;
+    const { chartNumber, patientName, date, treatments } = data;
 
     // 필수 필드 검증
-    if (!chartNumber || !patientName || !date || !doctor) {
+    if (!chartNumber || !patientName || !date) {
       return NextResponse.json(
-        { error: "차트번호, 환자명, 날짜, 의사 정보는 필수 입력 사항입니다." },
+        { error: "차트번호, 환자명, 날짜는 필수 입력 사항입니다." },
+        { status: 400 }
+      );
+    }
+
+    // 진료 정보가 없거나 빈 배열인 경우 검증
+    if (!treatments || !Array.isArray(treatments) || treatments.length === 0) {
+      return NextResponse.json(
+        { error: "최소 하나 이상의 진료 정보가 필요합니다." },
         { status: 400 }
       );
     }
