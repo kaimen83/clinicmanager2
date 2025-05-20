@@ -27,16 +27,41 @@ export async function GET(request: NextRequest) {
       ];
     }
     
-    // 날짜 필터 추가
+    // 날짜 필터 추가 (날짜의 시작과 끝 시간 설정 - 한국 시간 기준)
     if (dateStart && dateEnd) {
+      // 시작 날짜: 해당 날짜의 00:00:00 (한국 시간)
+      const startParts = dateStart.split('-').map(Number);
+      const startDateObj = new Date(startParts[0], startParts[1] - 1, startParts[2], 0, 0, 0, 0);
+      
+      // 종료 날짜: 해당 날짜의 23:59:59.999 (한국 시간)
+      const endParts = dateEnd.split('-').map(Number);
+      const endDateObj = new Date(endParts[0], endParts[1] - 1, endParts[2], 23, 59, 59, 999);
+      
+      // 한국 시간과 UTC 간의 시차 (밀리초)
+      const kstOffset = 9 * 60 * 60 * 1000;
+      
+      // UTC 기준으로 변환 (MongoDB는 UTC로 저장)
+      const startUtc = new Date(startDateObj.getTime() - kstOffset);
+      const endUtc = new Date(endDateObj.getTime() - kstOffset);
+      
       searchQuery['date'] = {
-        $gte: toKstDate(dateStart),
-        $lte: toKstDate(dateEnd)
+        $gte: startUtc,
+        $lte: endUtc
       };
     } else if (dateStart) {
-      searchQuery['date'] = { $gte: toKstDate(dateStart) };
+      const startParts = dateStart.split('-').map(Number);
+      const startDateObj = new Date(startParts[0], startParts[1] - 1, startParts[2], 0, 0, 0, 0);
+      const kstOffset = 9 * 60 * 60 * 1000;
+      const startUtc = new Date(startDateObj.getTime() - kstOffset);
+      
+      searchQuery['date'] = { $gte: startUtc };
     } else if (dateEnd) {
-      searchQuery['date'] = { $lte: toKstDate(dateEnd) };
+      const endParts = dateEnd.split('-').map(Number);
+      const endDateObj = new Date(endParts[0], endParts[1] - 1, endParts[2], 23, 59, 59, 999);
+      const kstOffset = 9 * 60 * 60 * 1000;
+      const endUtc = new Date(endDateObj.getTime() - kstOffset);
+      
+      searchQuery['date'] = { $lte: endUtc };
     }
     
     // 의사 필터 추가

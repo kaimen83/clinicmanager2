@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
+import { toISODateString } from '@/lib/utils';
 
 // 의사별로 트랜잭션 목록 그룹화 함수
 const groupTransactionsByDoctor = (transactions: Transaction[]) => {
@@ -62,7 +63,7 @@ export default function PatientList({ date }: Props) {
     const fetchTransactions = async () => {
       try {
         setLoading(true);
-        const dateString = date.toISOString().split('T')[0]; // YYYY-MM-DD 형식
+        const dateString = toISODateString(date); // 한국 시간 기준 YYYY-MM-DD 형식
         
         // 시작 날짜와 종료 날짜를 같은 날짜로 설정하여 정확한 날짜 필터링
         const response = await fetch(`/api/transactions?dateStart=${dateString}&dateEnd=${dateString}`);
@@ -471,7 +472,14 @@ export default function PatientList({ date }: Props) {
                             <TableRow key={transaction._id}>
                               <TableCell>{index + 1}</TableCell>
                               <TableCell>{transaction.chartNumber}</TableCell>
-                              <TableCell>{transaction.patientName}</TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  {transaction.patientName}
+                                  {transaction.isNew && (
+                                    <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300">신환</Badge>
+                                  )}
+                                </div>
+                              </TableCell>
                               <TableCell>{transaction.treatmentType}</TableCell>
                               <TableCell className="text-right">{formatAmount(transaction.paymentAmount)}원</TableCell>
                               <TableCell>{formatPaymentMethod(transaction)}</TableCell>

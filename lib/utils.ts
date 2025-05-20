@@ -22,10 +22,13 @@ export function toKstDate(date: Date | string | number | null | undefined): Date
   return new Date(parsedDate.toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
 }
 
-// Date 객체를 ISO 문자열(YYYY-MM-DD)로 변환
+// Date 객체를 ISO 문자열(YYYY-MM-DD)로 변환 (한국 시간 기준으로 정확히 처리)
 export function toISODateString(date: Date | string | number | null | undefined): string {
   const kstDate = toKstDate(date);
-  return kstDate.toISOString().split('T')[0];
+  const year = kstDate.getFullYear();
+  const month = String(kstDate.getMonth() + 1).padStart(2, '0');
+  const day = String(kstDate.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 // Date 객체를 한국 로컬 형식으로 변환 (YYYY년 MM월 DD일)

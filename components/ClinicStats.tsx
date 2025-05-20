@@ -1,49 +1,71 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DailyStats, MonthlyStats } from '@/lib/types';
-
-// 샘플 데이터
-const SAMPLE_DAILY_STATS: DailyStats = {
-  totalPatients: 38,
-  newPatients: 5,
-  cashTransferAmount: 1450000,
-  cardAmount: 2150000,
-  totalPaymentAmount: 3600000,
-  nonMedicalIncome: 580000,
-  totalIncome: 4180000,
-  totalExpenses: 890000,
-  consultationAgreedAmount: 1200000,
-  consultationNonAgreedAmount: 300000,
-};
-
-const SAMPLE_MONTHLY_STATS: MonthlyStats = {
-  totalPatients: 845,
-  newPatients: 122,
-  cashTransferAmount: 32450000,
-  cardAmount: 48750000,
-  totalPaymentAmount: 81200000,
-  nonMedicalIncome: 11580000,
-  totalIncome: 92780000,
-  totalExpenses: 25890000,
-  consultationAgreedAmount: 32200000,
-  consultationNonAgreedAmount: 8300000,
-};
+import { toISODateString } from '@/lib/utils';
 
 type Props = {
   date: Date;
-  dailyStats?: DailyStats;
-  monthlyStats?: MonthlyStats;
 };
 
-export default function ClinicStats({ 
-  date, 
-  dailyStats = SAMPLE_DAILY_STATS,
-  monthlyStats = SAMPLE_MONTHLY_STATS 
-}: Props) {
+export default function ClinicStats({ date }: Props) {
   const [activeTab, setActiveTab] = useState('daily');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [dailyStats, setDailyStats] = useState<DailyStats | null>(null);
+  const [monthlyStats, setMonthlyStats] = useState<MonthlyStats | null>(null);
+  
+  // 통계 데이터 가져오기 함수
+  const fetchStats = async (type: 'daily' | 'monthly') => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      let dateParam;
+      if (type === 'daily') {
+        dateParam = toISODateString(date);
+      } else {
+        // YYYY-MM 형식으로 변환 (한국 시간대 고려)
+        dateParam = toISODateString(date).substring(0, 7);
+      }
+      
+      const response = await fetch(`/api/stats?type=${type}&date=${dateParam}`);
+      
+      if (!response.ok) {
+        throw new Error('통계 데이터를 가져오는데 실패했습니다.');
+      }
+      
+      const data = await response.json();
+      
+      if (type === 'daily') {
+        setDailyStats(data.stats);
+      } else {
+        setMonthlyStats(data.stats);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.');
+      console.error('통계 데이터 조회 오류:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // 날짜가 변경될 때 데이터 가져오기
+  useEffect(() => {
+    fetchStats('daily');
+    fetchStats('monthly');
+  }, [date]);
+  
+  // 탭이 변경될 때 필요한 데이터만 가져오기
+  useEffect(() => {
+    if (activeTab === 'daily' && !dailyStats) {
+      fetchStats('daily');
+    } else if (activeTab === 'monthly' && !monthlyStats) {
+      fetchStats('monthly');
+    }
+  }, [activeTab]);
   
   const formatAmount = (amount: number) => {
     return new Intl.NumberFormat('ko-KR').format(amount);
@@ -60,6 +82,53 @@ export default function ClinicStats({
       </div>
     );
   };
+  
+  // 로딩 상태 표시
+  if (loading && ((activeTab === 'daily' && !dailyStats) || (activeTab === 'monthly' && !monthlyStats))) {
+    return (
+      <Card className="w-full h-full shadow-sm">
+        <CardHeader>
+          <CardTitle>진료 통계</CardTitle>
+          <CardDescription>데이터를 불러오는 중...</CardDescription>
+        </CardHeader>
+        <CardContent className="text-center p-8">
+          통계 데이터를 불러오는 중입니다...
+        </CardContent>
+      </Card>
+    );
+  }
+  
+  // 오류 상태 표시
+  if (error) {
+    return (
+      <Card className="w-full h-full shadow-sm">
+        <CardHeader>
+          <CardTitle>진료 통계</CardTitle>
+          <CardDescription className="text-red-500">오류 발생</CardDescription>
+        </CardHeader>
+        <CardContent className="text-center p-8 text-red-500">
+          {error}
+        </CardContent>
+      </Card>
+    );
+  }
+  
+  // 기본값 설정 (API 응답이 오기 전)
+  const defaultStats = {
+    totalPatients: 0,
+    newPatients: 0,
+    cashTransferAmount: 0,
+    cardAmount: 0,
+    totalPaymentAmount: 0,
+    nonMedicalIncome: 0,
+    totalIncome: 0,
+    totalExpenses: 0,
+    consultationAgreedAmount: 0,
+    consultationNonAgreedAmount: 0
+  };
+  
+  const currentDailyStats = dailyStats || defaultStats;
+  const currentMonthlyStats = monthlyStats || defaultStats;
   
   return (
     <Card className="w-full h-full shadow-sm">
@@ -81,31 +150,31 @@ export default function ClinicStats({
           
           <TabsContent value="daily" className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              {renderStatItem('총 내원인원', dailyStats.totalPatients, false)}
-              {renderStatItem('신환', dailyStats.newPatients, false)}
-              {renderStatItem('현금/계좌이체', dailyStats.cashTransferAmount)}
-              {renderStatItem('카드 수납금액', dailyStats.cardAmount)}
-              {renderStatItem('전체 수납금액', dailyStats.totalPaymentAmount)}
-              {renderStatItem('진료외수입', dailyStats.nonMedicalIncome)}
-              {renderStatItem('총수입', dailyStats.totalIncome)}
-              {renderStatItem('총지출', dailyStats.totalExpenses)}
-              {renderStatItem('상담 동의금액', dailyStats.consultationAgreedAmount)}
-              {renderStatItem('상담 미동의금액', dailyStats.consultationNonAgreedAmount)}
+              {renderStatItem('총 내원인원', currentDailyStats.totalPatients, false)}
+              {renderStatItem('신환', currentDailyStats.newPatients, false)}
+              {renderStatItem('현금/계좌이체', currentDailyStats.cashTransferAmount)}
+              {renderStatItem('카드 수납금액', currentDailyStats.cardAmount)}
+              {renderStatItem('전체 수납금액', currentDailyStats.totalPaymentAmount)}
+              {renderStatItem('진료외수입', currentDailyStats.nonMedicalIncome)}
+              {renderStatItem('총수입', currentDailyStats.totalIncome)}
+              {renderStatItem('총지출', currentDailyStats.totalExpenses)}
+              {renderStatItem('상담 동의금액', currentDailyStats.consultationAgreedAmount)}
+              {renderStatItem('상담 미동의금액', currentDailyStats.consultationNonAgreedAmount)}
             </div>
           </TabsContent>
           
           <TabsContent value="monthly" className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              {renderStatItem('총 내원인원', monthlyStats.totalPatients, false)}
-              {renderStatItem('신환', monthlyStats.newPatients, false)}
-              {renderStatItem('현금/계좌이체', monthlyStats.cashTransferAmount)}
-              {renderStatItem('카드 수납금액', monthlyStats.cardAmount)}
-              {renderStatItem('전체 수납금액', monthlyStats.totalPaymentAmount)}
-              {renderStatItem('진료외수입', monthlyStats.nonMedicalIncome)}
-              {renderStatItem('총수입', monthlyStats.totalIncome)}
-              {renderStatItem('총지출', monthlyStats.totalExpenses)}
-              {renderStatItem('상담 동의금액', monthlyStats.consultationAgreedAmount)}
-              {renderStatItem('상담 미동의금액', monthlyStats.consultationNonAgreedAmount)}
+              {renderStatItem('총 내원인원', currentMonthlyStats.totalPatients, false)}
+              {renderStatItem('신환', currentMonthlyStats.newPatients, false)}
+              {renderStatItem('현금/계좌이체', currentMonthlyStats.cashTransferAmount)}
+              {renderStatItem('카드 수납금액', currentMonthlyStats.cardAmount)}
+              {renderStatItem('전체 수납금액', currentMonthlyStats.totalPaymentAmount)}
+              {renderStatItem('진료외수입', currentMonthlyStats.nonMedicalIncome)}
+              {renderStatItem('총수입', currentMonthlyStats.totalIncome)}
+              {renderStatItem('총지출', currentMonthlyStats.totalExpenses)}
+              {renderStatItem('상담 동의금액', currentMonthlyStats.consultationAgreedAmount)}
+              {renderStatItem('상담 미동의금액', currentMonthlyStats.consultationNonAgreedAmount)}
             </div>
           </TabsContent>
         </Tabs>

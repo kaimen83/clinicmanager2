@@ -59,10 +59,21 @@ export async function GET(request: NextRequest) {
       })
       .toArray();
     
+    // 중복 없는 환자 수 및 신환 수 계산
+    const uniqueChartNumbers = new Set();
+    const uniqueNewPatientChartNumbers = new Set();
+
+    transactions.forEach(t => {
+      uniqueChartNumbers.add(t.chartNumber);
+      if (t.isNew) {
+        uniqueNewPatientChartNumbers.add(t.chartNumber);
+      }
+    });
+    
     // 통계 계산
     const stats = {
-      totalPatients: transactions.length,
-      newPatients: transactions.filter(t => t.isNew).length,
+      totalPatients: uniqueChartNumbers.size,
+      newPatients: uniqueNewPatientChartNumbers.size,
       cashTransferAmount: transactions
         .filter(t => t.paymentMethod === '현금' || t.paymentMethod === '계좌이체')
         .reduce((sum, t) => sum + (t.paymentAmount || 0), 0),

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
+import { toKstDate } from '@/lib/utils';
 
 // GET 요청 처리 - 특정 내원정보(트랜잭션) 조회
 export async function GET(
@@ -71,11 +72,11 @@ export async function PATCH(
       );
     }
     
-    // 날짜 형식 변환
+    // 날짜 형식 변환 (한국 시간대 고려)
     let updateData: any = { ...data };
     
     if (data.date) {
-      updateData.date = new Date(data.date);
+      updateData.date = toKstDate(data.date);
     }
     
     // 상담 내역 업데이트
@@ -86,19 +87,19 @@ export async function PATCH(
           return {
             ...consultation,
             _id: typeof consultation._id === 'string' ? new ObjectId(consultation._id) : consultation._id,
-            date: consultation.date ? new Date(consultation.date) : new Date(),
-            confirmedDate: consultation.confirmedDate ? new Date(consultation.confirmedDate) : null,
-            updatedAt: new Date()
+            date: consultation.date ? toKstDate(consultation.date) : toKstDate(new Date()),
+            confirmedDate: consultation.confirmedDate ? toKstDate(consultation.confirmedDate) : null,
+            updatedAt: toKstDate(new Date())
           };
         }
         // 새 상담 추가
         return {
           ...consultation,
           _id: new ObjectId(),
-          date: consultation.date ? new Date(consultation.date) : new Date(),
-          confirmedDate: consultation.confirmedDate ? new Date(consultation.confirmedDate) : null,
-          createdAt: new Date(),
-          updatedAt: new Date()
+          date: consultation.date ? toKstDate(consultation.date) : toKstDate(new Date()),
+          confirmedDate: consultation.confirmedDate ? toKstDate(consultation.confirmedDate) : null,
+          createdAt: toKstDate(new Date()),
+          updatedAt: toKstDate(new Date())
         };
       });
     }
@@ -111,20 +112,20 @@ export async function PATCH(
           return {
             ...payment,
             _id: typeof payment._id === 'string' ? new ObjectId(payment._id) : payment._id,
-            date: payment.date ? new Date(payment.date) : new Date()
+            date: payment.date ? toKstDate(payment.date) : toKstDate(new Date())
           };
         }
         // 새 수납 추가
         return {
           ...payment,
           _id: new ObjectId(),
-          date: payment.date ? new Date(payment.date) : new Date()
+          date: payment.date ? toKstDate(payment.date) : toKstDate(new Date())
         };
       });
     }
     
     // 업데이트 시간 추가
-    updateData.updatedAt = new Date();
+    updateData.updatedAt = toKstDate(new Date());
     
     // 내원정보 업데이트
     await db.collection('transactions').updateOne(
