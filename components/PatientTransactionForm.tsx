@@ -38,8 +38,8 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
 
   // 추가 상태 변수
   const [isLoading, setIsLoading] = useState(false);
-  const [isNewPatientPrompt, setIsNewPatientPrompt] = useState(false);
   const [patientNotFound, setPatientNotFound] = useState(false);
+  const [patientFound, setPatientFound] = useState(false);
   
   // 시스템 설정 데이터
   const [doctors, setDoctors] = useState<{value: string}[]>([]);
@@ -129,6 +129,7 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
     
     setIsLoading(true);
     setPatientNotFound(false);
+    setPatientFound(false);
     
     try {
       const response = await fetch(`/api/patients/${chartNumber}`);
@@ -137,15 +138,19 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
         if (response.status === 404) {
           // 환자 정보가 없는 경우
           setPatientNotFound(true);
-          setIsNewPatientPrompt(true);
-          
-          // 신규 환자로 설정
+          // 폼 초기화
           setFormData(prev => ({
             ...prev,
-            isNew: true,
             patientName: '',
-            visitPath: ''
+            visitPath: '',
+            isNew: false
           }));
+          
+          toast({
+            title: "환자를 찾을 수 없음",
+            description: "입력한 차트번호로 등록된 환자가 없습니다. 먼저 환자를 등록해주세요.",
+            variant: "destructive",
+          });
         } else {
           throw new Error('환자 정보 조회 중 오류가 발생했습니다.');
         }
@@ -154,6 +159,7 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
       
       // 환자 정보 가져오기 성공
       const patientData: PatientData = await response.json();
+      setPatientFound(true);
       
       // 폼 데이터 자동 입력
       setFormData(prev => ({
@@ -187,27 +193,6 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
     }
   };
 
-  // 신규 환자 등록 확인
-  const handleConfirmNewPatient = () => {
-    setIsNewPatientPrompt(false);
-    toast({
-      title: "신규 환자",
-      description: "새 환자로 등록됩니다. 환자 정보를 입력해주세요.",
-    });
-  };
-
-  // 신규 환자 등록 취소
-  const handleCancelNewPatient = () => {
-    setIsNewPatientPrompt(false);
-    setFormData(prev => ({
-      ...prev,
-      chartNumber: '',
-      patientName: '',
-      visitPath: '',
-      isNew: false
-    }));
-  };
-
   // 폼 초기화
   const resetForm = () => {
     setFormData({
@@ -222,6 +207,7 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
     setErrors({});
     setCurrentStep(1);
     setPatientNotFound(false);
+    setPatientFound(false);
   };
 
   // 현재 진료 그룹 초기화
@@ -458,12 +444,8 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
         newErrors.chartNumber = '차트번호는 필수입니다.';
       }
       
-      if (!formData.patientName) {
-        newErrors.patientName = '환자 이름은 필수입니다.';
-      }
-      
-      if (!formData.visitPath) {
-        newErrors.visitPath = '내원경로는 필수입니다.';
+      if (!patientFound) {
+        newErrors.chartNumber = '유효한 환자 정보가 필요합니다.';
       }
     }
     
@@ -493,44 +475,59 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // 현재 입력 중인 진료 정보가 있고, 유효한 경우 추가
+    if (
+      currentTreatmentGroup.doctor || 
+      currentTreatmentGroup.treatmentType || 
+      (currentTreatmentGroup.paymentMethod !== '수납없음' && currentTreatmentGroup.paymentAmount > 0)
+    ) {
+      // 확인 대화상자 표시
+      const confirmAdd = window.confirm(
+        '현재 입력 중인 진료 정보가 있습니다. 이 정보도 포함하시겠습니까?'
+      );
+      
+      if (confirmAdd) {
+        const added = addTreatmentGroup();
+        if (!added) {
+          // 추가 실패 시 제출 중단
+          return;
+        }
+      }
+    }
+    
     // 최종 유효성 검사
-    if (!validateCurrentStep()) {
+    if (!formData.chartNumber || !formData.patientName || !formData.date) {
+      toast({
+        title: "필수 정보 누락",
+        description: "환자 정보가 모두 입력되었는지 확인해주세요.",
+        variant: "destructive",
+      });
+      
+      setCurrentStep(1);
       return;
     }
     
-    // 현재 작업 중인 그룹이 있고 필수 필드가 입력된 경우 자동으로 추가
-    const hasCurrentGroup = currentTreatmentGroup.doctor && currentTreatmentGroup.treatmentType && currentTreatmentGroup.paymentMethod;
-    
-    // 진료 그룹이 없는 경우 오류 메시지
-    if (treatmentGroups.length === 0 && !hasCurrentGroup) {
+    if (treatmentGroups.length === 0) {
       toast({
-        title: "오류",
-        description: "최소 하나 이상의 진료 정보를 입력해주세요.",
+        title: "진료 정보 누락",
+        description: "최소 하나 이상의 진료 정보가 필요합니다.",
         variant: "destructive",
       });
+      
       return;
     }
     
     setIsSubmitting(true);
     
     try {
-      // 처리할 진료 그룹 목록 (현재 작업 중인 그룹이 있으면 포함)
-      const groupsToProcess = hasCurrentGroup 
-        ? [...treatmentGroups, currentTreatmentGroup]
-        : treatmentGroups;
-      
-      // 각 진료 그룹마다 API 호출을 수행
-      const promises = groupsToProcess.map(async (group) => {
-        // 서버에 전송할 데이터
-        const transactionData = {
-          // 1단계 환자 정보
-          date: formData.date,
-          chartNumber: formData.chartNumber,
-          patientName: formData.patientName,
-          visitPath: formData.visitPath,
-          isNew: formData.isNew,
-          
-          // 2단계 진료 및 수납 정보 (그룹별)
+      // 트랜잭션 데이터 생성
+      const transactionData = {
+        date: new Date(formData.date),
+        chartNumber: formData.chartNumber,
+        patientName: formData.patientName,
+        visitPath: formData.visitPath,
+        isNew: formData.isNew,
+        treatments: treatmentGroups.map(group => ({
           doctor: group.doctor,
           treatmentType: group.treatmentType,
           paymentMethod: group.paymentMethod,
@@ -538,44 +535,42 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
           cashReceipt: group.cashReceipt,
           paymentAmount: group.paymentAmount,
           notes: group.notes
-        };
-        
-        const response = await fetch('/api/transactions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(transactionData),
-        });
-        
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || '내원정보 등록에 실패했습니다.');
-        }
-        
-        return response.json();
+        }))
+      };
+      
+      // API 호출하여 데이터 저장
+      const response = await fetch('/api/transactions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(transactionData),
       });
       
-      // 모든 Promise 실행
-      await Promise.all(promises);
-      
-      toast({
-        title: "내원정보가 등록되었습니다.",
-        description: `${formData.patientName} 환자의 내원정보 ${groupsToProcess.length}건이 성공적으로 등록되었습니다.`,
-      });
-      
-      resetForm();
-      onClose();
-      
-      // 부모 컴포넌트에 알림
-      if (onTransactionAdded) {
-        onTransactionAdded();
+      if (!response.ok) {
+        throw new Error('트랜잭션 저장 중 오류가 발생했습니다.');
       }
-    } catch (err) {
-      console.error('내원정보 등록 오류:', err);
+      
+      const data = await response.json();
+      
+      // 성공 메시지
       toast({
-        title: "오류가 발생했습니다.",
-        description: err instanceof Error ? err.message : "내원정보 등록 중 오류가 발생했습니다. 다시 시도해 주세요.",
+        title: "내원 정보 등록 완료",
+        description: "환자 내원 정보가 성공적으로 등록되었습니다.",
+      });
+      
+      // 성공 콜백 호출
+      if (onTransactionAdded) {
+        onTransactionAdded(data);
+      }
+      
+      // 모달 닫기
+      onClose();
+    } catch (err) {
+      console.error('트랜잭션 저장 오류:', err);
+      toast({
+        title: "오류",
+        description: err instanceof Error ? err.message : "내원 정보 등록 중 오류가 발생했습니다.",
         variant: "destructive",
       });
     } finally {
@@ -593,7 +588,7 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
             errors={errors}
             isLoading={isLoading}
             patientNotFound={patientNotFound}
-            isNewPatientPrompt={isNewPatientPrompt}
+            isNewPatientPrompt={false}
             handleInputChange={handleInputChange}
             handleChartNumberBlur={handleChartNumberBlur}
             handleSwitchChange={handleSwitchChange}
@@ -602,16 +597,16 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
       case 2:
         return (
           <TreatmentInfoStep
-            treatmentGroups={treatmentGroups}
-            currentTreatmentGroup={currentTreatmentGroup}
-            errors={errors}
             doctors={doctors}
             treatmentTypes={treatmentTypes}
             paymentMethods={paymentMethods}
             cardCompanies={cardCompanies}
+            treatmentGroups={treatmentGroups}
+            currentTreatmentGroup={currentTreatmentGroup}
+            errors={errors}
             handleTreatmentInputChange={handleTreatmentInputChange}
-            handleTreatmentSelectChange={handleTreatmentSelectChange}
             handleTreatmentSwitchChange={handleTreatmentSwitchChange}
+            handleTreatmentSelectChange={handleTreatmentSelectChange}
             addTreatmentGroup={addTreatmentGroup}
             removeTreatmentGroup={removeTreatmentGroup}
             removeCurrentTreatmentGroup={removeCurrentTreatmentGroup}
@@ -623,86 +618,53 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
   };
 
   return (
-    <>
-      <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>내원정보 등록</DialogTitle>
-          </DialogHeader>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[600px]">
+        <DialogHeader>
+          <DialogTitle>내원 정보 등록</DialogTitle>
+          <DialogDescription>
+            환자의 내원 정보와 진료 내역을 입력해주세요.
+          </DialogDescription>
           
-          <form onSubmit={handleSubmit} className="space-y-4 py-4">
-            <StepIndicator currentStep={currentStep} totalSteps={totalSteps} />
+          <StepIndicator currentStep={currentStep} totalSteps={totalSteps} />
+        </DialogHeader>
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {renderStepContent()}
+          
+          <DialogFooter className="flex justify-between">
+            {currentStep > 1 ? (
+              <Button type="button" variant="outline" onClick={goToPreviousStep}>
+                <ChevronLeft className="mr-2 h-4 w-4" />
+                이전
+              </Button>
+            ) : (
+              <div></div>
+            )}
             
-            {renderStepContent()}
-            
-            <DialogFooter className="flex justify-between items-center mt-6 pt-4 border-t">
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={onClose}
-                  disabled={isSubmitting || isLoading}
-                >
-                  취소
-                </Button>
-                
-                {currentStep > 1 && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={goToPreviousStep}
-                    disabled={isSubmitting || isLoading}
-                  >
-                    <ChevronLeft className="mr-1 h-4 w-4" />
-                    이전
-                  </Button>
-                )}
-              </div>
-              
-              <div>
-                {currentStep < totalSteps ? (
-                  <Button
-                    type="button"
-                    onClick={goToNextStep}
-                    disabled={isSubmitting || isLoading}
-                  >
-                    다음
-                    <ChevronRight className="ml-1 h-4 w-4" />
-                  </Button>
+            {currentStep < totalSteps ? (
+              <Button type="button" onClick={goToNextStep}>
+                다음
+                <ChevronRight className="ml-2 h-4 w-4" />
+              </Button>
+            ) : (
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    처리 중...
+                  </>
                 ) : (
-                  <Button
-                    type="submit"
-                    disabled={isSubmitting || isLoading}
-                  >
-                    {isSubmitting ? '처리 중...' : '등록'}
-                  </Button>
+                  <>
+                    <Check className="mr-2 h-4 w-4" />
+                    등록하기
+                  </>
                 )}
-              </div>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* 신규 환자 등록 확인 다이얼로그 */}
-      <Dialog open={isNewPatientPrompt} onOpenChange={setIsNewPatientPrompt}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>신규 환자 등록</DialogTitle>
-            <DialogDescription>
-              입력하신 차트번호({formData.chartNumber})로 등록된 환자 정보를 찾을 수 없습니다. 
-              새로운 환자로 등록하시겠습니까?
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="flex justify-between sm:justify-between">
-            <Button variant="outline" onClick={handleCancelNewPatient}>
-              취소
-            </Button>
-            <Button onClick={handleConfirmNewPatient}>
-              신규 환자로 등록
-            </Button>
+              </Button>
+            )}
           </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 } 

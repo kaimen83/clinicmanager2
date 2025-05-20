@@ -75,6 +75,8 @@ export default function PatientInfoStep({
             value={formData.patientName}
             onChange={handleInputChange}
             className={errors.patientName ? "border-red-500" : ""}
+            disabled={true}
+            title="차트번호 입력 시 자동으로 채워집니다"
           />
           {errors.patientName && (
             <p className="text-red-500 text-xs">{errors.patientName}</p>
@@ -92,6 +94,8 @@ export default function PatientInfoStep({
           value={formData.visitPath}
           onChange={handleInputChange}
           className={errors.visitPath ? "border-red-500" : ""}
+          disabled={true}
+          title="차트번호 입력 시 자동으로 채워집니다"
         />
         {errors.visitPath && (
           <p className="text-red-500 text-xs">{errors.visitPath}</p>

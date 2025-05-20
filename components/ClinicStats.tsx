@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DailyStats, MonthlyStats, ExtraIncome } from '@/lib/types';
 import { toISODateString } from '@/lib/utils';
 import PaymentListModal from './PaymentListModal';
+import CardCompanyStatsModal from './CardCompanyStatsModal';
 
 type Props = {
   date: Date;
@@ -19,6 +20,7 @@ export default function ClinicStats({ date }: Props) {
   const [monthlyStats, setMonthlyStats] = useState<MonthlyStats | null>(null);
   const [extraincomes, setextraincomes] = useState<ExtraIncome[]>([]);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [isCardStatsModalOpen, setIsCardStatsModalOpen] = useState(false);
   const [modalTitle, setModalTitle] = useState('');
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | undefined>(undefined);
   
@@ -81,14 +83,26 @@ export default function ClinicStats({ date }: Props) {
   
   // 결제 목록 모달 열기
   const handleOpenPaymentModal = (label: string, paymentMethod?: string) => {
-    setModalTitle(`${label} 내역`);
-    setSelectedPaymentMethod(paymentMethod);
-    setIsPaymentModalOpen(true);
+    // 카드 결제인 경우 카드사별 통계 모달 열기
+    if (paymentMethod === '카드') {
+      setModalTitle(`${label} 통계`);
+      setIsCardStatsModalOpen(true);
+    } else {
+      // 다른 결제 방식은 기존 목록 모달 열기
+      setModalTitle(`${label} 내역`);
+      setSelectedPaymentMethod(paymentMethod);
+      setIsPaymentModalOpen(true);
+    }
   };
   
   // 결제 목록 모달 닫기
   const handleClosePaymentModal = () => {
     setIsPaymentModalOpen(false);
+  };
+  
+  // 카드사별 통계 모달 닫기
+  const handleCloseCardStatsModal = () => {
+    setIsCardStatsModalOpen(false);
   };
   
   // 통계 항목 렌더링 함수 (클릭 가능 여부 추가)
@@ -241,6 +255,15 @@ export default function ClinicStats({ date }: Props) {
         title={modalTitle}
         date={date}
         paymentMethod={selectedPaymentMethod}
+        type={activeTab as 'daily' | 'monthly'}
+      />
+      
+      {/* 카드사별 통계 모달 */}
+      <CardCompanyStatsModal
+        isOpen={isCardStatsModalOpen}
+        onClose={handleCloseCardStatsModal}
+        title={modalTitle}
+        date={date}
         type={activeTab as 'daily' | 'monthly'}
       />
     </>
