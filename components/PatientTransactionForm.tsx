@@ -11,6 +11,7 @@ import { toast } from '@/hooks/use-toast';
 import { useDateContext } from '@/lib/context/dateContext';
 import { PatientData } from '@/lib/types';
 import { Check, ChevronLeft, ChevronRight, Loader2, Plus, Trash2 } from 'lucide-react';
+import { toISODateString } from '@/lib/utils';
 
 // 타입 및 컴포넌트 임포트
 import { 
@@ -29,7 +30,7 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
   
   // 폼 상태 관리
   const [formData, setFormData] = useState<PatientInfoFormData>({
-    date: selectedDate.toISOString().split('T')[0],
+    date: toISODateString(selectedDate),
     chartNumber: '',
     patientName: '',
     visitPath: '',
@@ -41,7 +42,7 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
     if (isOpen) {
       setFormData(prev => ({
         ...prev,
-        date: selectedDate.toISOString().split('T')[0],
+        date: toISODateString(selectedDate),
       }));
     }
   }, [isOpen, selectedDate]);
@@ -207,7 +208,7 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
   // 폼 초기화
   const resetForm = () => {
     setFormData({
-      date: selectedDate.toISOString().split('T')[0],
+      date: toISODateString(selectedDate),
       chartNumber: '',
       patientName: '',
       visitPath: '',
@@ -534,48 +535,70 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
     setIsSubmitting(true);
     
     try {
-      // 트랜잭션 데이터 생성
-      const transactionData = {
-        date: formData.date,
-        chartNumber: formData.chartNumber,
-        patientName: formData.patientName,
-        visitPath: formData.visitPath,
-        isNew: formData.isNew,
-        treatments: treatmentGroups.map(group => ({
+      const results = [];
+      let hasError = false;
+      
+      // 각 진료 그룹에 대해 개별 트랜잭션 생성 및 저장
+      for (const group of treatmentGroups) {
+        // 각 진료 그룹에 대한 트랜잭션 데이터 생성
+        const transactionData = {
+          date: formData.date,
+          chartNumber: formData.chartNumber,
+          patientName: formData.patientName,
+          visitPath: formData.visitPath,
+          isNew: formData.isNew,
           doctor: group.doctor,
           treatmentType: group.treatmentType,
           paymentMethod: group.paymentMethod,
           cardCompany: group.cardCompany,
           cashReceipt: group.cashReceipt,
           paymentAmount: group.paymentAmount,
-          notes: group.notes
-        }))
-      };
-      
-      // API 호출하여 데이터 저장
-      const response = await fetch('/api/transactions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(transactionData),
-      });
-      
-      if (!response.ok) {
-        throw new Error('트랜잭션 저장 중 오류가 발생했습니다.');
+          notes: group.notes,
+          // API가 treatments 필드를 필요로 함
+          treatments: [{
+            doctor: group.doctor,
+            treatmentType: group.treatmentType,
+            paymentMethod: group.paymentMethod,
+            cardCompany: group.cardCompany,
+            cashReceipt: group.cashReceipt,
+            paymentAmount: group.paymentAmount,
+            notes: group.notes
+          }]
+        };
+        
+        // API 호출하여 데이터 저장
+        const response = await fetch('/api/transactions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(transactionData),
+        });
+        
+        if (!response.ok) {
+          hasError = true;
+          const errorData = await response.json();
+          console.error('API 오류 응답:', errorData);
+          throw new Error(errorData.error || '일부 트랜잭션 저장 중 오류가 발생했습니다.');
+        }
+        
+        const data = await response.json();
+        results.push(data);
       }
       
-      const data = await response.json();
+      if (hasError) {
+        throw new Error('일부 트랜잭션 저장 중 오류가 발생했습니다.');
+      }
       
       // 성공 메시지
       toast({
         title: "내원 정보 등록 완료",
-        description: "환자 내원 정보가 성공적으로 등록되었습니다.",
+        description: `${treatmentGroups.length}건의 환자 내원 정보가 성공적으로 등록되었습니다.`,
       });
       
-      // 성공 콜백 호출
+      // 성공 콜백 호출 - 마지막으로 추가된 트랜잭션 또는 전체 결과 전달
       if (onTransactionAdded) {
-        onTransactionAdded(data);
+        onTransactionAdded(results.length > 0 ? results[results.length - 1] : null);
       }
       
       // 모달 닫기
