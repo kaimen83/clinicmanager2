@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Transaction } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,7 +26,7 @@ interface ExtendedTransaction extends Transaction {
 }
 
 // 의사별로 트랜잭션 목록 그룹화 함수
-const groupTransactionsByDoctor = (transactions: ExtendedTransaction[]) => {
+const groupTransactionsByDoctor = (transactions: ExtendedTransaction[], doctorOrder: {value: string, order: number}[]) => {
   const grouped: Record<string, ExtendedTransaction[]> = {};
   
   transactions.forEach(transaction => {
@@ -42,6 +42,16 @@ const groupTransactionsByDoctor = (transactions: ExtendedTransaction[]) => {
   });
   
   return grouped;
+};
+
+// 의사 목록 정렬 함수
+const sortDoctors = (doctors: string[], doctorOrder: {value: string, order: number}[]) => {
+  // 시스템 설정의 의사 순서를 기준으로 정렬
+  return [...doctors].sort((a, b) => {
+    const orderA = doctorOrder.find(d => d.value === a)?.order ?? Number.MAX_SAFE_INTEGER;
+    const orderB = doctorOrder.find(d => d.value === b)?.order ?? Number.MAX_SAFE_INTEGER;
+    return orderA - orderB;
+  });
 };
 
 // ObjectId 변환 함수 (MongoDB 객체 처리)
@@ -75,6 +85,34 @@ export default function PatientList({ date }: Props) {
   const [currentTransaction, setCurrentTransaction] = useState<ExtendedTransaction | null>(null);
   const [editFormData, setEditFormData] = useState<Partial<ExtendedTransaction>>({});
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [doctorOrder, setDoctorOrder] = useState<{value: string, order: number}[]>([]);
+  
+  // 의사 정보 불러오기 함수를 useCallback으로 감싸기
+  const fetchDoctors = useCallback(async () => {
+    try {
+      const response = await fetch('/api/settings?type=doctor', {
+        cache: 'default'
+      });
+      
+      if (!response.ok) {
+        throw new Error('의사 정보를 불러오는데 실패했습니다.');
+      }
+      
+      const data = await response.json();
+      // 의사 목록과 순서 정보 저장
+      setDoctorOrder(data.settings.map((doctor: any, index: number) => ({
+        value: doctor.value,
+        order: doctor.order || index // order 값이 없으면 index를 사용
+      })));
+    } catch (err) {
+      console.error('의사 정보 조회 오류:', err);
+    }
+  }, []);
+  
+  // 의사 정보 가져오기를 한 번만 실행하도록 수정
+  useEffect(() => {
+    fetchDoctors();
+  }, [fetchDoctors]);
   
   useEffect(() => {
     const fetchTransactions = async () => {
@@ -83,7 +121,9 @@ export default function PatientList({ date }: Props) {
         const dateString = toISODateString(date); // 한국 시간 기준 YYYY-MM-DD 형식
         
         // 시작 날짜와 종료 날짜를 같은 날짜로 설정하여 정확한 날짜 필터링
-        const response = await fetch(`/api/transactions?dateStart=${dateString}&dateEnd=${dateString}`);
+        const response = await fetch(`/api/transactions?dateStart=${dateString}&dateEnd=${dateString}`, {
+          cache: 'default'
+        });
         
         if (!response.ok) {
           throw new Error('데이터를 가져오는데 실패했습니다.');
@@ -167,17 +207,39 @@ export default function PatientList({ date }: Props) {
   
   // 트랜잭션이 있을 때만 그룹화 및 정렬 처리
   const sortedTransactions = sortTransactions(transactions, sortField, sortDirection);
-  const groupedTransactions = sortedTransactions.length > 0 ? groupTransactionsByDoctor(sortedTransactions) : {};
-  const doctorNames = Object.keys(groupedTransactions);
+  const groupedTransactions = sortedTransactions.length > 0 ? groupTransactionsByDoctor(sortedTransactions, doctorOrder) : {};
+  // 의사 이름 배열을 시스템 설정의 의사 순서대로 정렬
+  const doctorNames = sortDoctors(Object.keys(groupedTransactions), doctorOrder);
   
   // 초기 상태는 모든 의사의 목록이 펼쳐져 있음
   useEffect(() => {
-    const initialExpandedState: Record<string, boolean> = {};
-    doctorNames.forEach(doctor => {
-      initialExpandedState[doctor] = true;
+    // 이전 상태를 확인하고 실제로 변경된 경우에만 업데이트
+    setExpandedDoctors(prev => {
+      const initialExpandedState = { ...prev };
+      
+      // 새로운 의사 추가
+      doctorNames.forEach(doctor => {
+        if (initialExpandedState[doctor] === undefined) {
+          initialExpandedState[doctor] = true;
+        }
+      });
+      
+      // 더 이상 존재하지 않는 의사 제거
+      Object.keys(initialExpandedState).forEach(doctor => {
+        if (!doctorNames.includes(doctor)) {
+          delete initialExpandedState[doctor];
+        }
+      });
+      
+      // 이전 상태와 새로운 상태가 다를 경우에만 업데이트
+      if (JSON.stringify(initialExpandedState) !== JSON.stringify(prev)) {
+        return initialExpandedState;
+      }
+
+      // 상태 변경이 없으면 이전 상태 유지
+      return prev;
     });
-    setExpandedDoctors(initialExpandedState);
-  }, [transactions]);
+  }, [doctorNames]); // doctorNames가 변경될 때만 실행
   
   const toggleDoctorExpand = (doctor: string) => {
     setExpandedDoctors(prev => ({
@@ -244,6 +306,7 @@ export default function PatientList({ date }: Props) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(editFormData),
+        cache: 'default'
       });
       
       if (!response.ok) {
@@ -280,6 +343,7 @@ export default function PatientList({ date }: Props) {
     try {
       const response = await fetch(`/api/transactions/${currentTransaction._id}`, {
         method: 'DELETE',
+        cache: 'default'
       });
       
       if (!response.ok) {
@@ -716,4 +780,4 @@ export default function PatientList({ date }: Props) {
       </Dialog>
     </>
   );
-} 
+}

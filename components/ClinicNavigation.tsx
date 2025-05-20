@@ -31,10 +31,12 @@ export default function ClinicNavigation() {
   const { selectedDate, setSelectedDate } = useDateContext();
   const [isPatientFormOpen, setIsPatientFormOpen] = useState(false);
   const [isExtraIncomeModalOpen, setIsExtraIncomeModalOpen] = useState(false);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
       setSelectedDate(date);
+      setIsCalendarOpen(false);
     }
   };
   
@@ -130,7 +132,7 @@ export default function ClinicNavigation() {
           </Button>
           
           <div className="grid gap-2">
-            <Popover>
+            <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"

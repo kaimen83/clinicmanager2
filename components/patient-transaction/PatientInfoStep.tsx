@@ -1,3 +1,4 @@
+import { FocusEvent, useEffect, useRef } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,6 +16,26 @@ export default function PatientInfoStep({
   handleChartNumberBlur,
   handleSwitchChange,
 }: PatientInfoStepProps) {
+  const chartNumberRef = useRef<HTMLInputElement>(null);
+
+  // 컴포넌트가 마운트될 때 차트번호 입력란에 자동 포커스
+  useEffect(() => {
+    if (chartNumberRef.current) {
+      chartNumberRef.current.focus();
+    }
+  }, []);
+
+  // 키보드 이벤트 처리 함수 - Enter 키 입력 시 다음 필드로 이동
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, nextFieldId: string) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const nextField = document.getElementById(nextFieldId) as HTMLInputElement;
+      if (nextField) {
+        nextField.focus();
+      }
+    }
+  };
+
   return (
     <div className="space-y-4">
       <StepTitle step={1} />
@@ -30,6 +51,8 @@ export default function PatientInfoStep({
           value={formData.date}
           onChange={handleInputChange}
           className={errors.date ? "border-red-500" : ""}
+          tabIndex={1}
+          onKeyDown={(e) => handleKeyDown(e, 'chartNumber')}
         />
         {errors.date && (
           <p className="text-red-500 text-xs">{errors.date}</p>
@@ -45,11 +68,14 @@ export default function PatientInfoStep({
             <Input
               id="chartNumber"
               name="chartNumber"
+              ref={chartNumberRef}
               value={formData.chartNumber}
               onChange={handleInputChange}
               onBlur={handleChartNumberBlur}
               className={errors.chartNumber ? "border-red-500" : ""}
               disabled={isLoading}
+              tabIndex={2}
+              onKeyDown={(e) => handleKeyDown(e, 'patientName')}
             />
             {isLoading && (
               <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
@@ -77,6 +103,8 @@ export default function PatientInfoStep({
             className={errors.patientName ? "border-red-500" : ""}
             disabled={true}
             title="차트번호 입력 시 자동으로 채워집니다"
+            tabIndex={3}
+            onKeyDown={(e) => handleKeyDown(e, 'visitPath')}
           />
           {errors.patientName && (
             <p className="text-red-500 text-xs">{errors.patientName}</p>
@@ -96,6 +124,8 @@ export default function PatientInfoStep({
           className={errors.visitPath ? "border-red-500" : ""}
           disabled={true}
           title="차트번호 입력 시 자동으로 채워집니다"
+          tabIndex={4}
+          onKeyDown={(e) => handleKeyDown(e, 'isNew')}
         />
         {errors.visitPath && (
           <p className="text-red-500 text-xs">{errors.visitPath}</p>
@@ -110,6 +140,8 @@ export default function PatientInfoStep({
           id="isNew"
           checked={formData.isNew}
           onCheckedChange={(checked) => handleSwitchChange('isNew', checked)}
+          disabled={isLoading}
+          tabIndex={5}
         />
       </div>
     </div>

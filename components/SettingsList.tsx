@@ -14,7 +14,7 @@ import {
   DialogFooter,
   DialogClose
 } from './ui/dialog';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
 import { Label } from './ui/label';
 
 export type Setting = {
@@ -44,6 +44,7 @@ export default function SettingsList({ title, type, includesFeeRate = false }: S
   const [currentSetting, setCurrentSetting] = useState<Setting | null>(null);
   const [newValue, setNewValue] = useState('');
   const [newFeeRate, setNewFeeRate] = useState<number | undefined>(undefined);
+  const [updatingOrder, setUpdatingOrder] = useState(false);
 
   // useCallback 대신 일반 함수로 변경
   const handleAddDialogChange = (open: boolean) => {
@@ -71,14 +72,18 @@ export default function SettingsList({ title, type, includesFeeRate = false }: S
     setLoading(true);
     try {
       const response = await fetch(`/api/settings?type=${type}`, {
-        // 캐싱 사용 안함으로 변경하여 항상 최신 데이터 가져오기
-        cache: 'no-store'
+        // next.js에서는 기본 캐시 옵션 사용
+        cache: 'default', 
+        // next.js 13 이상에서는 다음과 같이 사용할 수도 있음
+        // next: { revalidate: 0 }
       });
       if (!response.ok) {
         throw new Error('설정 데이터를 불러오는데 실패했습니다');
       }
       const data = await response.json();
-      setSettings(data.settings);
+      // order 값으로 정렬
+      const sortedSettings = data.settings.sort((a: Setting, b: Setting) => a.order - b.order);
+      setSettings(sortedSettings);
     } catch (err) {
       setError(err instanceof Error ? err.message : '데이터를 불러오는데 오류가 발생했습니다');
     } finally {
@@ -95,9 +100,15 @@ export default function SettingsList({ title, type, includesFeeRate = false }: S
     if (!newValue.trim()) return;
 
     try {
+      // 새 항목의 order는 현재 항목 중 가장 큰 order + 1로 설정
+      const maxOrder = settings.length > 0 
+        ? Math.max(...settings.map(s => s.order)) 
+        : 0;
+      
       const payload: any = {
         type,
-        value: newValue
+        value: newValue,
+        order: maxOrder + 1
       };
 
       if (includesFeeRate && newFeeRate !== undefined) {
@@ -110,7 +121,7 @@ export default function SettingsList({ title, type, includesFeeRate = false }: S
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(payload),
-        cache: 'no-store'
+        cache: 'default'
       });
 
       if (!response.ok) {
@@ -151,7 +162,7 @@ export default function SettingsList({ title, type, includesFeeRate = false }: S
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(payload),
-        cache: 'no-store'
+        cache: 'default'
       });
 
       if (!response.ok) {
@@ -192,7 +203,7 @@ export default function SettingsList({ title, type, includesFeeRate = false }: S
           id: setting._id,
           isActive: !setting.isActive
         }),
-        cache: 'no-store'
+        cache: 'default'
       });
 
       if (!response.ok) {
@@ -219,7 +230,7 @@ export default function SettingsList({ title, type, includesFeeRate = false }: S
     try {
       const response = await fetch(`/api/settings?id=${id}`, {
         method: 'DELETE',
-        cache: 'no-store'
+        cache: 'default'
       });
 
       if (!response.ok) {
@@ -231,6 +242,112 @@ export default function SettingsList({ title, type, includesFeeRate = false }: S
       setSettings(prevSettings => prevSettings.filter(setting => setting._id !== id));
     } catch (err) {
       setError(err instanceof Error ? err.message : '설정을 삭제하는데 오류가 발생했습니다');
+    }
+  };
+
+  const handleMoveUp = async (setting: Setting, index: number) => {
+    if (index === 0) return; // 이미 첫 번째 항목이면 이동할 수 없음
+    
+    setUpdatingOrder(true);
+    try {
+      // 현재 항목과 이전 항목의 순서를 교환
+      const prevSetting = settings[index - 1];
+      
+      // API 호출로 현재 항목의 순서 변경
+      const response1 = await fetch('/api/settings', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: setting._id,
+          order: prevSetting.order
+        }),
+        cache: 'default'
+      });
+      
+      // API 호출로 이전 항목의 순서 변경
+      const response2 = await fetch('/api/settings', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: prevSetting._id,
+          order: setting.order
+        }),
+        cache: 'default'
+      });
+
+      if (!response1.ok || !response2.ok) {
+        throw new Error('순서 변경에 실패했습니다');
+      }
+
+      // 로컬 상태 업데이트
+      const updatedSettings = [...settings];
+      updatedSettings[index] = { ...prevSetting, order: setting.order };
+      updatedSettings[index - 1] = { ...setting, order: prevSetting.order };
+      
+      // 순서를 기준으로 정렬
+      updatedSettings.sort((a, b) => a.order - b.order);
+      setSettings(updatedSettings);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '순서 변경에 실패했습니다');
+    } finally {
+      setUpdatingOrder(false);
+    }
+  };
+
+  const handleMoveDown = async (setting: Setting, index: number) => {
+    if (index === settings.length - 1) return; // 이미 마지막 항목이면 이동할 수 없음
+    
+    setUpdatingOrder(true);
+    try {
+      // 현재 항목과 다음 항목의 순서를 교환
+      const nextSetting = settings[index + 1];
+      
+      // API 호출로 현재 항목의 순서 변경
+      const response1 = await fetch('/api/settings', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: setting._id,
+          order: nextSetting.order
+        }),
+        cache: 'default'
+      });
+      
+      // API 호출로 다음 항목의 순서 변경
+      const response2 = await fetch('/api/settings', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: nextSetting._id,
+          order: setting.order
+        }),
+        cache: 'default'
+      });
+
+      if (!response1.ok || !response2.ok) {
+        throw new Error('순서 변경에 실패했습니다');
+      }
+
+      // 로컬 상태 업데이트
+      const updatedSettings = [...settings];
+      updatedSettings[index] = { ...nextSetting, order: setting.order };
+      updatedSettings[index + 1] = { ...setting, order: nextSetting.order };
+      
+      // 순서를 기준으로 정렬
+      updatedSettings.sort((a, b) => a.order - b.order);
+      setSettings(updatedSettings);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '순서 변경에 실패했습니다');
+    } finally {
+      setUpdatingOrder(false);
     }
   };
 
@@ -307,18 +424,19 @@ export default function SettingsList({ title, type, includesFeeRate = false }: S
             <TableHead>이름</TableHead>
             {includesFeeRate && <TableHead>수수료율 (%)</TableHead>}
             <TableHead>사용</TableHead>
+            <TableHead>순서</TableHead>
             <TableHead className="text-right">작업</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {settings.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={includesFeeRate ? 4 : 3} className="text-center">
+              <TableCell colSpan={includesFeeRate ? 5 : 4} className="text-center">
                 등록된 항목이 없습니다
               </TableCell>
             </TableRow>
           ) : (
-            settings.map((setting) => (
+            settings.map((setting, index) => (
               <TableRow key={setting._id}>
                 <TableCell>{setting.value}</TableCell>
                 {includesFeeRate && (
@@ -329,6 +447,28 @@ export default function SettingsList({ title, type, includesFeeRate = false }: S
                     checked={setting.isActive}
                     onCheckedChange={() => handleToggleActive(setting)}
                   />
+                </TableCell>
+                <TableCell>
+                  <div className="flex gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleMoveUp(setting, index)}
+                      disabled={index === 0 || updatingOrder}
+                      title="위로 이동"
+                    >
+                      <ArrowUp className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleMoveDown(setting, index)}
+                      disabled={index === settings.length - 1 || updatingOrder}
+                      title="아래로 이동"
+                    >
+                      <ArrowDown className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">

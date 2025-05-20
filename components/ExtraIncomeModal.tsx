@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -51,7 +51,7 @@ export default function ExtraIncomeModal({ isOpen, onClose, onSuccess, defaultDa
         setIncomeTypes(data.settings);
         
         // 수정 모드가 아니고 첫 번째 유형이 있을 경우 기본값으로 설정
-        if (!isEditMode && data.settings.length > 0) {
+        if (!isEditMode && data.settings.length > 0 && !formData.type) {
           setFormData(prev => ({ ...prev, type: data.settings[0].value }));
         }
       }
@@ -61,13 +61,13 @@ export default function ExtraIncomeModal({ isOpen, onClose, onSuccess, defaultDa
     }
   };
 
-  // 모달이 열릴 때 초기화
+  // 모달이 열릴 때만 초기화하도록 수정
   useEffect(() => {
     if (isOpen) {
       fetchIncomeTypes();
       
+      // 수정 모드일 때와 새로 등록할 때 분리하여 처리
       if (isEditMode && editItem) {
-        // 수정 모드일 때 기존 데이터로 폼 초기화
         setFormData({
           date: new Date(editItem.date),
           type: editItem.type,
@@ -75,16 +75,15 @@ export default function ExtraIncomeModal({ isOpen, onClose, onSuccess, defaultDa
           notes: editItem.notes || ''
         });
       } else {
-        // 신규 등록 모드일 때 폼 리셋
         setFormData({
           date: defaultDate || createNewDate(),
-          type: '',
+          type: '',  // 유형은 fetchIncomeTypes에서 설정
           amount: '',
           notes: ''
         });
       }
     }
-  }, [isOpen, defaultDate, editItem, isEditMode]);
+  }, [isOpen]); // isOpen만 의존성으로 설정
 
   // 입력값 변경 처리
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {

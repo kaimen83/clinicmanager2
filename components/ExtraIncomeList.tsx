@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Trash2, Edit } from 'lucide-react';
@@ -42,6 +42,9 @@ export default function ExtraIncomeList({ date }: Props) {
   const [selectedItem, setSelectedItem] = useState<string | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [editItem, setEditItem] = useState<ExtraIncome | null>(null);
+  
+  // 날짜를 문자열로 변환하여 메모이제이션
+  const dateStr = useMemo(() => toISODateString(date), [date]);
 
   // 진료외수입 목록 조회
   const fetchextraincomes = async () => {
@@ -50,7 +53,7 @@ export default function ExtraIncomeList({ date }: Props) {
     setIsLoading(true);
     
     try {
-      const dateStr = toISODateString(date);
+      // 메모이제이션된 날짜 문자열 사용
       const response = await fetch(`/api/extraIncome?dateStart=${dateStr}&dateEnd=${dateStr}`);
       
       if (!response.ok) {
@@ -67,10 +70,10 @@ export default function ExtraIncomeList({ date }: Props) {
     }
   };
 
-  // 날짜가 변경될 때마다 목록 새로 조회
+  // 날짜 문자열이 변경될 때마다 목록 새로 조회
   useEffect(() => {
     fetchextraincomes();
-  }, [date, userId]);
+  }, [dateStr, userId]);
 
   // 등록 모달 열기
   const handleOpenModal = () => {
