@@ -73,6 +73,18 @@ export interface Transaction {
   cashRecordId?: string;
 }
 
+// 진료외수입 타입
+export interface ExtraIncome {
+  _id?: string;
+  date: Date;
+  type: string;
+  amount: number;
+  notes?: string;
+  createdBy: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
 // 일별 통계 타입
 export type DailyStats = {
   totalPatients: number;

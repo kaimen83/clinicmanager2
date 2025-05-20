@@ -74,9 +74,9 @@ export default function ClinicStats({ date }: Props) {
   // 통계 항목 렌더링 함수
   const renderStatItem = (label: string, value: string | number, isAmount: boolean = true) => {
     return (
-      <div className="p-4 border rounded-lg bg-white">
-        <p className="text-sm text-gray-500">{label}</p>
-        <p className="text-2xl font-semibold mt-1">
+      <div className="p-2 border rounded-lg bg-white">
+        <p className="text-xs text-gray-500">{label}</p>
+        <p className="text-lg font-semibold">
           {isAmount ? `₩${formatAmount(value as number)}` : value}
         </p>
       </div>
@@ -86,12 +86,12 @@ export default function ClinicStats({ date }: Props) {
   // 로딩 상태 표시
   if (loading && ((activeTab === 'daily' && !dailyStats) || (activeTab === 'monthly' && !monthlyStats))) {
     return (
-      <Card className="w-full h-full shadow-sm">
-        <CardHeader>
+      <Card className="w-full shadow-sm">
+        <CardHeader className="pb-2">
           <CardTitle>진료 통계</CardTitle>
           <CardDescription>데이터를 불러오는 중...</CardDescription>
         </CardHeader>
-        <CardContent className="text-center p-8">
+        <CardContent className="text-center py-4">
           통계 데이터를 불러오는 중입니다...
         </CardContent>
       </Card>
@@ -101,12 +101,12 @@ export default function ClinicStats({ date }: Props) {
   // 오류 상태 표시
   if (error) {
     return (
-      <Card className="w-full h-full shadow-sm">
-        <CardHeader>
+      <Card className="w-full shadow-sm">
+        <CardHeader className="pb-2">
           <CardTitle>진료 통계</CardTitle>
           <CardDescription className="text-red-500">오류 발생</CardDescription>
         </CardHeader>
-        <CardContent className="text-center p-8 text-red-500">
+        <CardContent className="text-center py-4 text-red-500">
           {error}
         </CardContent>
       </Card>
@@ -130,52 +130,61 @@ export default function ClinicStats({ date }: Props) {
   const currentDailyStats = dailyStats || defaultStats;
   const currentMonthlyStats = monthlyStats || defaultStats;
   
+  // 중요한 지표만 표시하는 간소화된 버전
+  const renderCompactDailyStats = () => (
+    <div className="grid grid-cols-2 gap-2">
+      {renderStatItem('총 내원인원', currentDailyStats.totalPatients, false)}
+      {renderStatItem('신환', currentDailyStats.newPatients, false)}
+      {renderStatItem('현금/계좌이체', currentDailyStats.cashTransferAmount)}
+      {renderStatItem('카드 수납금액', currentDailyStats.cardAmount)}
+      {renderStatItem('전체 수납금액', currentDailyStats.totalPaymentAmount)}
+      {renderStatItem('진료외수입', currentDailyStats.nonMedicalIncome)}
+      {renderStatItem('총수입', currentDailyStats.totalIncome)}
+      {renderStatItem('총지출', currentDailyStats.totalExpenses)}
+      {renderStatItem('상담 동의금액', currentDailyStats.consultationAgreedAmount)}
+      {renderStatItem('상담 미동의금액', currentDailyStats.consultationNonAgreedAmount)}
+    </div>
+  );
+  
+  const renderCompactMonthlyStats = () => (
+    <div className="grid grid-cols-2 gap-2">
+      {renderStatItem('총 내원인원', currentMonthlyStats.totalPatients, false)}
+      {renderStatItem('신환', currentMonthlyStats.newPatients, false)}
+      {renderStatItem('현금/계좌이체', currentMonthlyStats.cashTransferAmount)}
+      {renderStatItem('카드 수납금액', currentMonthlyStats.cardAmount)}
+      {renderStatItem('전체 수납금액', currentMonthlyStats.totalPaymentAmount)}
+      {renderStatItem('진료외수입', currentMonthlyStats.nonMedicalIncome)}
+      {renderStatItem('총수입', currentMonthlyStats.totalIncome)}
+      {renderStatItem('총지출', currentMonthlyStats.totalExpenses)}
+      {renderStatItem('상담 동의금액', currentMonthlyStats.consultationAgreedAmount)}
+      {renderStatItem('상담 미동의금액', currentMonthlyStats.consultationNonAgreedAmount)}
+    </div>
+  );
+  
   return (
-    <Card className="w-full h-full shadow-sm">
-      <CardHeader>
-        <CardTitle>진료 통계</CardTitle>
-        <CardDescription>
+    <Card className="w-full shadow-sm">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base">진료 통계</CardTitle>
+        <CardDescription className="text-xs">
           {activeTab === 'daily' 
             ? `${date.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}의 통계`
             : `${date.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long' })}의 통계`
           }
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-3">
         <Tabs defaultValue="daily" onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2 mb-6">
-            <TabsTrigger value="daily">일간 통계</TabsTrigger>
-            <TabsTrigger value="monthly">월간 통계</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 mb-2 h-8">
+            <TabsTrigger value="daily" className="text-xs py-1">일간 통계</TabsTrigger>
+            <TabsTrigger value="monthly" className="text-xs py-1">월간 통계</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="daily" className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              {renderStatItem('총 내원인원', currentDailyStats.totalPatients, false)}
-              {renderStatItem('신환', currentDailyStats.newPatients, false)}
-              {renderStatItem('현금/계좌이체', currentDailyStats.cashTransferAmount)}
-              {renderStatItem('카드 수납금액', currentDailyStats.cardAmount)}
-              {renderStatItem('전체 수납금액', currentDailyStats.totalPaymentAmount)}
-              {renderStatItem('진료외수입', currentDailyStats.nonMedicalIncome)}
-              {renderStatItem('총수입', currentDailyStats.totalIncome)}
-              {renderStatItem('총지출', currentDailyStats.totalExpenses)}
-              {renderStatItem('상담 동의금액', currentDailyStats.consultationAgreedAmount)}
-              {renderStatItem('상담 미동의금액', currentDailyStats.consultationNonAgreedAmount)}
-            </div>
+          <TabsContent value="daily" className="pt-2">
+            {renderCompactDailyStats()}
           </TabsContent>
           
-          <TabsContent value="monthly" className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              {renderStatItem('총 내원인원', currentMonthlyStats.totalPatients, false)}
-              {renderStatItem('신환', currentMonthlyStats.newPatients, false)}
-              {renderStatItem('현금/계좌이체', currentMonthlyStats.cashTransferAmount)}
-              {renderStatItem('카드 수납금액', currentMonthlyStats.cardAmount)}
-              {renderStatItem('전체 수납금액', currentMonthlyStats.totalPaymentAmount)}
-              {renderStatItem('진료외수입', currentMonthlyStats.nonMedicalIncome)}
-              {renderStatItem('총수입', currentMonthlyStats.totalIncome)}
-              {renderStatItem('총지출', currentMonthlyStats.totalExpenses)}
-              {renderStatItem('상담 동의금액', currentMonthlyStats.consultationAgreedAmount)}
-              {renderStatItem('상담 미동의금액', currentMonthlyStats.consultationNonAgreedAmount)}
-            </div>
+          <TabsContent value="monthly" className="pt-2">
+            {renderCompactMonthlyStats()}
           </TabsContent>
         </Tabs>
       </CardContent>

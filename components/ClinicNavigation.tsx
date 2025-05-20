@@ -23,10 +23,14 @@ import { ko } from "date-fns/locale";
 import { useDateContext } from "@/lib/context/dateContext";
 import SystemSettingsModal from "./SystemSettingsModal";
 import PatientTransactionForm from "./PatientTransactionForm";
+import ExtraIncomeModal from "./ExtraIncomeModal";
+import { ExtraIncome } from "@/lib/types";
+import { toast } from "sonner";
 
 export default function ClinicNavigation() {
   const { selectedDate, setSelectedDate } = useDateContext();
   const [isPatientFormOpen, setIsPatientFormOpen] = useState(false);
+  const [isExtraIncomeModalOpen, setIsExtraIncomeModalOpen] = useState(false);
 
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
@@ -54,6 +58,18 @@ export default function ClinicNavigation() {
     setIsPatientFormOpen(false);
   };
 
+  const handleExtraIncomeModalOpen = () => {
+    setIsExtraIncomeModalOpen(true);
+  };
+
+  const handleExtraIncomeModalClose = () => {
+    setIsExtraIncomeModalOpen(false);
+  };
+
+  const handleExtraIncomeSuccess = (data: ExtraIncome) => {
+    toast.success('진료외수입이 등록되었습니다.');
+  };
+
   const handleTransactionAdded = () => {
     // 트랜잭션이 추가된 후 필요한 작업 (예: 데이터 새로고침)
   };
@@ -71,7 +87,11 @@ export default function ClinicNavigation() {
             <span>내원정보등록</span>
           </Button>
           
-          <Button variant="outline" className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            className="flex items-center gap-2"
+            onClick={handleExtraIncomeModalOpen}
+          >
             <CreditCard className="w-4 h-4" />
             <span>진료 외 수입</span>
           </Button>
@@ -153,6 +173,14 @@ export default function ClinicNavigation() {
         isOpen={isPatientFormOpen}
         onClose={handlePatientFormClose}
         onTransactionAdded={handleTransactionAdded}
+      />
+
+      {/* 진료외수입 등록 모달 */}
+      <ExtraIncomeModal
+        isOpen={isExtraIncomeModalOpen}
+        onClose={handleExtraIncomeModalClose}
+        onSuccess={handleExtraIncomeSuccess}
+        defaultDate={selectedDate}
       />
     </Card>
   );
