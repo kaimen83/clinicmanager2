@@ -52,6 +52,13 @@ export async function GET(request: NextRequest) {
       })
       .toArray();
     
+    // 진료외수입 데이터 조회
+    const extraincomes = await db.collection('extraincomes')
+      .find({
+        date: { $gte: startDate, $lte: endDate }
+      })
+      .toArray();
+    
     // 비의료 수입 및 지출 데이터 조회
     const nonMedicalTransactions = await db.collection('nonMedicalTransactions')
       .find({
@@ -70,6 +77,9 @@ export async function GET(request: NextRequest) {
       }
     });
     
+    // 진료외수입 총액 계산
+    const extraIncomeTotal = extraincomes.reduce((sum, income) => sum + (income.amount || 0), 0);
+    
     // 통계 계산
     const stats = {
       totalPatients: uniqueChartNumbers.size,
@@ -82,10 +92,8 @@ export async function GET(request: NextRequest) {
         .reduce((sum, t) => sum + (t.paymentAmount || 0), 0),
       totalPaymentAmount: transactions
         .reduce((sum, t) => sum + (t.paymentAmount || 0), 0),
-      nonMedicalIncome: nonMedicalTransactions
-        .filter(t => t.type === 'income')
-        .reduce((sum, t) => sum + (t.amount || 0), 0),
-      totalIncome: 0, // 계산 예정
+      nonMedicalIncome: extraIncomeTotal, // 진료외수입을 사용
+      totalIncome: 0, // 후에 계산
       totalExpenses: nonMedicalTransactions
         .filter(t => t.type === 'expense')
         .reduce((sum, t) => sum + (t.amount || 0), 0),
@@ -112,7 +120,7 @@ export async function GET(request: NextRequest) {
     stats.consultationAgreedAmount = consultationAgreedAmount;
     stats.consultationNonAgreedAmount = consultationNonAgreedAmount;
     
-    // 총 수입 계산 (의료 + 비의료)
+    // 총 수입 계산 (전체 수납금액 + 진료외수입)
     stats.totalIncome = stats.totalPaymentAmount + stats.nonMedicalIncome;
     
     return NextResponse.json({
@@ -121,7 +129,8 @@ export async function GET(request: NextRequest) {
         start: startDate.toISOString(),
         end: endDate.toISOString()
       },
-      stats
+      stats,
+      extraincomes // 진료외수입 목록도 함께 반환
     });
   } catch (error) {
     console.error('통계 정보 조회 중 에러:', error);

@@ -1,5 +1,5 @@
 import { updateFormSelections, getDoctorVisibility } from './settings.js';
-import { updateExtraIncomeStatistics, displayExtraIncomes } from './extraIncomes.js';
+import { updateextraincomestatistics, displayextraincomes } from './extraincomes.js';
 import { loadSettings } from './settings.js';
 import { PatientHistoryModal } from './components/PatientHistoryModal.js';
 import { PatientInfoModal } from './components/PatientInfoModal.js';
@@ -269,7 +269,7 @@ async function displayTransactions(transactions, selectedDate = null) {
         // 전체 통계 업데이트
         updateStatistics(filteredTransactions);
         updateMonthlyStatistics(transactions, selectedDate || new Date());
-        await updateExtraIncomeStatistics(); // 진료외수입 통계 업데이트 추가
+        await updateextraincomestatistics(); // 진료외수입 통계 업데이트 추가
 
         // 정렬 이벤트 리스너 다시 설정
         setupSortingListeners();
@@ -573,17 +573,17 @@ async function updateStatistics(transactions, selectedDate) {
                 'Authorization': `Bearer ${localStorage.getItem('token')}`
             }
         });
-        const extraIncomes = await response.json();
+        const extraincomes = await response.json();
 
         // 선택된 날짜의 진료외수입만 필터링
-        const dailyExtraIncomes = extraIncomes.filter(income => {
+        const dailyextraincomes = extraincomes.filter(income => {
             const incomeDate = new Date(income.date);
             incomeDate.setHours(0, 0, 0, 0);
             return incomeDate.getTime() === targetDate.getTime();
         });
 
         // 일간 진료외수입 액 계산
-        const extraIncomeAmount = dailyExtraIncomes.reduce((sum, income) => sum + (Number(income.amount) || 0), 0);
+        const extraIncomeAmount = dailyextraincomes.reduce((sum, income) => sum + (Number(income.amount) || 0), 0);
         
         // 총수입 계산 (전체 수납금액 + 진료외수입)
         const totalIncome = totalAmount + extraIncomeAmount;
@@ -637,15 +637,15 @@ async function updateMonthlyStatistics(transactions, selectedDate) {
         }
 
         // 월간 진료외수입 계산
-        const extraIncomesResponse = await fetch('/api/extra-incomes', {
+        const extraincomesResponse = await fetch('/api/extra-incomes', {
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem('token')}`
             }
         });
-        const allExtraIncomes = await extraIncomesResponse.json();
+        const allextraincomes = await extraincomesResponse.json();
 
         // 해당 월의 진료외수입만 필터링
-        const monthlyExtraIncomes = allExtraIncomes.filter(income => {
+        const monthlyextraincomes = allextraincomes.filter(income => {
             const incomeDate = new Date(income.date);
             return incomeDate >= monthStart && incomeDate <= monthEnd;
         });
@@ -704,7 +704,7 @@ async function updateMonthlyStatistics(transactions, selectedDate) {
             .filter(t => t.paymentMethod === '현금' || t.paymentMethod === '계좌이체')
             .reduce((sum, t) => sum + (Number(t.paymentAmount) || 0), 0);
 
-        const monthlyExtraIncomeAmount = monthlyExtraIncomes.reduce((sum, income) => sum + (Number(income.amount) || 0), 0);
+        const monthlyExtraIncomeAmount = monthlyextraincomes.reduce((sum, income) => sum + (Number(income.amount) || 0), 0);
         const monthlyTotalIncome = monthlyTotalAmount + monthlyExtraIncomeAmount;
 
 
@@ -1573,20 +1573,20 @@ export async function updateDailyExtraIncomeTotal(selectedDate) {
                 'Authorization': `Bearer ${localStorage.getItem('token')}`
             }
         });
-        const extraIncomes = await response.json();
+        const extraincomes = await response.json();
 
         // 선택된 날짜의 진료외수입만 필터링
         const targetDate = new Date(selectedDate);
         targetDate.setHours(0, 0, 0, 0);
 
-        const dailyExtraIncomes = extraIncomes.filter(income => {
+        const dailyextraincomes = extraincomes.filter(income => {
             const incomeDate = new Date(income.date);
             incomeDate.setHours(0, 0, 0, 0);
             return incomeDate.getTime() === targetDate.getTime();
         });
 
         // 일간 진료외수입 총액 계산
-        const dailyTotal = dailyExtraIncomes.reduce((sum, income) => sum + (Number(income.amount) || 0), 0);
+        const dailyTotal = dailyextraincomes.reduce((sum, income) => sum + (Number(income.amount) || 0), 0);
 
         // 합계 표시 업데이트 (요소가 있을 때만 실행)
         const totalElement = document.getElementById('daily-extra-income-total');
@@ -1639,7 +1639,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // 진료외수입 저장 후 처리 수
-async function handleExtraIncomeSubmit(e) {
+async function handleextraincomesubmit(e) {
     e.preventDefault();
     
     const formData = {
@@ -1663,7 +1663,7 @@ async function handleExtraIncomeSubmit(e) {
             document.getElementById('extra-income-form').style.display = 'none';
             e.target.reset();
             const selectedDate = document.getElementById('statistics-date').value;
-            await displayExtraIncomes(selectedDate);
+            await displayextraincomes(selectedDate);
             await updateDailyExtraIncomeTotal(selectedDate);  // 합계 업데이트
             await updateStatistics(transactions, selectedDate);  // 전체 통계 업데이트
             alert('진료외수입이 등록되었습니다.');
@@ -1727,7 +1727,7 @@ async function deleteExtraIncome(id) {
 
         if (response.ok) {
             const selectedDate = document.getElementById('statistics-date').value;
-            await displayExtraIncomes(selectedDate);
+            await displayextraincomes(selectedDate);
             await updateDailyExtraIncomeTotal(selectedDate);  // 합계 업데이트
             await updateStatistics(transactions, selectedDate);  // 전체 통계 업데이트
             alert('진료외수입이 삭제되었습니다.');

@@ -66,7 +66,7 @@ export default function ClinicNavigation() {
     setIsExtraIncomeModalOpen(false);
   };
 
-  const handleExtraIncomeSuccess = (data: ExtraIncome) => {
+  const handleextraincomesuccess = (data: ExtraIncome) => {
     toast.success('진료외수입이 등록되었습니다.');
   };
 
@@ -179,7 +179,7 @@ export default function ClinicNavigation() {
       <ExtraIncomeModal
         isOpen={isExtraIncomeModalOpen}
         onClose={handleExtraIncomeModalClose}
-        onSuccess={handleExtraIncomeSuccess}
+        onSuccess={handleextraincomesuccess}
         defaultDate={selectedDate}
       />
     </Card>

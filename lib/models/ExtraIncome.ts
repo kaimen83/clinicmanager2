@@ -1,6 +1,6 @@
 import mongoose, { Schema } from 'mongoose';
 
-const ExtraIncomeSchema = new Schema({
+const extraincomeschema = new Schema({
   date: {
     type: Date,
     required: true,
@@ -23,4 +23,4 @@ const ExtraIncomeSchema = new Schema({
   timestamps: true
 });
 
-export default mongoose.models.ExtraIncome || mongoose.model('ExtraIncome', ExtraIncomeSchema); 
+export default mongoose.models.ExtraIncome || mongoose.model('ExtraIncome', extraincomeschema); 

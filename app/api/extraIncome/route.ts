@@ -49,12 +49,12 @@ export async function GET(request: NextRequest) {
       searchQuery['date'] = { ...searchQuery['date'], $lte: endUtc };
     }
     
-    const extraIncomes = await db.collection('extraIncomes')
+    const extraincomes = await db.collection('extraincomes')
       .find(searchQuery)
       .sort({ date: -1 })
       .toArray();
     
-    return NextResponse.json(extraIncomes);
+    return NextResponse.json(extraincomes);
   } catch (error) {
     console.error('진료외수입 조회 오류:', error);
     return NextResponse.json({ error: '진료외수입을 조회하는 중 오류가 발생했습니다.' }, { status: 500 });
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
       updatedAt: createNewDate()
     };
     
-    const result = await db.collection('extraIncomes').insertOne(extraIncome);
+    const result = await db.collection('extraincomes').insertOne(extraIncome);
     
     // 활동 로그 추가
     await db.collection('activityLogs').insertOne({
@@ -146,14 +146,14 @@ export async function DELETE(request: NextRequest) {
     const { db } = await connectToDatabase();
     
     // 삭제할 진료외수입 찾기 (로그 기록용)
-    const extraIncome = await db.collection('extraIncomes').findOne({ _id: new ObjectId(id) });
+    const extraIncome = await db.collection('extraincomes').findOne({ _id: new ObjectId(id) });
     
     if (!extraIncome) {
       return NextResponse.json({ error: '해당 진료외수입 내역을 찾을 수 없습니다.' }, { status: 404 });
     }
     
     // 진료외수입 삭제
-    const result = await db.collection('extraIncomes').deleteOne({ _id: new ObjectId(id) });
+    const result = await db.collection('extraincomes').deleteOne({ _id: new ObjectId(id) });
     
     if (result.deletedCount === 0) {
       return NextResponse.json({ error: '진료외수입 내역을 찾을 수 없습니다.' }, { status: 404 });

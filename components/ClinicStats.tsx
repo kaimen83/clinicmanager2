@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { DailyStats, MonthlyStats } from '@/lib/types';
+import { DailyStats, MonthlyStats, ExtraIncome } from '@/lib/types';
 import { toISODateString } from '@/lib/utils';
 
 type Props = {
@@ -16,6 +16,7 @@ export default function ClinicStats({ date }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [dailyStats, setDailyStats] = useState<DailyStats | null>(null);
   const [monthlyStats, setMonthlyStats] = useState<MonthlyStats | null>(null);
+  const [extraincomes, setextraincomes] = useState<ExtraIncome[]>([]);
   
   // 통계 데이터 가져오기 함수
   const fetchStats = async (type: 'daily' | 'monthly') => {
@@ -41,6 +42,9 @@ export default function ClinicStats({ date }: Props) {
       
       if (type === 'daily') {
         setDailyStats(data.stats);
+        if (data.extraincomes) {
+          setextraincomes(data.extraincomes);
+        }
       } else {
         setMonthlyStats(data.stats);
       }

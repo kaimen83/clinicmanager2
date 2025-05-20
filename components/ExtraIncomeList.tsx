@@ -37,13 +37,13 @@ type Props = {
 export default function ExtraIncomeList({ date }: Props) {
   const { userId } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const [extraIncomes, setExtraIncomes] = useState<ExtraIncome[]>([]);
+  const [extraincomes, setextraincomes] = useState<ExtraIncome[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<string | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   // 진료외수입 목록 조회
-  const fetchExtraIncomes = async () => {
+  const fetchextraincomes = async () => {
     if (!userId) return;
     
     setIsLoading(true);
@@ -57,7 +57,7 @@ export default function ExtraIncomeList({ date }: Props) {
       }
       
       const data = await response.json();
-      setExtraIncomes(data);
+      setextraincomes(data);
     } catch (error) {
       console.error('진료외수입 목록 조회 에러:', error);
       toast.error('진료외수입 목록을 불러오는데 실패했습니다.');
@@ -68,7 +68,7 @@ export default function ExtraIncomeList({ date }: Props) {
 
   // 날짜가 변경될 때마다 목록 새로 조회
   useEffect(() => {
-    fetchExtraIncomes();
+    fetchextraincomes();
   }, [date, userId]);
 
   // 모달 열기
@@ -83,7 +83,7 @@ export default function ExtraIncomeList({ date }: Props) {
 
   // 등록 성공 시 목록 새로고침
   const handleSuccess = (newData: ExtraIncome) => {
-    fetchExtraIncomes();
+    fetchextraincomes();
   };
 
   // 삭제 대화상자 열기
@@ -112,7 +112,7 @@ export default function ExtraIncomeList({ date }: Props) {
       }
       
       toast.success('진료외수입이 삭제되었습니다.');
-      fetchExtraIncomes();
+      fetchextraincomes();
     } catch (error) {
       console.error('진료외수입 삭제 에러:', error);
       toast.error('진료외수입 삭제에 실패했습니다.');
@@ -128,7 +128,7 @@ export default function ExtraIncomeList({ date }: Props) {
 
   // 총 금액 계산
   const calculateTotal = () => {
-    return extraIncomes.reduce((total, item) => total + item.amount, 0);
+    return extraincomes.reduce((total, item) => total + item.amount, 0);
   };
 
   return (
@@ -143,7 +143,7 @@ export default function ExtraIncomeList({ date }: Props) {
         <CardContent className="p-3">
           {isLoading ? (
             <div className="text-center py-2 text-sm">로딩 중...</div>
-          ) : extraIncomes.length === 0 ? (
+          ) : extraincomes.length === 0 ? (
             <div className="text-center py-2 text-xs text-muted-foreground">
               등록된 진료외수입이 없습니다.
             </div>
@@ -155,15 +155,19 @@ export default function ExtraIncomeList({ date }: Props) {
                     <TableRow className="hover:bg-muted/50">
                       <TableHead className="h-8 text-xs font-medium">유형</TableHead>
                       <TableHead className="h-8 text-xs font-medium text-right">금액</TableHead>
+                      <TableHead className="h-8 text-xs font-medium">비고</TableHead>
                       <TableHead className="h-8 text-xs font-medium w-12"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {extraIncomes.map((item) => (
+                    {extraincomes.map((item) => (
                       <TableRow key={item._id} className="h-8 hover:bg-muted/50">
                         <TableCell className="py-1 text-xs">{item.type}</TableCell>
                         <TableCell className="py-1 text-xs text-right">
                           ₩{formatAmount(item.amount)}
+                        </TableCell>
+                        <TableCell className="py-1 text-xs max-w-[120px] truncate">
+                          {item.notes || '-'}
                         </TableCell>
                         <TableCell className="py-1 text-xs">
                           <Button
@@ -182,6 +186,7 @@ export default function ExtraIncomeList({ date }: Props) {
                       <TableCell className="py-1 text-xs font-bold text-right">
                         ₩{formatAmount(calculateTotal())}
                       </TableCell>
+                      <TableCell className="py-1 text-xs"></TableCell>
                       <TableCell></TableCell>
                     </TableRow>
                   </TableBody>
