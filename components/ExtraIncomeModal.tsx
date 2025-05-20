@@ -22,9 +22,10 @@ type Props = {
   onClose: () => void;
   onSuccess?: (data: ExtraIncome) => void;
   defaultDate?: Date;
+  editItem?: ExtraIncome | null;
 };
 
-export default function ExtraIncomeModal({ isOpen, onClose, onSuccess, defaultDate }: Props) {
+export default function ExtraIncomeModal({ isOpen, onClose, onSuccess, defaultDate, editItem }: Props) {
   const [isLoading, setIsLoading] = useState(false);
   const [incomeTypes, setIncomeTypes] = useState<{ _id: string; value: string }[]>([]);
   const [formData, setFormData] = useState({
@@ -33,6 +34,8 @@ export default function ExtraIncomeModal({ isOpen, onClose, onSuccess, defaultDa
     amount: '',
     notes: ''
   });
+  
+  const isEditMode = !!editItem;
 
   // 진료외수입 유형 조회
   const fetchIncomeTypes = async () => {
@@ -47,8 +50,8 @@ export default function ExtraIncomeModal({ isOpen, onClose, onSuccess, defaultDa
       if (data.settings && Array.isArray(data.settings)) {
         setIncomeTypes(data.settings);
         
-        // 첫 번째 유형을 기본값으로 설정
-        if (data.settings.length > 0) {
+        // 수정 모드가 아니고 첫 번째 유형이 있을 경우 기본값으로 설정
+        if (!isEditMode && data.settings.length > 0) {
           setFormData(prev => ({ ...prev, type: data.settings[0].value }));
         }
       }
@@ -58,18 +61,30 @@ export default function ExtraIncomeModal({ isOpen, onClose, onSuccess, defaultDa
     }
   };
 
-  // 모달이 열릴 때 진료외수입 유형 불러오기
+  // 모달이 열릴 때 초기화
   useEffect(() => {
     if (isOpen) {
       fetchIncomeTypes();
-      setFormData({
-        date: defaultDate || createNewDate(),
-        type: '',
-        amount: '',
-        notes: ''
-      });
+      
+      if (isEditMode && editItem) {
+        // 수정 모드일 때 기존 데이터로 폼 초기화
+        setFormData({
+          date: new Date(editItem.date),
+          type: editItem.type,
+          amount: editItem.amount.toString(),
+          notes: editItem.notes || ''
+        });
+      } else {
+        // 신규 등록 모드일 때 폼 리셋
+        setFormData({
+          date: defaultDate || createNewDate(),
+          type: '',
+          amount: '',
+          notes: ''
+        });
+      }
     }
-  }, [isOpen, defaultDate]);
+  }, [isOpen, defaultDate, editItem, isEditMode]);
 
   // 입력값 변경 처리
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -89,7 +104,7 @@ export default function ExtraIncomeModal({ isOpen, onClose, onSuccess, defaultDa
     setFormData(prev => ({ ...prev, type: value }));
   };
 
-  // 진료외수입 추가 처리
+  // 진료외수입 추가/수정 처리
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -107,34 +122,53 @@ export default function ExtraIncomeModal({ isOpen, onClose, onSuccess, defaultDa
     setIsLoading(true);
     
     try {
-      const response = await fetch('/api/extraIncome', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          date: formData.date,
-          type: formData.type,
-          amount: Number(formData.amount),
-          notes: formData.notes,
-        }),
-      });
+      const reqBody = {
+        date: formData.date,
+        type: formData.type,
+        amount: Number(formData.amount),
+        notes: formData.notes,
+      };
+      
+      let response;
+      
+      if (isEditMode && editItem?._id) {
+        // 수정 요청
+        response = await fetch('/api/extraIncome', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            id: editItem._id,
+            ...reqBody
+          }),
+        });
+      } else {
+        // 추가 요청
+        response = await fetch('/api/extraIncome', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(reqBody),
+        });
+      }
       
       if (!response.ok) {
-        throw new Error('진료외수입 등록에 실패했습니다.');
+        throw new Error(isEditMode ? '진료외수입 수정에 실패했습니다.' : '진료외수입 등록에 실패했습니다.');
       }
       
       const data = await response.json();
-      toast.success('진료외수입이 등록되었습니다.');
+      toast.success(isEditMode ? '진료외수입이 수정되었습니다.' : '진료외수입이 등록되었습니다.');
       
-      if (onSuccess && data.extraIncome) {
-        onSuccess(data.extraIncome);
+      if (onSuccess && (data.extraIncome || (isEditMode && editItem))) {
+        onSuccess(data.extraIncome || editItem);
       }
       
       onClose();
     } catch (error) {
-      console.error('진료외수입 등록 에러:', error);
-      toast.error('진료외수입 등록에 실패했습니다.');
+      console.error(isEditMode ? '진료외수입 수정 에러:' : '진료외수입 등록 에러:', error);
+      toast.error(isEditMode ? '진료외수입 수정에 실패했습니다.' : '진료외수입 등록에 실패했습니다.');
     } finally {
       setIsLoading(false);
     }
@@ -144,7 +178,7 @@ export default function ExtraIncomeModal({ isOpen, onClose, onSuccess, defaultDa
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>진료외수입 등록</DialogTitle>
+          <DialogTitle>{isEditMode ? '진료외수입 수정' : '진료외수입 등록'}</DialogTitle>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -236,7 +270,7 @@ export default function ExtraIncomeModal({ isOpen, onClose, onSuccess, defaultDa
               type="submit" 
               disabled={isLoading}
             >
-              {isLoading ? '처리 중...' : '등록'}
+              {isLoading ? '처리 중...' : isEditMode ? '수정' : '등록'}
             </Button>
           </DialogFooter>
         </form>

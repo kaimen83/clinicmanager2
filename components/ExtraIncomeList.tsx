@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Edit } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@clerk/nextjs';
 import { format } from 'date-fns';
@@ -41,6 +41,7 @@ export default function ExtraIncomeList({ date }: Props) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<string | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [editItem, setEditItem] = useState<ExtraIncome | null>(null);
 
   // 진료외수입 목록 조회
   const fetchextraincomes = async () => {
@@ -71,17 +72,25 @@ export default function ExtraIncomeList({ date }: Props) {
     fetchextraincomes();
   }, [date, userId]);
 
-  // 모달 열기
+  // 등록 모달 열기
   const handleOpenModal = () => {
+    setEditItem(null);
+    setIsModalOpen(true);
+  };
+
+  // 수정 모달 열기
+  const handleOpenEditModal = (item: ExtraIncome) => {
+    setEditItem(item);
     setIsModalOpen(true);
   };
 
   // 모달 닫기
   const handleCloseModal = () => {
     setIsModalOpen(false);
+    setEditItem(null);
   };
 
-  // 등록 성공 시 목록 새로고침
+  // 등록 또는 수정 성공 시 목록 새로고침
   const handleSuccess = (newData: ExtraIncome) => {
     fetchextraincomes();
   };
@@ -156,7 +165,7 @@ export default function ExtraIncomeList({ date }: Props) {
                       <TableHead className="h-8 text-xs font-medium">유형</TableHead>
                       <TableHead className="h-8 text-xs font-medium text-right">금액</TableHead>
                       <TableHead className="h-8 text-xs font-medium">비고</TableHead>
-                      <TableHead className="h-8 text-xs font-medium w-12"></TableHead>
+                      <TableHead className="h-8 text-xs font-medium w-20"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -170,14 +179,24 @@ export default function ExtraIncomeList({ date }: Props) {
                           {item.notes || '-'}
                         </TableCell>
                         <TableCell className="py-1 text-xs">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6"
-                            onClick={() => handleOpenDeleteDialog(item._id || '')}
-                          >
-                            <Trash2 className="h-3 w-3 text-red-500" />
-                          </Button>
+                          <div className="flex justify-end space-x-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6"
+                              onClick={() => handleOpenEditModal(item)}
+                            >
+                              <Edit className="h-3 w-3 text-blue-500" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6"
+                              onClick={() => handleOpenDeleteDialog(item._id || '')}
+                            >
+                              <Trash2 className="h-3 w-3 text-red-500" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -197,12 +216,13 @@ export default function ExtraIncomeList({ date }: Props) {
         </CardContent>
       </Card>
 
-      {/* 진료외수입 등록 모달 */}
+      {/* 진료외수입 등록/수정 모달 */}
       <ExtraIncomeModal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         onSuccess={handleSuccess}
         defaultDate={date}
+        editItem={editItem}
       />
 
       {/* 삭제 확인 대화상자 */}

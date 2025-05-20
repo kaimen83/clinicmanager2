@@ -66,24 +66,68 @@ export async function GET(request: NextRequest) {
       })
       .toArray();
     
-    // 중복 없는 환자 수 및 신환 수 계산
-    const uniqueChartNumbers = new Set();
-    const uniqueNewPatientChartNumbers = new Set();
+    // 환자 통계 계산 (일별과 월별 다르게 처리)
+    let totalPatients = 0;
+    let newPatients = 0;
 
-    transactions.forEach(t => {
-      uniqueChartNumbers.add(t.chartNumber);
-      if (t.isNew) {
-        uniqueNewPatientChartNumbers.add(t.chartNumber);
-      }
-    });
+    if (type === 'daily') {
+      // 일별 통계 - 차트번호 기준으로 중복 제거
+      const uniqueChartNumbers = new Set();
+      const uniqueNewPatientChartNumbers = new Set();
+
+      transactions.forEach(t => {
+        uniqueChartNumbers.add(t.chartNumber);
+        if (t.isNew) {
+          uniqueNewPatientChartNumbers.add(t.chartNumber);
+        }
+      });
+      
+      totalPatients = uniqueChartNumbers.size;
+      newPatients = uniqueNewPatientChartNumbers.size;
+    } else {
+      // 월별 통계 - 일자별로 중복 허용, 같은 날 내 중복은 제거
+      // 날짜별 환자 집계를 위한 맵
+      const dailyPatientMap = new Map();
+      const dailyNewPatientMap = new Map();
+      
+      transactions.forEach(t => {
+        // 날짜 문자열 생성 (YYYY-MM-DD 형식)
+        const txDate = new Date(t.date);
+        const dateStr = `${txDate.getFullYear()}-${String(txDate.getMonth() + 1).padStart(2, '0')}-${String(txDate.getDate()).padStart(2, '0')}`;
+        
+        // 해당 날짜의 환자 집합이 없으면 새로 생성
+        if (!dailyPatientMap.has(dateStr)) {
+          dailyPatientMap.set(dateStr, new Set());
+        }
+        
+        // 해당 날짜에 방문한 환자 차트번호 추가
+        dailyPatientMap.get(dateStr).add(t.chartNumber);
+        
+        // 신환 처리
+        if (t.isNew) {
+          if (!dailyNewPatientMap.has(dateStr)) {
+            dailyNewPatientMap.set(dateStr, new Set());
+          }
+          dailyNewPatientMap.get(dateStr).add(t.chartNumber);
+        }
+      });
+      
+      // 일별 방문 환자 수 총합 계산 (중복 허용)
+      totalPatients = Array.from(dailyPatientMap.values())
+        .reduce((total, patientSet) => total + patientSet.size, 0);
+      
+      // 일별 신환 환자 수 총합 계산 (중복 허용)
+      newPatients = Array.from(dailyNewPatientMap.values())
+        .reduce((total, patientSet) => total + patientSet.size, 0);
+    }
     
     // 진료외수입 총액 계산
     const extraIncomeTotal = extraincomes.reduce((sum, income) => sum + (income.amount || 0), 0);
     
     // 통계 계산
     const stats = {
-      totalPatients: uniqueChartNumbers.size,
-      newPatients: uniqueNewPatientChartNumbers.size,
+      totalPatients,
+      newPatients,
       cashTransferAmount: transactions
         .filter(t => t.paymentMethod === '현금' || t.paymentMethod === '계좌이체')
         .reduce((sum, t) => sum + (t.paymentAmount || 0), 0),

@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DailyStats, MonthlyStats, ExtraIncome } from '@/lib/types';
 import { toISODateString } from '@/lib/utils';
+import PaymentListModal from './PaymentListModal';
 
 type Props = {
   date: Date;
@@ -17,6 +18,9 @@ export default function ClinicStats({ date }: Props) {
   const [dailyStats, setDailyStats] = useState<DailyStats | null>(null);
   const [monthlyStats, setMonthlyStats] = useState<MonthlyStats | null>(null);
   const [extraincomes, setextraincomes] = useState<ExtraIncome[]>([]);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [modalTitle, setModalTitle] = useState('');
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | undefined>(undefined);
   
   // 통계 데이터 가져오기 함수
   const fetchStats = async (type: 'daily' | 'monthly') => {
@@ -75,14 +79,49 @@ export default function ClinicStats({ date }: Props) {
     return new Intl.NumberFormat('ko-KR').format(amount);
   };
   
-  // 통계 항목 렌더링 함수
-  const renderStatItem = (label: string, value: string | number, isAmount: boolean = true) => {
-    return (
-      <div className="p-2 border rounded-lg bg-white">
+  // 결제 목록 모달 열기
+  const handleOpenPaymentModal = (label: string, paymentMethod?: string) => {
+    setModalTitle(`${label} 내역`);
+    setSelectedPaymentMethod(paymentMethod);
+    setIsPaymentModalOpen(true);
+  };
+  
+  // 결제 목록 모달 닫기
+  const handleClosePaymentModal = () => {
+    setIsPaymentModalOpen(false);
+  };
+  
+  // 통계 항목 렌더링 함수 (클릭 가능 여부 추가)
+  const renderStatItem = (
+    label: string, 
+    value: string | number, 
+    isAmount: boolean = true, 
+    isClickable: boolean = false, 
+    paymentMethod?: string
+  ) => {
+    const content = (
+      <>
         <p className="text-xs text-gray-500">{label}</p>
         <p className="text-lg font-semibold">
           {isAmount ? `₩${formatAmount(value as number)}` : value}
         </p>
+      </>
+    );
+    
+    if (isClickable) {
+      return (
+        <div 
+          className="p-2 border rounded-lg bg-white cursor-pointer hover:bg-gray-50 transition-colors"
+          onClick={() => handleOpenPaymentModal(label, paymentMethod)}
+        >
+          {content}
+        </div>
+      );
+    }
+    
+    return (
+      <div className="p-2 border rounded-lg bg-white">
+        {content}
       </div>
     );
   };
@@ -139,9 +178,9 @@ export default function ClinicStats({ date }: Props) {
     <div className="grid grid-cols-2 gap-2">
       {renderStatItem('총 내원인원', currentDailyStats.totalPatients, false)}
       {renderStatItem('신환', currentDailyStats.newPatients, false)}
-      {renderStatItem('현금/계좌이체', currentDailyStats.cashTransferAmount)}
-      {renderStatItem('카드 수납금액', currentDailyStats.cardAmount)}
-      {renderStatItem('전체 수납금액', currentDailyStats.totalPaymentAmount)}
+      {renderStatItem('현금/계좌이체', currentDailyStats.cashTransferAmount, true, true, '현금')}
+      {renderStatItem('카드 수납금액', currentDailyStats.cardAmount, true, true, '카드')}
+      {renderStatItem('전체 수납금액', currentDailyStats.totalPaymentAmount, true, true)}
       {renderStatItem('진료외수입', currentDailyStats.nonMedicalIncome)}
       {renderStatItem('총수입', currentDailyStats.totalIncome)}
       {renderStatItem('총지출', currentDailyStats.totalExpenses)}
@@ -154,9 +193,9 @@ export default function ClinicStats({ date }: Props) {
     <div className="grid grid-cols-2 gap-2">
       {renderStatItem('총 내원인원', currentMonthlyStats.totalPatients, false)}
       {renderStatItem('신환', currentMonthlyStats.newPatients, false)}
-      {renderStatItem('현금/계좌이체', currentMonthlyStats.cashTransferAmount)}
-      {renderStatItem('카드 수납금액', currentMonthlyStats.cardAmount)}
-      {renderStatItem('전체 수납금액', currentMonthlyStats.totalPaymentAmount)}
+      {renderStatItem('현금/계좌이체', currentMonthlyStats.cashTransferAmount, true, true, '현금')}
+      {renderStatItem('카드 수납금액', currentMonthlyStats.cardAmount, true, true, '카드')}
+      {renderStatItem('전체 수납금액', currentMonthlyStats.totalPaymentAmount, true, true)}
       {renderStatItem('진료외수입', currentMonthlyStats.nonMedicalIncome)}
       {renderStatItem('총수입', currentMonthlyStats.totalIncome)}
       {renderStatItem('총지출', currentMonthlyStats.totalExpenses)}
@@ -166,32 +205,44 @@ export default function ClinicStats({ date }: Props) {
   );
   
   return (
-    <Card className="w-full shadow-sm">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base">진료 통계</CardTitle>
-        <CardDescription className="text-xs">
-          {activeTab === 'daily' 
-            ? `${date.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}의 통계`
-            : `${date.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long' })}의 통계`
-          }
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="p-3">
-        <Tabs defaultValue="daily" onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2 mb-2 h-8">
-            <TabsTrigger value="daily" className="text-xs py-1">일간 통계</TabsTrigger>
-            <TabsTrigger value="monthly" className="text-xs py-1">월간 통계</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="daily" className="pt-2">
-            {renderCompactDailyStats()}
-          </TabsContent>
-          
-          <TabsContent value="monthly" className="pt-2">
-            {renderCompactMonthlyStats()}
-          </TabsContent>
-        </Tabs>
-      </CardContent>
-    </Card>
+    <>
+      <Card className="w-full shadow-sm">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">진료 통계</CardTitle>
+          <CardDescription className="text-xs">
+            {activeTab === 'daily' 
+              ? `${date.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}의 통계`
+              : `${date.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long' })}의 통계`
+            }
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-3">
+          <Tabs defaultValue="daily" onValueChange={setActiveTab}>
+            <TabsList className="grid w-full grid-cols-2 mb-2 h-8">
+              <TabsTrigger value="daily" className="text-xs py-1">일간 통계</TabsTrigger>
+              <TabsTrigger value="monthly" className="text-xs py-1">월간 통계</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="daily" className="pt-2">
+              {renderCompactDailyStats()}
+            </TabsContent>
+            
+            <TabsContent value="monthly" className="pt-2">
+              {renderCompactMonthlyStats()}
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+      
+      {/* 결제 내역 모달 */}
+      <PaymentListModal
+        isOpen={isPaymentModalOpen}
+        onClose={handleClosePaymentModal}
+        title={modalTitle}
+        date={date}
+        paymentMethod={selectedPaymentMethod}
+        type={activeTab as 'daily' | 'monthly'}
+      />
+    </>
   );
 } 

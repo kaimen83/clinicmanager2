@@ -125,6 +125,86 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// 진료외수입 수정
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { id, date, type, amount, notes } = body;
+    
+    if (!id || !date || !type || !amount) {
+      return NextResponse.json({ error: '필수 필드가 누락되었습니다.' }, { status: 400 });
+    }
+    
+    // 현재 인증된 사용자 가져오기
+    const user = await currentUser();
+    const userId = user?.id;
+    
+    if (!userId) {
+      return NextResponse.json({ error: '인증되지 않은 요청입니다.' }, { status: 401 });
+    }
+    
+    const { db } = await connectToDatabase();
+    
+    // 기존 데이터 조회 (로그 기록용)
+    const existingItem = await db.collection('extraincomes').findOne({ _id: new ObjectId(id) });
+    
+    if (!existingItem) {
+      return NextResponse.json({ error: '해당 진료외수입 내역을 찾을 수 없습니다.' }, { status: 404 });
+    }
+    
+    // 한국 시간대로 변환된 날짜
+    const kstDate = toKstDate(date);
+    
+    // 수정할 데이터
+    const updateData = {
+      date: kstDate,
+      type,
+      amount: Number(amount),
+      notes,
+      updatedAt: createNewDate()
+    };
+    
+    // 데이터 업데이트
+    const result = await db.collection('extraincomes').updateOne(
+      { _id: new ObjectId(id) },
+      { $set: updateData }
+    );
+    
+    if (result.matchedCount === 0) {
+      return NextResponse.json({ error: '해당 진료외수입 내역을 찾을 수 없습니다.' }, { status: 404 });
+    }
+    
+    // 활동 로그 추가
+    await db.collection('activityLogs').insertOne({
+      userId,
+      action: 'update',
+      targetCollection: 'extraIncome',
+      targetId: new ObjectId(id),
+      description: '진료외수입 수정',
+      details: [
+        `수입 유형: ${existingItem.type} → ${type}`,
+        `금액: ${existingItem.amount.toLocaleString()}원 → ${Number(amount).toLocaleString()}원`,
+        `날짜: ${new Date(existingItem.date).toISOString().split('T')[0]} → ${kstDate.toISOString().split('T')[0]}`,
+        `메모: ${existingItem.notes || '없음'} → ${notes || '없음'}`
+      ],
+      createdAt: createNewDate()
+    });
+    
+    return NextResponse.json({ 
+      message: '진료외수입 내역이 수정되었습니다.',
+      extraIncome: {
+        _id: id,
+        ...updateData,
+        createdBy: existingItem.createdBy,
+        createdAt: existingItem.createdAt
+      }
+    });
+  } catch (error) {
+    console.error('진료외수입 수정 오류:', error);
+    return NextResponse.json({ error: '진료외수입을 수정하는 중 오류가 발생했습니다.' }, { status: 500 });
+  }
+}
+
 // 진료외수입 삭제
 export async function DELETE(request: NextRequest) {
   try {
