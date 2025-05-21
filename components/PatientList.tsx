@@ -519,9 +519,6 @@ export default function PatientList({ date }: Props) {
       <Card className="w-full h-full shadow-sm">
         <CardHeader>
           <CardTitle>진료 환자 목록</CardTitle>
-          <CardDescription>
-            {date.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}의 진료 내역
-          </CardDescription>
         </CardHeader>
         <CardContent className="text-center p-8">
           해당 날짜에 등록된 환자가 없습니다.
@@ -532,34 +529,31 @@ export default function PatientList({ date }: Props) {
   
   return (
     <>
-      <Card className="w-full h-full shadow-sm">
-        <CardHeader className="sticky top-0 bg-white z-10">
+      <Card className="w-full shadow-sm">
+        <CardHeader className="sticky top-0 bg-white z-30">
           <CardTitle>진료 환자 목록</CardTitle>
-          <CardDescription>
-            {date.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}의 진료 내역
-          </CardDescription>
         </CardHeader>
         <CardContent className="p-0">
           {doctorNames.length > 0 ? (
-            doctorNames.map(doctor => (
-              <div key={doctor} className="mb-4">
-                <div 
-                  className="bg-gray-100 p-3 flex justify-between items-center cursor-pointer sticky top-[88px] z-10"
-                  onClick={() => toggleDoctorExpand(doctor)}
-                >
-                  <h3 className="font-medium">{doctor} 의사 ({groupedTransactions[doctor].length}명)</h3>
-                  {expandedDoctors[doctor] ? (
-                    <ChevronUp className="h-5 w-5 text-gray-500" />
-                  ) : (
-                    <ChevronDown className="h-5 w-5 text-gray-500" />
-                  )}
-                </div>
-                
-                {expandedDoctors[doctor] && (
-                  <div className="overflow-x-auto">
-                    <div className="max-h-[calc(56px*7)] overflow-y-auto">
-                      <Table>
-                        <TableHeader className="sticky top-0 bg-white z-10">
+            <div>
+              {doctorNames.map(doctor => (
+                <div key={doctor} className="mb-2">
+                  <div 
+                    className="bg-gray-100 p-3 flex justify-between items-center cursor-pointer sticky top-0 z-20"
+                    onClick={() => toggleDoctorExpand(doctor)}
+                  >
+                    <h3 className="font-medium">{doctor} 의사 ({groupedTransactions[doctor].length}명)</h3>
+                    {expandedDoctors[doctor] ? (
+                      <ChevronUp className="h-5 w-5 text-gray-500" />
+                    ) : (
+                      <ChevronDown className="h-5 w-5 text-gray-500" />
+                    )}
+                  </div>
+                  
+                  {expandedDoctors[doctor] && (
+                    <div className="border border-t-0 rounded-b-md">
+                      <Table className="w-full border-collapse">
+                        <TableHeader className="sticky top-[56px] bg-white z-10" style={{ display: 'table', width: '100%', tableLayout: 'fixed', margin: 0 }}>
                           <TableRow>
                             <TableHead className="w-12 cursor-pointer" onClick={() => handleSort('updatedAt')}>
                               <div className="flex items-center gap-1">
@@ -583,9 +577,20 @@ export default function PatientList({ date }: Props) {
                             <TableHead className="text-right">관리</TableHead>
                           </TableRow>
                         </TableHeader>
-                        <TableBody>
+                        <TableBody style={{
+                          height: 'auto',
+                          maxHeight: '336px',
+                          overflowY: 'auto', 
+                          display: 'block',
+                          width: '100%',
+                          scrollbarWidth: 'thin',
+                          scrollbarColor: '#e2e8f0 #f8fafc',
+                          msOverflowStyle: 'auto', /* IE 및 Edge 대응 */
+                          WebkitOverflowScrolling: 'touch', /* iOS 스크롤 성능 향상 */
+                          paddingTop: '48px' /* 테이블 헤더의 높이만큼 패딩 추가 */
+                        }}>
                           {groupedTransactions[doctor].map((transaction, index) => (
-                            <TableRow key={transaction._id}>
+                            <TableRow key={transaction._id} style={{ display: 'table', width: '100%', tableLayout: 'fixed', height: '48px' }}>
                               <TableCell>{index + 1}</TableCell>
                               <TableCell>{transaction.chartNumber}</TableCell>
                               <TableCell>
@@ -624,10 +629,10 @@ export default function PatientList({ date }: Props) {
                         </TableBody>
                       </Table>
                     </div>
-                  </div>
-                )}
-              </div>
-            ))
+                  )}
+                </div>
+              ))}
+            </div>
           ) : (
             <div className="text-center p-8">
               해당 날짜에 등록된 의사가 없습니다.

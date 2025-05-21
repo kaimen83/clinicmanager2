@@ -148,9 +148,6 @@ export default function ExtraIncomeList({ date }: Props) {
       <Card className="w-full shadow-sm">
         <CardHeader className="pb-2">
           <CardTitle className="text-base">진료외수입</CardTitle>
-          <CardDescription className="text-xs">
-            {format(date, 'PPP', { locale: ko })}의 진료외수입 내역
-          </CardDescription>
         </CardHeader>
         <CardContent className="p-3">
           {isLoading ? (

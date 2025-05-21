@@ -238,12 +238,6 @@ export default function ClinicStats({ date }: Props) {
       <Card className="w-full shadow-sm">
         <CardHeader className="pb-2">
           <CardTitle className="text-base">진료 통계</CardTitle>
-          <CardDescription className="text-xs">
-            {activeTab === 'daily' 
-              ? `${date.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}의 통계`
-              : `${date.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long' })}의 통계`
-            }
-          </CardDescription>
         </CardHeader>
         <CardContent className="p-3">
           <Tabs defaultValue="daily" onValueChange={setActiveTab}>

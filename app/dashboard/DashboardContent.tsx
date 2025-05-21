@@ -5,6 +5,7 @@ import { useDateContext } from '@/lib/context/dateContext';
 import PatientList from '@/components/PatientList';
 import ClinicStats from '@/components/ClinicStats';
 import ExtraIncomeList from '@/components/ExtraIncomeList';
+import ExpenseList from '@/components/ExpenseList';
 import { Card } from '@/components/ui/card';
 
 type Props = {
@@ -15,9 +16,14 @@ export default function DashboardContent({ children }: Props) {
   const { selectedDate } = useDateContext();
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-      <div className="lg:col-span-2">
-        <PatientList date={selectedDate} />
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-16">
+      <div className="lg:col-span-2 space-y-8">
+        <div className="min-h-[400px]">
+          <PatientList date={selectedDate} />
+        </div>
+        <div className="min-h-[300px]">
+          <ExpenseList date={selectedDate} />
+        </div>
       </div>
       <div className="lg:col-span-1 space-y-4">
         <Card className="shadow-sm p-4 bg-slate-50">

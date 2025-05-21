@@ -9,7 +9,6 @@ import SettingsList from "./SettingsList";
 import { Badge } from "./ui/badge";
 import { Separator } from "./ui/separator";
 import { ScrollArea } from "./ui/scroll-area";
-import ExpenseSubTabs from "./ExpenseSubTabs";
 import ImplantSubTabs from "./ImplantSubTabs";
 import DentalProductsList from "./DentalProductsList";
 import DatabaseBackup from "./DatabaseBackup";
@@ -80,7 +79,8 @@ export default function SystemSettingsModal() {
     {
       id: "expenses",
       label: "지출관련",
-      icon: <ReceiptText className="h-4 w-4" />
+      icon: <ReceiptText className="h-4 w-4" />,
+      settingType: "expenseAccount"
     },
     {
       id: "oralProducts",
@@ -122,9 +122,6 @@ export default function SystemSettingsModal() {
     
     // 특수 탭들
     switch (currentTab.id) {
-      case "expenses":
-        return <ExpenseSubTabs title={`${currentTab.label} 관리`} />;
-        
       case "implants":
         return <ImplantSubTabs title={`${currentTab.label} 관리`} />;
         

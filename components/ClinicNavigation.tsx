@@ -24,13 +24,15 @@ import { useDateContext } from "@/lib/context/dateContext";
 import SystemSettingsModal from "./SystemSettingsModal";
 import PatientTransactionForm from "./PatientTransactionForm";
 import ExtraIncomeModal from "./ExtraIncomeModal";
-import { ExtraIncome } from "@/lib/types";
+import ExpenseModal from "./ExpenseModal";
+import { ExtraIncome, Expense } from "@/lib/types";
 import { toast } from "sonner";
 
 export default function ClinicNavigation() {
   const { selectedDate, setSelectedDate } = useDateContext();
   const [isPatientFormOpen, setIsPatientFormOpen] = useState(false);
   const [isExtraIncomeModalOpen, setIsExtraIncomeModalOpen] = useState(false);
+  const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
   const handleDateSelect = (date: Date | undefined) => {
@@ -68,8 +70,20 @@ export default function ClinicNavigation() {
     setIsExtraIncomeModalOpen(false);
   };
 
-  const handleextraincomesuccess = (data: ExtraIncome) => {
+  const handleExpenseModalOpen = () => {
+    setIsExpenseModalOpen(true);
+  };
+
+  const handleExpenseModalClose = () => {
+    setIsExpenseModalOpen(false);
+  };
+
+  const handleExtraIncomeSuccess = (data: ExtraIncome) => {
     toast.success('진료외수입이 등록되었습니다.');
+  };
+
+  const handleExpenseSuccess = (data: Expense) => {
+    toast.success('지출이 등록되었습니다.');
   };
 
   const handleTransactionAdded = () => {
@@ -98,7 +112,11 @@ export default function ClinicNavigation() {
             <span>진료 외 수입</span>
           </Button>
           
-          <Button variant="outline" className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            className="flex items-center gap-2"
+            onClick={handleExpenseModalOpen}
+          >
             <DollarSign className="w-4 h-4" />
             <span>지출등록</span>
           </Button>
@@ -181,7 +199,15 @@ export default function ClinicNavigation() {
       <ExtraIncomeModal
         isOpen={isExtraIncomeModalOpen}
         onClose={handleExtraIncomeModalClose}
-        onSuccess={handleextraincomesuccess}
+        onSuccess={handleExtraIncomeSuccess}
+        defaultDate={selectedDate}
+      />
+
+      {/* 지출 등록 모달 */}
+      <ExpenseModal
+        isOpen={isExpenseModalOpen}
+        onClose={handleExpenseModalClose}
+        onSuccess={handleExpenseSuccess}
         defaultDate={selectedDate}
       />
     </Card>

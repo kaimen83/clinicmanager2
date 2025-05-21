@@ -85,6 +85,23 @@ export interface ExtraIncome {
   updatedAt?: Date;
 }
 
+// 지출 타입
+export interface Expense {
+  _id?: string;
+  date: Date;
+  details: string;
+  amount: number;
+  method: '현금' | '카드' | '계좌이체';
+  hasReceipt: boolean;
+  vendor?: string;
+  account?: string;
+  notes?: string;
+  createdBy: string;
+  cashRecordId?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
 // 일별 통계 타입
 export type DailyStats = {
   totalPatients: number;
