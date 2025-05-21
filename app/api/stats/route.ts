@@ -122,7 +122,7 @@ export async function GET(request: NextRequest) {
     }
     
     // 진료외수입 총액 계산
-    const extraIncomeTotal = extraincomes.reduce((sum, income) => sum + (income.amount || 0), 0);
+    const extraIncomeTotal = extraincomes.reduce((sum, income) => sum + (Number(income.amount) || 0), 0);
     
     // 통계 계산
     const stats = {
@@ -130,17 +130,17 @@ export async function GET(request: NextRequest) {
       newPatients,
       cashTransferAmount: transactions
         .filter(t => t.paymentMethod === '현금' || t.paymentMethod === '계좌이체')
-        .reduce((sum, t) => sum + (t.paymentAmount || 0), 0),
+        .reduce((sum, t) => sum + (Number(t.paymentAmount) || 0), 0),
       cardAmount: transactions
         .filter(t => t.paymentMethod === '카드')
-        .reduce((sum, t) => sum + (t.paymentAmount || 0), 0),
+        .reduce((sum, t) => sum + (Number(t.paymentAmount) || 0), 0),
       totalPaymentAmount: transactions
-        .reduce((sum, t) => sum + (t.paymentAmount || 0), 0),
+        .reduce((sum, t) => sum + (Number(t.paymentAmount) || 0), 0),
       nonMedicalIncome: extraIncomeTotal, // 진료외수입을 사용
       totalIncome: 0, // 후에 계산
       totalExpenses: nonMedicalTransactions
         .filter(t => t.type === 'expense')
-        .reduce((sum, t) => sum + (t.amount || 0), 0),
+        .reduce((sum, t) => sum + (Number(t.amount) || 0), 0),
       consultationAgreedAmount: 0,
       consultationNonAgreedAmount: 0
     };
@@ -153,9 +153,9 @@ export async function GET(request: NextRequest) {
       if (transaction.consultations && transaction.consultations.length > 0) {
         transaction.consultations.forEach((consultation: any) => {
           if (consultation.agreed) {
-            consultationAgreedAmount += consultation.amount || 0;
+            consultationAgreedAmount += Number(consultation.amount) || 0;
           } else {
-            consultationNonAgreedAmount += consultation.amount || 0;
+            consultationNonAgreedAmount += Number(consultation.amount) || 0;
           }
         });
       }
