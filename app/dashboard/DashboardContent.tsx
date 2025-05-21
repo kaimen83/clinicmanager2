@@ -2,7 +2,7 @@
 
 import { ReactNode } from 'react';
 import { useDateContext } from '@/lib/context/dateContext';
-import PatientList from '@/components/PatientList';
+import DoctorPatientList from '@/components/DoctorPatientList';
 import ClinicStats from '@/components/ClinicStats';
 import ExtraIncomeList from '@/components/ExtraIncomeList';
 import ExpenseList from '@/components/ExpenseList';
@@ -19,7 +19,7 @@ export default function DashboardContent({ children }: Props) {
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-16">
       <div className="lg:col-span-2 space-y-8">
         <div className="min-h-[400px]">
-          <PatientList date={selectedDate} />
+          <DoctorPatientList date={selectedDate} />
         </div>
         <div className="min-h-[300px]">
           <ExpenseList date={selectedDate} />
