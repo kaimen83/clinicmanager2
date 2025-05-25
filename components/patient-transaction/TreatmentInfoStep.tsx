@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function TreatmentInfoStep({
   treatmentGroups,
@@ -39,26 +39,74 @@ export default function TreatmentInfoStep({
   // 컬랩스 상태 관리
   const [isGroupsOpen, setIsGroupsOpen] = useState(true);
   const [isPaymentInfoOpen, setIsPaymentInfoOpen] = useState(true);
+  
+  // 수납금액 입력 관리를 위한 상태
+  const [paymentAmountDisplay, setPaymentAmountDisplay] = useState('');
+  const [isPaymentAmountFocused, setIsPaymentAmountFocused] = useState(false);
 
-  const doctorSelectRef = useRef<HTMLButtonElement>(null);
 
-  // 컴포넌트가 마운트될 때 첫 번째 셀렉트 박스에 포커스
+
+  // 수납금액 표시값 업데이트
   useEffect(() => {
-    if (doctorSelectRef.current) {
-      doctorSelectRef.current.focus();
-    }
-  }, []);
-
-  // 키보드 이벤트 처리 함수 - Enter 키 입력 시 다음 필드로 이동
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLElement>, nextFieldId: string) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      const nextField = document.getElementById(nextFieldId);
-      if (nextField) {
-        nextField.focus();
+    if (!isPaymentAmountFocused) {
+      const amount = currentTreatmentGroup.paymentAmount;
+      if (amount === 0) {
+        setPaymentAmountDisplay('');
+      } else {
+        setPaymentAmountDisplay(amount.toLocaleString());
       }
     }
+  }, [currentTreatmentGroup.paymentAmount, isPaymentAmountFocused]);
+
+  // 숫자만 입력 허용하는 함수
+  const formatNumberInput = (value: string): string => {
+    // 숫자가 아닌 문자 제거
+    const numbersOnly = value.replace(/[^\d]/g, '');
+    // 천단위 구분자 추가
+    return numbersOnly ? parseInt(numbersOnly).toLocaleString() : '';
   };
+
+  // 수납금액 입력 처리
+  const handlePaymentAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputValue = e.target.value;
+    const formattedValue = formatNumberInput(inputValue);
+    setPaymentAmountDisplay(formattedValue);
+    
+    // 숫자 값으로 변환하여 상태 업데이트
+    const numericValue = formattedValue.replace(/[^\d]/g, '');
+    const amount = numericValue ? parseInt(numericValue) : 0;
+    
+    // 가짜 이벤트 객체 생성하여 기존 핸들러 호출
+    const fakeEvent = {
+      target: {
+        name: 'paymentAmount',
+        value: amount.toString(),
+        type: 'number'
+      }
+    } as React.ChangeEvent<HTMLInputElement>;
+    
+    handleTreatmentInputChange(fakeEvent);
+  };
+
+  // 수납금액 포커스 처리
+  const handlePaymentAmountFocus = () => {
+    setIsPaymentAmountFocused(true);
+    setPaymentAmountDisplay(''); // 포커스 시 값 초기화
+  };
+
+  // 수납금액 블러 처리
+  const handlePaymentAmountBlur = () => {
+    setIsPaymentAmountFocused(false);
+    // 현재 값으로 다시 포맷팅
+    const amount = currentTreatmentGroup.paymentAmount;
+    if (amount === 0) {
+      setPaymentAmountDisplay('');
+    } else {
+      setPaymentAmountDisplay(amount.toLocaleString());
+    }
+  };
+
+
 
   // Enter 키로 처리 그룹 추가
   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -169,9 +217,6 @@ export default function TreatmentInfoStep({
               <Select 
                 onValueChange={(value) => handleTreatmentSelectChange('doctor', value)}
                 value={currentTreatmentGroup.doctor}
-                ref={doctorSelectRef}
-                onKeyDown={(e) => handleKeyDown(e, 'treatmentType')}
-                tabIndex={1}
               >
                 <SelectTrigger className={errors.doctor ? "border-destructive" : ""}>
                   <SelectValue placeholder="선택하세요" />
@@ -194,8 +239,6 @@ export default function TreatmentInfoStep({
               <Select 
                 onValueChange={(value) => handleTreatmentSelectChange('treatmentType', value)}
                 value={currentTreatmentGroup.treatmentType}
-                onKeyDown={(e) => handleKeyDown(e, 'paymentMethod')}
-                tabIndex={2}
               >
                 <SelectTrigger className={errors.treatmentType ? "border-destructive" : ""}>
                   <SelectValue placeholder="선택하세요" />
@@ -227,16 +270,6 @@ export default function TreatmentInfoStep({
                   <Select 
                     onValueChange={(value) => handleTreatmentSelectChange('paymentMethod', value)}
                     value={currentTreatmentGroup.paymentMethod}
-                    onKeyDown={(e) => {
-                      if (currentTreatmentGroup.paymentMethod === '카드') {
-                        handleKeyDown(e, 'cardCompany');
-                      } else if (currentTreatmentGroup.paymentMethod === '현금' || currentTreatmentGroup.paymentMethod === '계좌이체') {
-                        handleKeyDown(e, 'cashReceipt');
-                      } else {
-                        handleKeyDown(e, 'paymentAmount');
-                      }
-                    }}
-                    tabIndex={3}
                   >
                     <SelectTrigger className={errors.paymentMethod ? "border-destructive" : ""}>
                       <SelectValue placeholder="선택하세요" />
@@ -260,8 +293,6 @@ export default function TreatmentInfoStep({
                     <Select 
                       onValueChange={(value) => handleTreatmentSelectChange('cardCompany', value)}
                       value={currentTreatmentGroup.cardCompany}
-                      onKeyDown={(e) => handleKeyDown(e, 'paymentAmount')}
-                      tabIndex={4}
                     >
                       <SelectTrigger className={errors.cardCompany ? "border-destructive" : ""}>
                         <SelectValue placeholder="선택하세요" />
@@ -288,16 +319,14 @@ export default function TreatmentInfoStep({
                     id="paymentAmount"
                     name="paymentAmount"
                     type="text"
-                    value={isNaN(currentTreatmentGroup.paymentAmount) 
-                      ? "0" 
-                      : currentTreatmentGroup.paymentAmount === 0 
-                        ? "0" 
-                        : currentTreatmentGroup.paymentAmount.toLocaleString()}
-                    onChange={handleTreatmentInputChange}
+                    value={paymentAmountDisplay}
+                    onChange={handlePaymentAmountChange}
+                    onFocus={handlePaymentAmountFocus}
+                    onBlur={handlePaymentAmountBlur}
                     onKeyDown={handleInputKeyDown}
                     className={errors.paymentAmount ? "border-destructive" : ""}
                     disabled={currentTreatmentGroup.paymentMethod === '수납없음'}
-                    tabIndex={5}
+                    placeholder="0"
                   />
                   {errors.paymentAmount && (
                     <p className="text-destructive text-xs">{errors.paymentAmount}</p>
@@ -311,8 +340,6 @@ export default function TreatmentInfoStep({
                       id="cashReceipt"
                       checked={currentTreatmentGroup.cashReceipt}
                       onCheckedChange={(checked) => handleTreatmentSwitchChange('cashReceipt', checked)}
-                      onKeyDown={(e) => handleKeyDown(e, 'paymentAmount')}
-                      tabIndex={4}
                     />
                   </div>
                 )}
@@ -327,7 +354,6 @@ export default function TreatmentInfoStep({
                   onChange={handleTreatmentInputChange}
                   onKeyDown={handleInputKeyDown}
                   placeholder="추가 정보를 입력하세요"
-                  tabIndex={6}
                 />
               </div>
             </CollapsibleContent>
@@ -339,7 +365,6 @@ export default function TreatmentInfoStep({
             onClick={addTreatmentGroup}
             disabled={!isCurrentGroupValid}
             className="gap-1"
-            tabIndex={7}
           >
             <Save className="h-4 w-4" />
             진료정보 추가
