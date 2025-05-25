@@ -63,7 +63,8 @@ const calculateDoctorStats = (transactions: ExtendedTransaction[]) => {
       ? transaction.treatments[0].paymentAmount 
       : transaction.paymentAmount;
     
-    totalAmount += paymentAmount || 0;
+    // 문자열로 저장된 경우를 대비해 명시적으로 숫자로 변환
+    totalAmount += Number(paymentAmount) || 0;
   });
   
   return {
@@ -150,7 +151,8 @@ export default function DoctorPatientList({ date }: Props) {
         const dateString = toISODateString(date); // 한국 시간 기준 YYYY-MM-DD 형식
         
         // 시작 날짜와 종료 날짜를 같은 날짜로 설정하여 정확한 날짜 필터링
-        const response = await fetch(`/api/transactions?dateStart=${dateString}&dateEnd=${dateString}`, {
+        // limit을 1000으로 설정하여 하루 진료하는 모든 환자 데이터를 가져옴
+        const response = await fetch(`/api/transactions?dateStart=${dateString}&dateEnd=${dateString}&limit=1000`, {
           cache: 'default'
         });
         
@@ -520,12 +522,12 @@ export default function DoctorPatientList({ date }: Props) {
           </TableHeader>
           <TableBody style={{
             display: 'block',
-            height: '350px', // 7명의 환자 정보를 표시할 수 있는 높이로 증가
+            height: '336px', // 7명의 환자가 보이도록 고정 높이 설정 (48px * 7 = 336px)
             overflowY: 'auto',
             width: '100%'
           }}>
             <TableRow style={{ display: 'table', width: '100%', tableLayout: 'fixed' }}>
-              <TableCell colSpan={7} className="h-[350px] text-center">
+              <TableCell colSpan={7} className="h-[336px] text-center">
                 해당 날짜에 등록된 환자가 없습니다.
               </TableCell>
             </TableRow>
@@ -553,9 +555,9 @@ export default function DoctorPatientList({ date }: Props) {
             >
               {doctorNames.map(doctor => (
                 <div key={doctor} className="min-h-0 flex flex-col overflow-hidden">
-                  <div className="bg-gray-100 p-3 sticky top-0 z-20">
+                  <div className="bg-gray-100 p-3 sticky top-0 z-20 flex justify-between items-center">
                     <div className="font-medium">{doctor} 의사</div>
-                    <div className="text-sm text-gray-600 mt-1">
+                    <div className="text-sm text-gray-600">
                       {(() => {
                         const stats = calculateDoctorStats(groupedTransactions[doctor]);
                         return `환자 ${stats.patientCount}명 | 신환 ${stats.newPatientCount}명 | 수납 ${stats.totalAmount.toLocaleString()}원`;
@@ -578,7 +580,7 @@ export default function DoctorPatientList({ date }: Props) {
                       </TableHeader>
                       <TableBody style={{
                         display: 'block',
-                        height: '350px', // 7명의 환자 정보를 표시할 수 있는 높이로 증가
+                        height: '336px', // 7명의 환자가 보이도록 고정 높이 설정 (48px * 7 = 336px)
                         overflowY: 'auto',
                         width: '100%'
                       }}>

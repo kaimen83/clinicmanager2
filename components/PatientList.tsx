@@ -63,7 +63,8 @@ const calculateDoctorStats = (transactions: ExtendedTransaction[]) => {
       ? transaction.treatments[0].paymentAmount 
       : transaction.paymentAmount;
     
-    totalAmount += paymentAmount || 0;
+    // 문자열로 저장된 경우를 대비해 명시적으로 숫자로 변환
+    totalAmount += Number(paymentAmount) || 0;
   });
   
   return {
@@ -150,7 +151,8 @@ export default function PatientList({ date }: Props) {
         const dateString = toISODateString(date); // 한국 시간 기준 YYYY-MM-DD 형식
         
         // 시작 날짜와 종료 날짜를 같은 날짜로 설정하여 정확한 날짜 필터링
-        const response = await fetch(`/api/transactions?dateStart=${dateString}&dateEnd=${dateString}`, {
+        // limit을 1000으로 설정하여 하루 진료하는 모든 환자 데이터를 가져옴
+        const response = await fetch(`/api/transactions?dateStart=${dateString}&dateEnd=${dateString}&limit=1000`, {
           cache: 'default'
         });
         
@@ -571,20 +573,20 @@ export default function PatientList({ date }: Props) {
                     className="bg-gray-100 p-3 flex justify-between items-center cursor-pointer sticky top-0 z-20"
                     onClick={() => toggleDoctorExpand(doctor)}
                   >
-                    <div className="flex flex-col">
-                      <h3 className="font-medium">{doctor} 의사</h3>
-                      <div className="text-sm text-gray-600 mt-1">
+                    <h3 className="font-medium">{doctor} 의사</h3>
+                    <div className="flex items-center gap-4">
+                      <div className="text-sm text-gray-600">
                         {(() => {
                           const stats = calculateDoctorStats(groupedTransactions[doctor]);
                           return `환자 ${stats.patientCount}명 | 신환 ${stats.newPatientCount}명 | 수납 ${stats.totalAmount.toLocaleString()}원`;
                         })()}
                       </div>
+                      {expandedDoctors[doctor] ? (
+                        <ChevronUp className="h-5 w-5 text-gray-500" />
+                      ) : (
+                        <ChevronDown className="h-5 w-5 text-gray-500" />
+                      )}
                     </div>
-                    {expandedDoctors[doctor] ? (
-                      <ChevronUp className="h-5 w-5 text-gray-500" />
-                    ) : (
-                      <ChevronDown className="h-5 w-5 text-gray-500" />
-                    )}
                   </div>
                   
                   {expandedDoctors[doctor] && (
@@ -615,16 +617,14 @@ export default function PatientList({ date }: Props) {
                           </TableRow>
                         </TableHeader>
                         <TableBody style={{
-                          height: 'auto',
-                          maxHeight: '336px',
+                          height: '336px', // 7명의 환자가 보이도록 고정 높이 설정 (48px * 7 = 336px)
                           overflowY: 'auto', 
                           display: 'block',
                           width: '100%',
                           scrollbarWidth: 'thin',
                           scrollbarColor: '#e2e8f0 #f8fafc',
                           msOverflowStyle: 'auto', /* IE 및 Edge 대응 */
-                          WebkitOverflowScrolling: 'touch', /* iOS 스크롤 성능 향상 */
-                          paddingTop: '48px' /* 테이블 헤더의 높이만큼 패딩 추가 */
+                          WebkitOverflowScrolling: 'touch' /* iOS 스크롤 성능 향상 */
                         }}>
                           {groupedTransactions[doctor].map((transaction, index) => (
                             <TableRow key={transaction._id} style={{ display: 'table', width: '100%', tableLayout: 'fixed', height: '48px' }}>
