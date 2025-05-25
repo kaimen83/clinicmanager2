@@ -30,7 +30,7 @@ import { ExtraIncome, Expense } from "@/lib/types";
 import { toast } from "sonner";
 
 export default function ClinicNavigation() {
-  const { selectedDate, setSelectedDate, triggerRefresh } = useDateContext();
+  const { selectedDate, setSelectedDate, triggerRefresh, triggerCashRefresh } = useDateContext();
   const [isPatientFormOpen, setIsPatientFormOpen] = useState(false);
   const [isExtraIncomeModalOpen, setIsExtraIncomeModalOpen] = useState(false);
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
@@ -99,6 +99,7 @@ export default function ClinicNavigation() {
   const handleTransactionAdded = () => {
     // 트랜잭션이 추가된 후 데이터 새로고침
     triggerRefresh();
+    triggerCashRefresh(); // 시재 데이터도 새로고침
     toast.success('내원정보가 등록되었습니다.');
   };
 

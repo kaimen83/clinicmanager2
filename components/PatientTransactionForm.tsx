@@ -24,7 +24,7 @@ import PatientInfoStep from './patient-transaction/PatientInfoStep';
 import TreatmentInfoStep from './patient-transaction/TreatmentInfoStep';
 
 export default function PatientTransactionForm({ isOpen, onClose, onTransactionAdded }: PatientTransactionFormProps) {
-  const { selectedDate } = useDateContext();
+  const { selectedDate, triggerCashRefresh } = useDateContext();
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 2;
   
@@ -605,19 +605,32 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
         throw new Error('일부 트랜잭션 저장 중 오류가 발생했습니다.');
       }
       
-      // 성공 메시지
-      toast({
-        title: "내원 정보 등록 완료",
-        description: `${finalTreatmentGroups.length}건의 환자 내원 정보가 성공적으로 등록되었습니다.`,
-      });
-      
-      // 성공 콜백 호출 - 마지막으로 추가된 트랜잭션 또는 전체 결과 전달
-      if (onTransactionAdded) {
-        onTransactionAdded(results.length > 0 ? results[results.length - 1] : null);
+      // 모든 트랜잭션이 성공한 경우
+      if (!hasError) {
+        toast({
+          title: "등록 완료",
+          description: `총 ${finalTreatmentGroups.length}개의 진료 내역이 성공적으로 등록되었습니다.`,
+        });
+        
+        // 성공 콜백 호출
+        if (onTransactionAdded) {
+          onTransactionAdded(results);
+        }
+        
+        // 폼 초기화
+        resetForm();
+        
+        // 모달 닫기
+        onClose();
+
+        // 현금 거래가 있는 경우에만 시재 새로고침 트리거
+        const hasCashPayment = finalTreatmentGroups.some(group => group.paymentMethod === '현금');
+        if (hasCashPayment) {
+          triggerCashRefresh();
+        }
+      } else {
+        throw new Error('일부 트랜잭션 저장 중 오류가 발생했습니다.');
       }
-      
-      // 모달 닫기
-      onClose();
     } catch (err) {
       console.error('트랜잭션 저장 오류:', err);
       toast({

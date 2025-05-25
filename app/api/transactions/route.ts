@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
 import { createNewDate, toKstDate } from '@/lib/utils';
+import { createCashRecordsForTransaction } from '@/lib/utils/cashManagement';
 
 // GET 요청 처리 - 내원정보(트랜잭션) 목록 조회 (필터링, 페이지네이션 지원)
 export async function GET(request: NextRequest) {
@@ -177,6 +178,14 @@ export async function POST(request: NextRequest) {
     const insertedTransaction = await db.collection('transactions').findOne({
       _id: result.insertedId
     });
+
+    // 현금 결제가 있는 경우 시재 기록 생성
+    try {
+      await createCashRecordsForTransaction(insertedTransaction);
+    } catch (cashError) {
+      console.error('시재 기록 생성 중 오류:', cashError);
+      // 시재 기록 실패는 로그만 남기고 거래는 계속 진행
+    }
 
     return NextResponse.json(insertedTransaction, { status: 201 });
   } catch (error) {

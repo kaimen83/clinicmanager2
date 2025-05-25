@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { toISODateString } from '@/lib/utils';
+import { useDateContext } from '@/lib/context/dateContext';
 
 interface CashRecord {
   _id: string;
@@ -36,6 +37,7 @@ interface Props {
 }
 
 export default function CashManagementModal({ isOpen, onClose, date }: Props) {
+  const { cashRefreshTrigger } = useDateContext();
   const [records, setRecords] = useState<CashRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [previousAmount, setPreviousAmount] = useState(0);
@@ -62,29 +64,50 @@ export default function CashManagementModal({ isOpen, onClose, date }: Props) {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const dateStr = toISODateString(date);
-      
-      // 현재 날짜 기록 조회
-      const recordsResponse = await fetch(`/api/cash?date=${dateStr}`);
-      if (!recordsResponse.ok) {
-        throw new Error('현금 기록을 가져오는데 실패했습니다.');
+      console.log('시재관리 데이터 조회 시작:', {
+        date: toISODateString(date),
+        cashRefreshTrigger
+      });
+
+      const [recordsResponse, previousResponse] = await Promise.all([
+        fetch(`/api/cash?date=${toISODateString(date)}`),
+        fetch(`/api/cash/previous?date=${toISODateString(date)}`)
+      ]);
+
+      if (recordsResponse.ok) {
+        const recordsData = await recordsResponse.json();
+        console.log('시재 기록 조회 결과:', {
+          recordsCount: recordsData.length,
+          records: recordsData.map((r: CashRecord) => ({
+            id: r._id,
+            type: r.type,
+            amount: r.amount,
+            description: r.description
+          }))
+        });
+        setRecords(recordsData);
+        
+        // 마감 여부 확인
+        const closedRecord = recordsData.find((record: CashRecord) => record.isClosed);
+        setIsClosed(!!closedRecord);
+      } else {
+        console.error('시재 기록 조회 실패:', recordsResponse.status, recordsResponse.statusText);
+        throw new Error('시재 기록을 조회할 수 없습니다.');
       }
-      const recordsData = await recordsResponse.json();
-      setRecords(recordsData || []);
-      
-      // 마감 여부 확인
-      const hasClosedRecord = recordsData?.some((record: CashRecord) => record.isClosed);
-      setIsClosed(hasClosedRecord);
-      
-      // 전일 시재 조회
-      const previousResponse = await fetch(`/api/cash/previous?date=${dateStr}`);
+
       if (previousResponse.ok) {
         const previousData = await previousResponse.json();
+        console.log('전일 시재 조회 결과:', {
+          previousAmount: previousData.closingAmount || 0
+        });
         setPreviousAmount(previousData.closingAmount || 0);
+      } else {
+        console.log('전일 시재 데이터 없음');
+        setPreviousAmount(0);
       }
     } catch (error) {
-      console.error('데이터 조회 에러:', error);
-      toast.error('데이터를 불러오는데 실패했습니다.');
+      console.error('시재 데이터 조회 중 오류:', error);
+      toast.error('시재 데이터를 불러오는 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
     }
@@ -108,9 +131,18 @@ export default function CashManagementModal({ isOpen, onClose, date }: Props) {
   // 모달이 열릴 때 데이터 가져오기
   useEffect(() => {
     if (isOpen) {
+      console.log('시재관리 모달 열림 - 데이터 조회 시작');
       fetchData();
     }
   }, [isOpen, date]);
+
+  // cashRefreshTrigger 변경 시 실시간 업데이트
+  useEffect(() => {
+    if (isOpen && cashRefreshTrigger > 0) {
+      console.log('현금 거래 변경 감지 - 시재 데이터 새로고침:', cashRefreshTrigger);
+      fetchData();
+    }
+  }, [cashRefreshTrigger, isOpen]);
 
   // 새 기록 추가
   const handleAddRecord = async (e: React.FormEvent) => {

@@ -105,7 +105,7 @@ type SortField = 'chartNumber' | 'patientName' | 'treatmentType' | 'paymentAmoun
 type SortDirection = 'asc' | 'desc';
 
 export default function DoctorPatientList({ date }: Props) {
-  const { refreshTrigger, triggerRefresh } = useDateContext();
+  const { refreshTrigger, triggerRefresh, triggerCashRefresh } = useDateContext();
   const [transactions, setTransactions] = useState<ExtendedTransaction[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -305,6 +305,7 @@ export default function DoctorPatientList({ date }: Props) {
       
       setIsEditDialogOpen(false);
       triggerRefresh(); // 데이터 새로고침
+      triggerCashRefresh(); // 시재 데이터 새로고침
       toast({
         title: '성공',
         description: '트랜잭션이 성공적으로 수정되었습니다.',
@@ -339,6 +340,7 @@ export default function DoctorPatientList({ date }: Props) {
       
       setIsDeleteDialogOpen(false);
       triggerRefresh(); // 데이터 새로고침
+      triggerCashRefresh(); // 시재 데이터 새로고침
       toast({
         title: '성공',
         description: '트랜잭션이 성공적으로 삭제되었습니다.',
