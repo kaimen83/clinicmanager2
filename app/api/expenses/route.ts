@@ -15,6 +15,9 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
     
+    // 날짜 범위가 지정된 경우 (일별 조회) 페이징 비활성화
+    const isDateRangeQuery = dateStart && dateEnd && dateStart === dateEnd;
+    
     // 현재 인증된 사용자 가져오기
     const user = await currentUser();
     const userId = user?.id;
@@ -66,21 +69,39 @@ export async function GET(request: NextRequest) {
     // 총 데이터 수 계산
     const total = await Expense.countDocuments(searchQuery);
     
-    // 페이징 처리된 데이터 조회
-    const expenses = await Expense.find(searchQuery)
-      .sort({ date: -1 })
-      .skip((page - 1) * limit)
-      .limit(limit);
+    let expenses;
+    let pagination;
     
-    return NextResponse.json({
-      success: true,
-      data: expenses,
-      pagination: {
+    if (isDateRangeQuery) {
+      // 일별 조회인 경우 페이징 없이 모든 데이터 반환
+      expenses = await Expense.find(searchQuery)
+        .sort({ date: -1 });
+      
+      pagination = {
+        total: expenses.length,
+        page: 1,
+        limit: expenses.length,
+        pages: 1
+      };
+    } else {
+      // 일반 조회인 경우 페이징 적용
+      expenses = await Expense.find(searchQuery)
+        .sort({ date: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit);
+      
+      pagination = {
         total,
         page,
         limit,
         pages: Math.ceil(total / limit)
-      }
+      };
+    }
+    
+    return NextResponse.json({
+      success: true,
+      data: expenses,
+      pagination
     });
   } catch (error) {
     console.error('지출 목록 조회 중 오류 발생:', error);

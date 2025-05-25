@@ -28,6 +28,7 @@ export default function ExpenseList({ date }: ExpenseListProps) {
     setLoading(true);
     try {
       const dateStr = toISODateString(date);
+      // API에서 일별 조회 시 자동으로 모든 데이터를 반환하도록 수정됨
       const response = await fetch(`/api/expenses?dateStart=${dateStr}&dateEnd=${dateStr}`);
       
       if (!response.ok) {

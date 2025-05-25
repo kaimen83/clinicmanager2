@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
+import dbConnect from '@/lib/mongoose';
+import Expense from '@/lib/models/Expense';
 import { toKstDate } from '@/lib/utils';
 
 // GET 요청 처리 - 통계 정보 조회 (일별 또는 월별)
@@ -17,6 +19,7 @@ export async function GET(request: NextRequest) {
     }
     
     const { db } = await connectToDatabase();
+    await dbConnect(); // Mongoose 연결도 함께 설정
     
     // 날짜 범위 계산
     let startDate: Date, endDate: Date;
@@ -65,6 +68,36 @@ export async function GET(request: NextRequest) {
         date: { $gte: startDate, $lte: endDate }
       })
       .toArray();
+    
+    // 지출내역 데이터 조회 (Expense 모델 사용)
+    // 한국 시간대 기준으로 날짜 필터링
+    let expenseStartDate: Date, expenseEndDate: Date;
+    
+    if (type === 'daily') {
+      // 일별: 해당 날짜의 00:00:00 ~ 23:59:59.999 (한국 시간)
+      const dateParts = date.split('-').map(Number);
+      const startDateObj = new Date(dateParts[0], dateParts[1] - 1, dateParts[2], 0, 0, 0, 0);
+      const endDateObj = new Date(dateParts[0], dateParts[1] - 1, dateParts[2], 23, 59, 59, 999);
+      
+      // 한국 시간과 UTC 간의 시차 조정 (9시간)
+      const kstOffset = 9 * 60 * 60 * 1000;
+      expenseStartDate = new Date(startDateObj.getTime() - kstOffset);
+      expenseEndDate = new Date(endDateObj.getTime() - kstOffset);
+    } else {
+      // 월별: 해당 월의 첫날 00:00:00 ~ 마지막날 23:59:59.999 (한국 시간)
+      const [year, month] = date.split('-').map(Number);
+      const startDateObj = new Date(year, month - 1, 1, 0, 0, 0, 0);
+      const endDateObj = new Date(year, month, 0, 23, 59, 59, 999);
+      
+      // 한국 시간과 UTC 간의 시차 조정 (9시간)
+      const kstOffset = 9 * 60 * 60 * 1000;
+      expenseStartDate = new Date(startDateObj.getTime() - kstOffset);
+      expenseEndDate = new Date(endDateObj.getTime() - kstOffset);
+    }
+    
+    const expenses = await Expense.find({
+      date: { $gte: expenseStartDate, $lte: expenseEndDate }
+    });
     
     // 환자 통계 계산 (일별과 월별 다르게 처리)
     let totalPatients = 0;
@@ -138,9 +171,8 @@ export async function GET(request: NextRequest) {
         .reduce((sum, t) => sum + (Number(t.paymentAmount) || 0), 0),
       nonMedicalIncome: extraIncomeTotal, // 진료외수입을 사용
       totalIncome: 0, // 후에 계산
-      totalExpenses: nonMedicalTransactions
-        .filter(t => t.type === 'expense')
-        .reduce((sum, t) => sum + (Number(t.amount) || 0), 0),
+      totalExpenses: expenses
+        .reduce((sum, expense) => sum + (Number(expense.amount) || 0), 0),
       consultationAgreedAmount: 0,
       consultationNonAgreedAmount: 0
     };
