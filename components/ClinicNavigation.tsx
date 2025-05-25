@@ -25,6 +25,7 @@ import SystemSettingsModal from "./SystemSettingsModal";
 import PatientTransactionForm from "./PatientTransactionForm";
 import ExtraIncomeModal from "./ExtraIncomeModal";
 import ExpenseModal from "./ExpenseModal";
+import CashManagementModal from "./CashManagementModal";
 import { ExtraIncome, Expense } from "@/lib/types";
 import { toast } from "sonner";
 
@@ -33,6 +34,7 @@ export default function ClinicNavigation() {
   const [isPatientFormOpen, setIsPatientFormOpen] = useState(false);
   const [isExtraIncomeModalOpen, setIsExtraIncomeModalOpen] = useState(false);
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+  const [isCashManagementModalOpen, setIsCashManagementModalOpen] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
   const handleDateSelect = (date: Date | undefined) => {
@@ -78,6 +80,14 @@ export default function ClinicNavigation() {
     setIsExpenseModalOpen(false);
   };
 
+  const handleCashManagementModalOpen = () => {
+    setIsCashManagementModalOpen(true);
+  };
+
+  const handleCashManagementModalClose = () => {
+    setIsCashManagementModalOpen(false);
+  };
+
   const handleExtraIncomeSuccess = (data: ExtraIncome) => {
     toast.success('진료외수입이 등록되었습니다.');
   };
@@ -121,7 +131,11 @@ export default function ClinicNavigation() {
             <span>지출등록</span>
           </Button>
           
-          <Button variant="outline" className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            className="flex items-center gap-2"
+            onClick={handleCashManagementModalOpen}
+          >
             <Calculator className="w-4 h-4" />
             <span>시재관리</span>
           </Button>
@@ -209,6 +223,13 @@ export default function ClinicNavigation() {
         onClose={handleExpenseModalClose}
         onSuccess={handleExpenseSuccess}
         defaultDate={selectedDate}
+      />
+
+      {/* 시재관리 모달 */}
+      <CashManagementModal
+        isOpen={isCashManagementModalOpen}
+        onClose={handleCashManagementModalClose}
+        date={selectedDate}
       />
     </Card>
   );

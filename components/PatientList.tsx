@@ -44,6 +44,35 @@ const groupTransactionsByDoctor = (transactions: ExtendedTransaction[], doctorOr
   return grouped;
 };
 
+// 의사별 통계 계산 함수
+const calculateDoctorStats = (transactions: ExtendedTransaction[]) => {
+  const uniquePatients = new Set<string>();
+  const uniqueNewPatients = new Set<string>();
+  let totalAmount = 0;
+  
+  transactions.forEach(transaction => {
+    // 차트번호로 중복 제거
+    uniquePatients.add(transaction.chartNumber);
+    
+    if (transaction.isNew) {
+      uniqueNewPatients.add(transaction.chartNumber);
+    }
+    
+    // 수납금액 합계 (treatments 배열 우선, 없으면 기존 필드 사용)
+    const paymentAmount = transaction.treatments && transaction.treatments.length > 0 
+      ? transaction.treatments[0].paymentAmount 
+      : transaction.paymentAmount;
+    
+    totalAmount += paymentAmount || 0;
+  });
+  
+  return {
+    patientCount: uniquePatients.size,
+    newPatientCount: uniqueNewPatients.size,
+    totalAmount
+  };
+};
+
 // 의사 목록 정렬 함수
 const sortDoctors = (doctors: string[], doctorOrder: {value: string, order: number}[]) => {
   // 시스템 설정의 의사 순서를 기준으로 정렬
@@ -542,7 +571,15 @@ export default function PatientList({ date }: Props) {
                     className="bg-gray-100 p-3 flex justify-between items-center cursor-pointer sticky top-0 z-20"
                     onClick={() => toggleDoctorExpand(doctor)}
                   >
-                    <h3 className="font-medium">{doctor} 의사 ({groupedTransactions[doctor].length}명)</h3>
+                    <div className="flex flex-col">
+                      <h3 className="font-medium">{doctor} 의사</h3>
+                      <div className="text-sm text-gray-600 mt-1">
+                        {(() => {
+                          const stats = calculateDoctorStats(groupedTransactions[doctor]);
+                          return `환자 ${stats.patientCount}명 | 신환 ${stats.newPatientCount}명 | 수납 ${stats.totalAmount.toLocaleString()}원`;
+                        })()}
+                      </div>
+                    </div>
                     {expandedDoctors[doctor] ? (
                       <ChevronUp className="h-5 w-5 text-gray-500" />
                     ) : (
