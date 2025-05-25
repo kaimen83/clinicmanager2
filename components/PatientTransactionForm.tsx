@@ -24,7 +24,7 @@ import PatientInfoStep from './patient-transaction/PatientInfoStep';
 import TreatmentInfoStep from './patient-transaction/TreatmentInfoStep';
 
 export default function PatientTransactionForm({ isOpen, onClose, onTransactionAdded }: PatientTransactionFormProps) {
-  const { selectedDate, triggerCashRefresh } = useDateContext();
+  const { selectedDate, triggerCashRefresh, triggerStatsRefresh } = useDateContext();
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 2;
   
@@ -628,6 +628,9 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
         if (hasCashPayment) {
           triggerCashRefresh();
         }
+        
+        // 통계 새로고침 트리거
+        triggerStatsRefresh();
       } else {
         throw new Error('일부 트랜잭션 저장 중 오류가 발생했습니다.');
       }

@@ -105,7 +105,7 @@ type SortField = 'chartNumber' | 'patientName' | 'treatmentType' | 'paymentAmoun
 type SortDirection = 'asc' | 'desc';
 
 export default function DoctorPatientList({ date }: Props) {
-  const { refreshTrigger, triggerRefresh, triggerCashRefresh } = useDateContext();
+  const { refreshTrigger, triggerRefresh, triggerCashRefresh, triggerStatsRefresh } = useDateContext();
   const [transactions, setTransactions] = useState<ExtendedTransaction[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -294,11 +294,14 @@ export default function DoctorPatientList({ date }: Props) {
         throw new Error('트랜잭션 수정에 실패했습니다.');
       }
       
-      // 트랜잭션 목록 업데이트
+      const updatedTransaction = await response.json();
+      const normalizedTransaction = normalizeId(updatedTransaction);
+      
+      // 트랜잭션 목록 업데이트 (API 응답 데이터 사용)
       setTransactions(prevTransactions => 
         prevTransactions.map(transaction => 
           transaction._id === currentTransaction._id 
-            ? { ...transaction, ...editFormData } as ExtendedTransaction
+            ? normalizedTransaction as ExtendedTransaction
             : transaction
         )
       );
@@ -306,6 +309,7 @@ export default function DoctorPatientList({ date }: Props) {
       setIsEditDialogOpen(false);
       triggerRefresh(); // 데이터 새로고침
       triggerCashRefresh(); // 시재 데이터 새로고침
+      triggerStatsRefresh(); // 통계 데이터 새로고침
       toast({
         title: '성공',
         description: '트랜잭션이 성공적으로 수정되었습니다.',
@@ -341,6 +345,7 @@ export default function DoctorPatientList({ date }: Props) {
       setIsDeleteDialogOpen(false);
       triggerRefresh(); // 데이터 새로고침
       triggerCashRefresh(); // 시재 데이터 새로고침
+      triggerStatsRefresh(); // 통계 데이터 새로고침
       toast({
         title: '성공',
         description: '트랜잭션이 성공적으로 삭제되었습니다.',

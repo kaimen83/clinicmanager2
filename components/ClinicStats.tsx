@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DailyStats, MonthlyStats, ExtraIncome } from '@/lib/types';
@@ -8,12 +8,14 @@ import { toISODateString } from '@/lib/utils';
 import PaymentListModal from './PaymentListModal';
 import CardCompanyStatsModal from './CardCompanyStatsModal';
 import ExtraIncomeListModal from './ExtraIncomeListModal';
+import { useDateContext } from '@/lib/context/dateContext';
 
 type Props = {
   date: Date;
 };
 
 export default function ClinicStats({ date }: Props) {
+  const { statsRefreshTrigger } = useDateContext();
   const [activeTab, setActiveTab] = useState('daily');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,20 +29,15 @@ export default function ClinicStats({ date }: Props) {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | undefined>(undefined);
   
   // 통계 데이터 가져오기 함수
-  const fetchStats = async (type: 'daily' | 'monthly') => {
+  const fetchStats = useCallback(async (type: 'daily' | 'monthly') => {
     try {
       setLoading(true);
       setError(null);
       
-      let dateParam;
-      if (type === 'daily') {
-        dateParam = toISODateString(date);
-      } else {
-        // YYYY-MM 형식으로 변환 (한국 시간대 고려)
-        dateParam = toISODateString(date).substring(0, 7);
-      }
-      
-      const response = await fetch(`/api/stats?type=${type}&date=${dateParam}`);
+      const dateString = toISODateString(date);
+      const response = await fetch(`/api/stats?date=${dateString}&type=${type}`, {
+        cache: 'default'
+      });
       
       if (!response.ok) {
         throw new Error('통계 데이터를 가져오는데 실패했습니다.');
@@ -62,13 +59,21 @@ export default function ClinicStats({ date }: Props) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [date]);
   
   // 날짜가 변경될 때 데이터 가져오기
   useEffect(() => {
     fetchStats('daily');
     fetchStats('monthly');
-  }, [date]);
+  }, [fetchStats]);
+  
+  // 통계 새로고침 트리거 감지
+  useEffect(() => {
+    if (statsRefreshTrigger > 0) {
+      fetchStats('daily');
+      fetchStats('monthly');
+    }
+  }, [statsRefreshTrigger, fetchStats]);
   
   // 탭이 변경될 때 필요한 데이터만 가져오기
   useEffect(() => {

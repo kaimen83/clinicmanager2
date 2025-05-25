@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
 import { toISODateString } from '@/lib/utils';
+import { useDateContext } from '@/lib/context/dateContext';
 
 // Transaction 타입 확장 (기존 Transaction 타입에 treatments 추가)
 interface ExtendedTransaction extends Transaction {
@@ -104,6 +105,7 @@ type SortField = 'chartNumber' | 'patientName' | 'treatmentType' | 'paymentAmoun
 type SortDirection = 'asc' | 'desc';
 
 export default function PatientList({ date }: Props) {
+  const { triggerStatsRefresh } = useDateContext();
   const [transactions, setTransactions] = useState<ExtendedTransaction[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -353,6 +355,7 @@ export default function PatientList({ date }: Props) {
       );
       
       setIsEditDialogOpen(false);
+      triggerStatsRefresh(); // 통계 데이터 새로고침
       toast({
         title: "환자 정보가 업데이트되었습니다.",
         description: `${normalizedTransaction.patientName} 환자의 정보가 성공적으로 수정되었습니다.`,
@@ -387,6 +390,7 @@ export default function PatientList({ date }: Props) {
       );
       
       setIsDeleteDialogOpen(false);
+      triggerStatsRefresh(); // 통계 데이터 새로고침
       toast({
         title: "환자 정보가 삭제되었습니다.",
         description: `${currentTransaction.patientName} 환자의 정보가 성공적으로 삭제되었습니다.`,
