@@ -55,7 +55,7 @@ implantProductSchema.methods.updateStock = async function(quantity: number) {
 
 const ImplantProduct = mongoose.models.ImplantProduct || mongoose.model('ImplantProduct', implantProductSchema);
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
         const user = await currentUser();
         if (!user) {
@@ -64,7 +64,8 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
 
         await dbConnect();
 
-        const log = await ImplantInventoryLog.findById(params.id);
+        const resolvedParams = await params;
+        const log = await ImplantInventoryLog.findById(resolvedParams.id);
         if (!log) {
             return NextResponse.json({ message: '활동 내역을 찾을 수 없습니다.' }, { status: 404 });
         }
@@ -79,7 +80,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
         await product.updateStock(quantityChange);
 
         // 활동 내역 삭제
-        await ImplantInventoryLog.findByIdAndDelete(params.id);
+        await ImplantInventoryLog.findByIdAndDelete(resolvedParams.id);
 
         return NextResponse.json({ message: '활동 내역이 삭제되었습니다.' });
     } catch (error) {

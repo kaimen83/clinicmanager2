@@ -5,7 +5,7 @@ import { ObjectId } from 'mongodb';
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // 현재 인증된 사용자 가져오기
@@ -17,7 +17,8 @@ export async function DELETE(
     }
 
     const { db } = await connectToDatabase();
-    const activityId = params.id;
+    const resolvedParams = await params;
+    const activityId = resolvedParams.id;
 
     // 판매 기록에서 삭제 시도
     const deletedSale = await db.collection('dentalproductsales').findOneAndDelete({

@@ -55,7 +55,7 @@ implantProductSchema.methods.updateStock = async function(quantity: number) {
 
 const ImplantProduct = mongoose.models.ImplantProduct || mongoose.model('ImplantProduct', implantProductSchema);
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
         const user = await currentUser();
         if (!user) {
@@ -65,7 +65,8 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
         await dbConnect();
 
         const { quantity, chartNumber, patientName, doctor, outReason, notes, date } = await request.json();
-        const product = await ImplantProduct.findById(params.id);
+        const resolvedParams = await params;
+        const product = await ImplantProduct.findById(resolvedParams.id);
         
         if (!product) {
             return NextResponse.json({ message: '제품을 찾을 수 없습니다.' }, { status: 404 });

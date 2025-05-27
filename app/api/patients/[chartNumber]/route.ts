@@ -5,7 +5,7 @@ import { ObjectId } from 'mongodb';
 // GET 요청 처리 - 특정 환자 정보 조회
 export async function GET(
   request: NextRequest,
-  { params }: { params: { chartNumber: string } }
+  { params }: { params: Promise<{ chartNumber: string }> }
 ) {
   try {
     // Next.js 15에서는 params를 사용하기 전에 await 해야 함
@@ -45,7 +45,7 @@ export async function GET(
 // PATCH 요청 처리 - 환자 정보 업데이트
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { chartNumber: string } }
+  { params }: { params: Promise<{ chartNumber: string }> }
 ) {
   try {
     // Next.js 15에서는 params를 사용하기 전에 await 해야 함
@@ -106,7 +106,7 @@ export async function PATCH(
 // DELETE 요청 처리 - 환자 정보 삭제
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { chartNumber: string } }
+  { params }: { params: Promise<{ chartNumber: string }> }
 ) {
   try {
     // Next.js 15에서는 params를 사용하기 전에 await 해야 함

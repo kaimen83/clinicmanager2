@@ -9,10 +9,11 @@ const ImplantProduct = mongoose.models.ImplantProduct;
 // 특정 ID 임플란트 제품 조회
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = params.id;
+    const resolvedParams = await params;
+    const id = resolvedParams.id;
     
     // 현재 인증된 사용자 가져오기
     const user = await currentUser();
@@ -43,10 +44,11 @@ export async function GET(
 // 특정 ID 임플란트 제품 수정
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = params.id;
+    const resolvedParams = await params;
+    const id = resolvedParams.id;
     const body = await request.json();
     const { category, name, specification, price, stock, usage } = body;
     
@@ -99,10 +101,11 @@ export async function PUT(
 // 특정 ID 임플란트 제품 삭제
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = params.id;
+    const resolvedParams = await params;
+    const id = resolvedParams.id;
     
     // 현재 인증된 사용자 가져오기
     const user = await currentUser();

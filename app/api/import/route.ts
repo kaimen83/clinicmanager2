@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { clerkClient } from '@clerk/nextjs/server';
 import { currentUser } from '@clerk/nextjs/server';
-import xlsx from 'xlsx';
+import * as xlsx from 'xlsx';
 
 export async function POST(req: NextRequest) {
   try {
