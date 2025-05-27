@@ -26,6 +26,7 @@ import PatientTransactionForm from "./PatientTransactionForm";
 import ExtraIncomeModal from "./ExtraIncomeModal";
 import ExpenseModal from "./ExpenseModal";
 import CashManagementModal from "./CashManagementModal";
+import SupplyModal from "./SupplyModal";
 import { ExtraIncome, Expense } from "@/lib/types";
 import { toast } from "sonner";
 
@@ -35,6 +36,7 @@ export default function ClinicNavigation() {
   const [isExtraIncomeModalOpen, setIsExtraIncomeModalOpen] = useState(false);
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
   const [isCashManagementModalOpen, setIsCashManagementModalOpen] = useState(false);
+  const [isSupplyModalOpen, setIsSupplyModalOpen] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
   const handleDateSelect = (date: Date | undefined) => {
@@ -86,6 +88,14 @@ export default function ClinicNavigation() {
 
   const handleCashManagementModalClose = () => {
     setIsCashManagementModalOpen(false);
+  };
+
+  const handleSupplyModalOpen = () => {
+    setIsSupplyModalOpen(true);
+  };
+
+  const handleSupplyModalClose = () => {
+    setIsSupplyModalOpen(false);
   };
 
   const handleExtraIncomeSuccess = (data: ExtraIncome) => {
@@ -152,7 +162,11 @@ export default function ClinicNavigation() {
             <span>시재관리</span>
           </Button>
           
-          <Button variant="outline" className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            className="flex items-center gap-2"
+            onClick={handleSupplyModalOpen}
+          >
             <ShoppingCart className="w-4 h-4" />
             <span>매입원장</span>
           </Button>
@@ -241,6 +255,13 @@ export default function ClinicNavigation() {
       <CashManagementModal
         isOpen={isCashManagementModalOpen}
         onClose={handleCashManagementModalClose}
+        date={selectedDate}
+      />
+
+      {/* 매입원장 모달 */}
+      <SupplyModal
+        isOpen={isSupplyModalOpen}
+        onClose={handleSupplyModalClose}
         date={selectedDate}
       />
     </Card>
