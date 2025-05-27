@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Trash2 } from 'lucide-react';
+import { safeRestorePointerEvents, createSafeOnOpenChange } from '@/lib/pointer-events-fix';
 
 interface ImplantProduct {
   _id: string;
@@ -168,6 +169,22 @@ export default function ImplantInventoryModal({ isOpen, onClose }: ImplantInvent
     }
   }, [isOpen, activeTab, startDate, endDate, statCategoryFilter, statNameFilter, statUsageFilter, view]);
 
+  // Radix UI Dialog pointer-events 버그 해결
+  useEffect(() => {
+    // 모달이 열릴 때와 닫힐 때 pointer-events 관리
+    if (!isOpen && !stockInModal && !stockOutModal) {
+      // 모든 모달이 닫혔을 때 안전하게 pointer-events 복원
+      safeRestorePointerEvents();
+    }
+  }, [isOpen, stockInModal, stockOutModal]);
+
+  // 컴포넌트 언마운트 시 cleanup
+  useEffect(() => {
+    return () => {
+      safeRestorePointerEvents(100);
+    };
+  }, []);
+
   // 입고 처리
   const handleStockIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -184,6 +201,13 @@ export default function ImplantInventoryModal({ isOpen, onClose }: ImplantInvent
       
       setStockInModal(false);
       setStockInForm({ date: new Date().toISOString().split('T')[0], quantity: '', notes: '' });
+      setSelectedProduct(null);
+      
+      // pointer-events 복원
+      setTimeout(() => {
+        document.body.style.pointerEvents = '';
+      }, 50);
+      
       loadInventoryData();
       alert('입고가 완료되었습니다.');
     } catch (error) {
@@ -230,6 +254,13 @@ export default function ImplantInventoryModal({ isOpen, onClose }: ImplantInvent
         outReason: '', 
         notes: '' 
       });
+      setSelectedProduct(null);
+      
+      // pointer-events 복원
+      setTimeout(() => {
+        document.body.style.pointerEvents = '';
+      }, 50);
+      
       loadInventoryData();
       alert('출고가 완료되었습니다.');
     } catch (error) {
@@ -277,7 +308,12 @@ export default function ImplantInventoryModal({ isOpen, onClose }: ImplantInvent
 
   return (
     <>
-      <Dialog open={isOpen} onOpenChange={onClose}>
+      {/* 메인 임플란트 수불부 모달 */}
+      <Dialog 
+        open={isOpen && !stockInModal && !stockOutModal} 
+        onOpenChange={createSafeOnOpenChange(onClose)}
+        modal={true}
+      >
         <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>임플란트 수불부</DialogTitle>
@@ -589,8 +625,20 @@ export default function ImplantInventoryModal({ isOpen, onClose }: ImplantInvent
         </DialogContent>
       </Dialog>
 
-      {/* 입고 모달 */}
-      <Dialog open={stockInModal} onOpenChange={setStockInModal}>
+      {/* 입고 모달 - 메인 모달과 같은 레벨로 분리 */}
+      <Dialog 
+        open={stockInModal} 
+        onOpenChange={createSafeOnOpenChange(() => setStockInModal(false), () => {
+          // 입고 모달이 닫힐 때 폼 데이터 초기화
+          setStockInForm({
+            date: new Date().toISOString().split('T')[0],
+            quantity: '',
+            notes: ''
+          });
+          setSelectedProduct(null);
+        })}
+        modal={true}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>입고 등록</DialogTitle>
@@ -626,7 +674,23 @@ export default function ImplantInventoryModal({ isOpen, onClose }: ImplantInvent
             </div>
             <div className="flex space-x-2">
               <Button type="submit">저장</Button>
-              <Button type="button" variant="outline" onClick={() => setStockInModal(false)}>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => {
+                  setStockInModal(false);
+                  setStockInForm({
+                    date: new Date().toISOString().split('T')[0],
+                    quantity: '',
+                    notes: ''
+                  });
+                  setSelectedProduct(null);
+                  // pointer-events 복원
+                  setTimeout(() => {
+                    document.body.style.pointerEvents = '';
+                  }, 50);
+                }}
+              >
                 취소
               </Button>
             </div>
@@ -634,8 +698,24 @@ export default function ImplantInventoryModal({ isOpen, onClose }: ImplantInvent
         </DialogContent>
       </Dialog>
 
-      {/* 출고 모달 */}
-      <Dialog open={stockOutModal} onOpenChange={setStockOutModal}>
+      {/* 출고 모달 - 메인 모달과 같은 레벨로 분리 */}
+      <Dialog 
+        open={stockOutModal} 
+        onOpenChange={createSafeOnOpenChange(() => setStockOutModal(false), () => {
+          // 출고 모달이 닫힐 때 폼 데이터 초기화
+          setStockOutForm({
+            date: new Date().toISOString().split('T')[0],
+            quantity: '',
+            chartNumber: '',
+            patientName: '',
+            doctor: '',
+            outReason: '',
+            notes: ''
+          });
+          setSelectedProduct(null);
+        })}
+        modal={true}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>출고 등록</DialogTitle>
@@ -716,7 +796,27 @@ export default function ImplantInventoryModal({ isOpen, onClose }: ImplantInvent
             </div>
             <div className="flex space-x-2">
               <Button type="submit">저장</Button>
-              <Button type="button" variant="outline" onClick={() => setStockOutModal(false)}>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => {
+                  setStockOutModal(false);
+                  setStockOutForm({
+                    date: new Date().toISOString().split('T')[0],
+                    quantity: '',
+                    chartNumber: '',
+                    patientName: '',
+                    doctor: '',
+                    outReason: '',
+                    notes: ''
+                  });
+                  setSelectedProduct(null);
+                  // pointer-events 복원
+                  setTimeout(() => {
+                    document.body.style.pointerEvents = '';
+                  }, 50);
+                }}
+              >
                 취소
               </Button>
             </div>
