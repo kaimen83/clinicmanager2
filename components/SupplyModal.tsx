@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { format, addDays, subDays } from 'date-fns';
+import { format, addDays, subDays, subMonths } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import {
   Dialog,
@@ -19,8 +19,9 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
+
 import { toast } from 'sonner';
-import { toISODateString, cn } from '@/lib/utils';
+import { toISODateString, cn, getCurrentKstDate, createNewDate } from '@/lib/utils';
 import { SupplyType } from '@/lib/models/Supply';
 import { VendorType } from '@/lib/models/Vendor';
 import { 
@@ -35,7 +36,8 @@ import {
   X,
   Check,
   ShoppingCart,
-  Filter
+  Filter,
+  Calendar as CalendarDays
 } from 'lucide-react';
 
 interface Props {
@@ -53,8 +55,6 @@ interface FormData {
 }
 
 export default function SupplyModal({ isOpen, onClose, date: initialDate }: Props) {
-  const [selectedDate, setSelectedDate] = useState<Date>(initialDate);
-  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [supplies, setSupplies] = useState<SupplyType[]>([]);
   const [vendors, setVendors] = useState<VendorType[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -63,9 +63,15 @@ export default function SupplyModal({ isOpen, onClose, date: initialDate }: Prop
   const [searchTerm, setSearchTerm] = useState('');
   const [filterVendor, setFilterVendor] = useState('all');
   const [filterPaid, setFilterPaid] = useState<string>('all');
-  const [dateRange, setDateRange] = useState<{ start: string; end: string }>({
-    start: toISODateString(initialDate),
-    end: toISODateString(initialDate)
+  
+  // 날짜 범위 필터링 (reference 파일 참고)
+  const [dateRange, setDateRange] = useState<{ start: string; end: string }>(() => {
+    const today = getCurrentKstDate();
+    const oneMonthAgo = subMonths(today, 1);
+    return {
+      start: toISODateString(oneMonthAgo),
+      end: toISODateString(today)
+    };
   });
 
   const [formData, setFormData] = useState<FormData>({
@@ -82,19 +88,7 @@ export default function SupplyModal({ isOpen, onClose, date: initialDate }: Prop
       loadSupplies();
       loadVendors();
     }
-  }, [isOpen, selectedDate, dateRange, filterVendor, filterPaid]);
-
-  // 날짜 변경 시 폼 데이터 업데이트
-  useEffect(() => {
-    setFormData(prev => ({
-      ...prev,
-      date: toISODateString(selectedDate)
-    }));
-    setDateRange({
-      start: toISODateString(selectedDate),
-      end: toISODateString(selectedDate)
-    });
-  }, [selectedDate]);
+  }, [isOpen, dateRange, filterVendor, filterPaid]);
 
   const loadSupplies = async () => {
     try {
@@ -142,19 +136,25 @@ export default function SupplyModal({ isOpen, onClose, date: initialDate }: Prop
     }
   };
 
-  const handleDateSelect = (date: Date | undefined) => {
-    if (date) {
-      setSelectedDate(date);
-      setIsCalendarOpen(false);
+  // 금액 입력 포맷팅 (reference 파일 참고)
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value;
+    // 마이너스 부호는 맨 앞에만 허용하고, 나머지는 숫자만 허용
+    value = value.replace(/[^\d-]|(?!^)-/g, '');
+    
+    if (value) {
+      const isNegative = value.startsWith('-');
+      const numStr = value.replace(/[^\d]/g, '');
+      if (numStr) {
+        const num = parseInt(numStr, 10);
+        const formattedValue = (isNegative ? '-' : '') + num.toLocaleString();
+        setFormData({ ...formData, amount: formattedValue });
+      } else {
+        setFormData({ ...formData, amount: isNegative ? '-' : '' });
+      }
+    } else {
+      setFormData({ ...formData, amount: '' });
     }
-  };
-
-  const goToPreviousDay = () => {
-    setSelectedDate(prev => subDays(prev, 1));
-  };
-
-  const goToNextDay = () => {
-    setSelectedDate(prev => addDays(prev, 1));
   };
 
   const handleAddSupply = async (e: React.FormEvent) => {
@@ -166,6 +166,11 @@ export default function SupplyModal({ isOpen, onClose, date: initialDate }: Prop
     }
 
     try {
+      // 천단위 구분자 제거하고 숫자로 변환
+      const amountStr = formData.amount;
+      const isNegative = amountStr.startsWith('-');
+      const amount = Number(amountStr.replace(/[^\d]/g, ''));
+      
       const response = await fetch('/api/supplies', {
         method: 'POST',
         headers: {
@@ -174,7 +179,7 @@ export default function SupplyModal({ isOpen, onClose, date: initialDate }: Prop
         body: JSON.stringify({
           date: formData.date,
           vendor: formData.vendor,
-          amount: Number(formData.amount),
+          amount: isNegative ? -amount : amount,
           note: formData.note,
           isPaid: formData.isPaid
         }),
@@ -187,7 +192,7 @@ export default function SupplyModal({ isOpen, onClose, date: initialDate }: Prop
 
       toast.success('매입 내역이 등록되었습니다.');
       setFormData({
-        date: toISODateString(selectedDate),
+        date: toISODateString(getCurrentKstDate()),
         vendor: '',
         amount: '',
         note: '',
@@ -210,16 +215,20 @@ export default function SupplyModal({ isOpen, onClose, date: initialDate }: Prop
     }
 
     try {
-      const response = await fetch('/api/supplies', {
+      // 천단위 구분자 제거하고 숫자로 변환
+      const amountStr = formData.amount;
+      const isNegative = amountStr.startsWith('-');
+      const amount = Number(amountStr.replace(/[^\d]/g, ''));
+
+      const response = await fetch(`/api/supplies/${editingId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          id: editingId,
           date: formData.date,
           vendor: formData.vendor,
-          amount: Number(formData.amount),
+          amount: isNegative ? -amount : amount,
           note: formData.note,
           isPaid: formData.isPaid
         }),
@@ -231,15 +240,7 @@ export default function SupplyModal({ isOpen, onClose, date: initialDate }: Prop
       }
 
       toast.success('매입 내역이 수정되었습니다.');
-      setEditingId(null);
-      setFormData({
-        date: toISODateString(selectedDate),
-        vendor: '',
-        amount: '',
-        note: '',
-        isPaid: false
-      });
-      setShowAddForm(false);
+      cancelEdit();
       loadSupplies();
     } catch (error: any) {
       console.error('매입 내역 수정 오류:', error);
@@ -248,34 +249,33 @@ export default function SupplyModal({ isOpen, onClose, date: initialDate }: Prop
   };
 
   const handleDeleteSupply = async (id: string) => {
-    if (!confirm('정말로 이 매입 내역을 삭제하시겠습니까?')) {
+    if (!confirm('정말 삭제하시겠습니까?')) {
       return;
     }
 
     try {
-      const response = await fetch(`/api/supplies?id=${id}`, {
+      const response = await fetch(`/api/supplies/${id}`, {
         method: 'DELETE',
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || '매입 내역 삭제 실패');
+        throw new Error('삭제 실패');
       }
 
       toast.success('매입 내역이 삭제되었습니다.');
       loadSupplies();
-    } catch (error: any) {
-      console.error('매입 내역 삭제 오류:', error);
-      toast.error(error.message || '매입 내역 삭제에 실패했습니다.');
+    } catch (error) {
+      console.error('삭제 오류:', error);
+      toast.error('삭제에 실패했습니다.');
     }
   };
 
   const startEdit = (supply: SupplyType) => {
     setEditingId(supply._id);
     setFormData({
-      date: toISODateString(supply.date),
+      date: toISODateString(new Date(supply.date)),
       vendor: supply.vendor,
-      amount: supply.amount.toString(),
+      amount: supply.amount.toLocaleString(),
       note: supply.note || '',
       isPaid: supply.isPaid
     });
@@ -284,23 +284,23 @@ export default function SupplyModal({ isOpen, onClose, date: initialDate }: Prop
 
   const cancelEdit = () => {
     setEditingId(null);
+    setShowAddForm(false);
     setFormData({
-      date: toISODateString(selectedDate),
+      date: toISODateString(getCurrentKstDate()),
       vendor: '',
       amount: '',
       note: '',
       isPaid: false
     });
-    setShowAddForm(false);
   };
 
   const formatAmount = (amount: number) => {
-    return amount.toLocaleString();
+    return Math.abs(amount).toLocaleString();
   };
 
   const formatDate = (date: Date | string) => {
     const dateObj = typeof date === 'string' ? new Date(date) : date;
-    return format(dateObj, 'yyyy-MM-dd', { locale: ko });
+    return format(dateObj, 'yyyy.MM.dd', { locale: ko });
   };
 
   // 검색 및 필터링된 매입 내역
@@ -321,61 +321,10 @@ export default function SupplyModal({ isOpen, onClose, date: initialDate }: Prop
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-7xl max-h-[95vh] overflow-hidden flex flex-col">
         <DialogHeader className="flex-shrink-0 pb-4">
-          <div className="flex items-center justify-between">
-            <DialogTitle className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-              <ShoppingCart className="w-6 h-6" />
-              매입원장
-            </DialogTitle>
-            
-            {/* 날짜 선택 컨트롤 */}
-            <div className="flex items-center gap-2">
-              <Button 
-                variant="outline" 
-                size="icon" 
-                onClick={goToPreviousDay}
-                className="h-9 w-9"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              
-              <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "min-w-[200px] justify-start text-left font-normal",
-                      !selectedDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {selectedDate ? (
-                      format(selectedDate, 'yyyy년 MM월 dd일 (EEEE)', { locale: ko })
-                    ) : (
-                      <span>날짜 선택</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={selectedDate}
-                    onSelect={handleDateSelect}
-                    initialFocus
-                    locale={ko}
-                  />
-                </PopoverContent>
-              </Popover>
-              
-              <Button 
-                variant="outline" 
-                size="icon" 
-                onClick={goToNextDay}
-                className="h-9 w-9"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
+          <DialogTitle className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <ShoppingCart className="w-6 h-6" />
+            매입원장
+          </DialogTitle>
         </DialogHeader>
 
         <div className="flex-1 overflow-auto space-y-6">
@@ -430,16 +379,37 @@ export default function SupplyModal({ isOpen, onClose, date: initialDate }: Prop
             </Card>
           </div>
 
-          {/* 검색 및 필터 */}
+          {/* 날짜 필터 및 검색 (reference 파일 참고) */}
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
-                <Filter className="w-5 h-5" />
-                검색 및 필터
+                <CalendarDays className="w-5 h-5" />
+                날짜 필터 및 검색
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {/* 날짜 범위 필터 */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div>
+                  <Label htmlFor="startDate">시작일</Label>
+                  <Input
+                    id="startDate"
+                    type="date"
+                    value={dateRange.start}
+                    onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="endDate">종료일</Label>
+                  <Input
+                    id="endDate"
+                    type="date"
+                    value={dateRange.end}
+                    onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                  />
+                </div>
+
                 <div>
                   <Label htmlFor="search">검색</Label>
                   <div className="relative">
@@ -484,17 +454,16 @@ export default function SupplyModal({ isOpen, onClose, date: initialDate }: Prop
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
 
-                <div className="flex items-end">
-                  <Button 
-                    onClick={() => setShowAddForm(true)}
-                    className="w-full"
-                    disabled={showAddForm}
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    매입 추가
-                  </Button>
-                </div>
+              <div className="flex justify-end">
+                <Button 
+                  onClick={() => setShowAddForm(true)}
+                  disabled={showAddForm}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  매입 추가
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -545,10 +514,9 @@ export default function SupplyModal({ isOpen, onClose, date: initialDate }: Prop
                       <Label htmlFor="amount">금액 *</Label>
                       <Input
                         id="amount"
-                        type="number"
-                        min="0"
+                        type="text"
                         value={formData.amount}
-                        onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                        onChange={handleAmountChange}
                         placeholder="0"
                         required
                       />
@@ -592,10 +560,10 @@ export default function SupplyModal({ isOpen, onClose, date: initialDate }: Prop
             </Card>
           )}
 
-          {/* 매입 내역 테이블 */}
+          {/* 매입 내역 테이블 (reference 파일의 헤더 스타일 참고) */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">매입 내역</CardTitle>
+              <CardTitle className="text-lg">매입 내역 ({filteredSupplies.length}건)</CardTitle>
             </CardHeader>
             <CardContent>
               {isLoading ? (
@@ -604,65 +572,64 @@ export default function SupplyModal({ isOpen, onClose, date: initialDate }: Prop
                 </div>
               ) : (
                 <div className="border rounded-md overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-24">날짜</TableHead>
-                        <TableHead>거래처</TableHead>
-                        <TableHead className="text-right">금액</TableHead>
-                        <TableHead>결제상태</TableHead>
-                        <TableHead>메모</TableHead>
-                        <TableHead className="text-center w-24">작업</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredSupplies.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={6} className="text-center py-8">
-                            매입 내역이 없습니다.
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        filteredSupplies.map((supply) => (
-                          <TableRow key={supply._id}>
-                            <TableCell>{formatDate(supply.date)}</TableCell>
-                            <TableCell>{supply.vendor}</TableCell>
-                            <TableCell className="text-right">₩{formatAmount(supply.amount)}</TableCell>
-                            <TableCell>
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                supply.isPaid 
-                                  ? 'bg-green-100 text-green-800' 
-                                  : 'bg-red-100 text-red-800'
-                              }`}>
-                                {supply.isPaid ? '결제완료' : '미결제'}
-                              </span>
-                            </TableCell>
-                            <TableCell>{supply.note || '-'}</TableCell>
-                            <TableCell>
-                              <div className="flex justify-center gap-1">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => startEdit(supply)}
-                                  className="h-8 w-8 p-0"
-                                >
-                                  <Edit className="w-3 h-3" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handleDeleteSupply(supply._id)}
-                                  className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
+                  {/* 헤더 스타일 개선 (reference 파일 참고) */}
+                  <div className="bg-gray-50 border-b grid grid-cols-6 gap-4 p-3 font-semibold text-sm text-gray-700">
+                    <div>날짜</div>
+                    <div>거래처</div>
+                    <div className="text-right">금액</div>
+                    <div className="text-center">결제여부</div>
+                    <div>비고</div>
+                    <div className="text-center">작업</div>
+                  </div>
+                  
+                  {filteredSupplies.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      매입 내역이 없습니다.
+                    </div>
+                  ) : (
+                    <div className="divide-y">
+                      {filteredSupplies
+                        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                        .map((supply) => (
+                          <div key={supply._id} className="grid grid-cols-6 gap-4 p-3 hover:bg-gray-50 transition-colors">
+                            <div className="text-sm">{formatDate(supply.date)}</div>
+                            <div className="text-sm font-medium">{supply.vendor}</div>
+                            <div className="text-sm text-right font-mono">
+                              {supply.amount < 0 ? '-' : ''}₩{formatAmount(supply.amount)}
+                            </div>
+                                                         <div className="text-center">
+                               <input
+                                 type="checkbox"
+                                 checked={supply.isPaid}
+                                 disabled
+                                 className="opacity-60 rounded"
+                               />
+                             </div>
+                            <div className="text-sm text-gray-600 truncate" title={supply.note || ''}>
+                              {supply.note || '-'}
+                            </div>
+                            <div className="flex justify-center gap-1">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => startEdit(supply)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Edit className="w-3 h-3" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleDeleteSupply(supply._id)}
+                                className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>
