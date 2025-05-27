@@ -120,6 +120,10 @@ export default function DoctorPatientList({ date }: Props) {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [doctorOrder, setDoctorOrder] = useState<{value: string, order: number}[]>([]);
   
+  // 수납금액 입력 관리를 위한 상태
+  const [paymentAmountDisplay, setPaymentAmountDisplay] = useState('');
+  const [isPaymentAmountFocused, setIsPaymentAmountFocused] = useState(false);
+  
   // 설정 데이터 상태
   const [visitPaths, setVisitPaths] = useState<{value: string}[]>([]);
   const [doctors, setDoctors] = useState<{value: string}[]>([]);
@@ -178,6 +182,18 @@ export default function DoctorPatientList({ date }: Props) {
   useEffect(() => {
     fetchSettings();
   }, [fetchSettings]);
+  
+  // 수납금액 표시값 업데이트
+  useEffect(() => {
+    if (!isPaymentAmountFocused) {
+      const amount = editFormData.paymentAmount || 0;
+      if (amount === 0) {
+        setPaymentAmountDisplay('');
+      } else {
+        setPaymentAmountDisplay(amount.toLocaleString());
+      }
+    }
+  }, [editFormData.paymentAmount, isPaymentAmountFocused]);
   
   // 트랜잭션 데이터 조회
   useEffect(() => {
@@ -288,6 +304,16 @@ export default function DoctorPatientList({ date }: Props) {
       cashReceipt: transaction.cashReceipt
     });
     setFormErrors({});
+    
+    // 수납금액 표시값 초기화
+    setIsPaymentAmountFocused(false);
+    const amount = transaction.paymentAmount || 0;
+    if (amount === 0) {
+      setPaymentAmountDisplay('');
+    } else {
+      setPaymentAmountDisplay(amount.toLocaleString());
+    }
+    
     setIsEditDialogOpen(true);
   };
   
@@ -445,6 +471,9 @@ export default function DoctorPatientList({ date }: Props) {
       // 수납방법이 "수납없음"으로 변경되면 수납금액을 0으로 설정
       if (name === 'paymentMethod' && value === '수납없음') {
         newData.paymentAmount = 0;
+        // 수납금액 표시값도 초기화
+        setPaymentAmountDisplay('');
+        setIsPaymentAmountFocused(false);
       }
       
       return newData;
@@ -470,6 +499,67 @@ export default function DoctorPatientList({ date }: Props) {
   // 금액 형식화
   const formatAmount = (amount: number) => {
     return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  };
+  
+  // 숫자만 입력 허용하는 함수
+  const formatNumberInput = (value: string): string => {
+    // 숫자가 아닌 문자 제거
+    const numbersOnly = value.replace(/[^\d]/g, '');
+    // 천단위 구분자 추가
+    return numbersOnly ? parseInt(numbersOnly).toLocaleString() : '';
+  };
+
+  // 수납금액 입력 처리
+  const handlePaymentAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // 수납방법이 "수납없음"일 때 변경 방지
+    if (editFormData.paymentMethod === '수납없음') {
+      return;
+    }
+    
+    const inputValue = e.target.value;
+    const formattedValue = formatNumberInput(inputValue);
+    setPaymentAmountDisplay(formattedValue);
+    
+    // 숫자 값으로 변환하여 상태 업데이트
+    const numericValue = formattedValue.replace(/[^\d]/g, '');
+    const amount = numericValue ? parseInt(numericValue) : 0;
+    
+    setEditFormData(prevData => ({
+      ...prevData,
+      paymentAmount: amount,
+    }));
+    
+    // 오류 메시지 삭제
+    if (formErrors.paymentAmount) {
+      setFormErrors(prevErrors => {
+        const newErrors = { ...prevErrors };
+        delete newErrors.paymentAmount;
+        return newErrors;
+      });
+    }
+  };
+
+  // 수납금액 포커스 처리
+  const handlePaymentAmountFocus = () => {
+    // 수납방법이 "수납없음"일 때 포커스 방지
+    if (editFormData.paymentMethod === '수납없음') {
+      return;
+    }
+    
+    setIsPaymentAmountFocused(true);
+    setPaymentAmountDisplay(''); // 포커스 시 값 초기화
+  };
+
+  // 수납금액 블러 처리
+  const handlePaymentAmountBlur = () => {
+    setIsPaymentAmountFocused(false);
+    // 현재 값으로 다시 포맷팅
+    const amount = editFormData.paymentAmount || 0;
+    if (amount === 0) {
+      setPaymentAmountDisplay('');
+    } else {
+      setPaymentAmountDisplay(amount.toLocaleString());
+    }
   };
   
   // 정렬 가능한 헤더 렌더링
@@ -931,9 +1021,11 @@ export default function DoctorPatientList({ date }: Props) {
                 <Input
                   id="paymentAmount"
                   name="paymentAmount"
-                  type="number"
-                  value={editFormData.paymentAmount || 0}
-                  onChange={handleInputChange}
+                  type="text"
+                  value={paymentAmountDisplay}
+                  onChange={handlePaymentAmountChange}
+                  onFocus={handlePaymentAmountFocus}
+                  onBlur={handlePaymentAmountBlur}
                   placeholder="0"
                   disabled={editFormData.paymentMethod === '수납없음'}
                   className={editFormData.paymentMethod === '수납없음' ? "bg-gray-100" : ""}

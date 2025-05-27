@@ -12,10 +12,11 @@ import { toast } from 'sonner';
 import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
-import { cn, createNewDate } from '@/lib/utils';
+import { cn, createNewDate, toISODateString } from '@/lib/utils';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Expense } from '@/lib/types';
+import { useDateContext } from '@/lib/context/dateContext';
 
 type Props = {
   isOpen: boolean;
@@ -26,6 +27,7 @@ type Props = {
 };
 
 export default function ExpenseModal({ isOpen, onClose, onSuccess, defaultDate, editItem }: Props) {
+  const { triggerExpenseRefresh, triggerCashRefresh, triggerStatsRefresh } = useDateContext();
   const [isLoading, setIsLoading] = useState(false);
   const [vendors, setVendors] = useState<Array<{_id: string; name: string}>>([]);
   const [accountTypes, setAccountTypes] = useState<Array<{_id: string; value: string}>>([]);
@@ -163,7 +165,7 @@ export default function ExpenseModal({ isOpen, onClose, onSuccess, defaultDate, 
     
     try {
       const reqBody = {
-        date: formData.date,
+        date: toISODateString(formData.date),
         details: formData.details,
         amount: Number(formData.amount),
         method: formData.method,
@@ -201,6 +203,15 @@ export default function ExpenseModal({ isOpen, onClose, onSuccess, defaultDate, 
       
       const data = await response.json();
       toast.success(isEditMode ? '지출이 수정되었습니다.' : '지출이 등록되었습니다.');
+      
+      // 모든 관련 데이터 새로고침 트리거
+      triggerExpenseRefresh(); // 지출 목록 새로고침
+      triggerStatsRefresh(); // 통계 새로고침
+      
+      // 현금 지출인 경우 시재 데이터도 새로고침
+      if (formData.method === '현금') {
+        triggerCashRefresh();
+      }
       
       if (onSuccess) {
         onSuccess(data.data);

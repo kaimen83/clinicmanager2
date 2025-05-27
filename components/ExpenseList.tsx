@@ -11,12 +11,14 @@ import { toast } from 'sonner';
 import ExpenseModal from './ExpenseModal';
 import { Expense } from '@/lib/types';
 import { toISODateString } from '@/lib/utils';
+import { useDateContext } from '@/lib/context/dateContext';
 
 type ExpenseListProps = {
   date: Date;
 };
 
 export default function ExpenseList({ date }: ExpenseListProps) {
+  const { expenseRefreshTrigger, triggerStatsRefresh, triggerCashRefresh } = useDateContext();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -57,10 +59,10 @@ export default function ExpenseList({ date }: ExpenseListProps) {
     }
   };
 
-  // 날짜가 변경되면 지출 내역 다시 가져오기
+  // 날짜가 변경되거나 지출 새로고침 트리거가 변경되면 지출 내역 다시 가져오기
   useEffect(() => {
     fetchExpenses();
-  }, [date]);
+  }, [date, expenseRefreshTrigger]);
 
   // 지출 수정 모달 열기
   const handleEditExpense = (expense: Expense) => {
@@ -71,6 +73,9 @@ export default function ExpenseList({ date }: ExpenseListProps) {
   // 지출 삭제
   const handleDeleteExpense = async (id: string) => {
     if (!confirm('정말로 이 지출 내역을 삭제하시겠습니까?')) return;
+    
+    // 삭제할 지출의 정보를 미리 가져와서 현금 지출인지 확인
+    const expenseToDelete = expenses.find(expense => expense._id === id);
     
     try {
       const response = await fetch(`/api/expenses/${id}`, {
@@ -83,6 +88,12 @@ export default function ExpenseList({ date }: ExpenseListProps) {
       
       toast.success('지출 내역이 삭제되었습니다.');
       fetchExpenses(); // 목록 새로고침
+      triggerStatsRefresh(); // 통계 새로고침
+      
+      // 현금 지출이었다면 시재 데이터도 새로고침
+      if (expenseToDelete?.method === '현금') {
+        triggerCashRefresh();
+      }
     } catch (error) {
       console.error('지출 삭제 에러:', error);
       toast.error('지출 내역 삭제에 실패했습니다.');
@@ -98,6 +109,7 @@ export default function ExpenseList({ date }: ExpenseListProps) {
   // 지출 등록/수정 완료 처리
   const handleSuccess = () => {
     fetchExpenses(); // 목록 새로고침
+    triggerStatsRefresh(); // 통계 새로고침
   };
 
   return (

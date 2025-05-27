@@ -12,6 +12,8 @@ type DateContextType = {
   triggerCashRefresh: () => void;
   statsRefreshTrigger: number;
   triggerStatsRefresh: () => void;
+  expenseRefreshTrigger: number;
+  triggerExpenseRefresh: () => void;
 };
 
 const DateContext = createContext<DateContextType | undefined>(undefined);
@@ -21,6 +23,7 @@ export function DateProvider({ children }: { children: ReactNode }) {
   const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
   const [cashRefreshTrigger, setCashRefreshTrigger] = useState<number>(0);
   const [statsRefreshTrigger, setStatsRefreshTrigger] = useState<number>(0);
+  const [expenseRefreshTrigger, setExpenseRefreshTrigger] = useState<number>(0);
 
   const triggerRefresh = () => {
     setRefreshTrigger(prev => prev + 1);
@@ -34,6 +37,10 @@ export function DateProvider({ children }: { children: ReactNode }) {
     setStatsRefreshTrigger(prev => prev + 1);
   };
 
+  const triggerExpenseRefresh = () => {
+    setExpenseRefreshTrigger(prev => prev + 1);
+  };
+
   return (
     <DateContext.Provider value={{ 
       selectedDate, 
@@ -43,7 +50,9 @@ export function DateProvider({ children }: { children: ReactNode }) {
       cashRefreshTrigger,
       triggerCashRefresh,
       statsRefreshTrigger,
-      triggerStatsRefresh
+      triggerStatsRefresh,
+      expenseRefreshTrigger,
+      triggerExpenseRefresh
     }}>
       {children}
     </DateContext.Provider>

@@ -11,7 +11,9 @@ export function cn(...inputs: ClassValue[]) {
 
 // 현재 시간을 한국 시간으로 반환
 export function getCurrentKstDate(): Date {
-  return new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
+  const now = new Date();
+  const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+  return new Date(utc + (9 * 60 * 60 * 1000)); // UTC+9 (한국 시간)
 }
 
 // Date 객체 또는 날짜 문자열을 한국 시간으로 변환
@@ -19,7 +21,16 @@ export function toKstDate(date: Date | string | number | null | undefined): Date
   if (!date) return getCurrentKstDate();
   
   const parsedDate = date instanceof Date ? date : new Date(date);
-  return new Date(parsedDate.toLocaleString("en-US", { timeZone: "Asia/Seoul" }));
+  
+  // 이미 한국 시간으로 입력된 날짜 문자열인 경우 (YYYY-MM-DD 형태)
+  if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    const [year, month, day] = date.split('-').map(Number);
+    return new Date(year, month - 1, day); // 로컬 시간으로 생성
+  }
+  
+  // UTC 시간을 한국 시간으로 변환
+  const utc = parsedDate.getTime() + (parsedDate.getTimezoneOffset() * 60000);
+  return new Date(utc + (9 * 60 * 60 * 1000)); // UTC+9 (한국 시간)
 }
 
 // Date 객체를 ISO 문자열(YYYY-MM-DD)로 변환 (한국 시간 기준으로 정확히 처리)
