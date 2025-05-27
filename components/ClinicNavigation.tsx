@@ -30,6 +30,7 @@ import ExpenseModal from "./ExpenseModal";
 import CashManagementModal from "./CashManagementModal";
 import SupplyModal from "./SupplyModal";
 import DentalProductInventoryModal from "./DentalProductInventoryModal";
+import ImplantInventoryModal from "./ImplantInventoryModal";
 import { ExtraIncome, Expense } from "@/lib/types";
 import { toast } from "sonner";
 
@@ -41,6 +42,7 @@ export default function ClinicNavigation() {
   const [isCashManagementModalOpen, setIsCashManagementModalOpen] = useState(false);
   const [isSupplyModalOpen, setIsSupplyModalOpen] = useState(false);
   const [isDentalProductInventoryModalOpen, setIsDentalProductInventoryModalOpen] = useState(false);
+  const [isImplantInventoryModalOpen, setIsImplantInventoryModalOpen] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
   const handleDateSelect = (date: Date | undefined) => {
@@ -108,6 +110,14 @@ export default function ClinicNavigation() {
 
   const handleDentalProductInventoryModalClose = () => {
     setIsDentalProductInventoryModalOpen(false);
+  };
+
+  const handleImplantInventoryModalOpen = () => {
+    setIsImplantInventoryModalOpen(true);
+  };
+
+  const handleImplantInventoryModalClose = () => {
+    setIsImplantInventoryModalOpen(false);
   };
 
   const handleExtraIncomeSuccess = (data: ExtraIncome) => {
@@ -195,7 +205,7 @@ export default function ClinicNavigation() {
               <DropdownMenuItem onClick={handleDentalProductInventoryModalOpen}>
                 구강용품 수불부
               </DropdownMenuItem>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={handleImplantInventoryModalOpen}>
                 임플란트 수불부
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -294,6 +304,12 @@ export default function ClinicNavigation() {
       <DentalProductInventoryModal
         isOpen={isDentalProductInventoryModalOpen}
         onClose={handleDentalProductInventoryModalClose}
+      />
+
+      {/* 임플란트 수불부 모달 */}
+      <ImplantInventoryModal
+        isOpen={isImplantInventoryModalOpen}
+        onClose={handleImplantInventoryModalClose}
       />
     </Card>
   );
