@@ -3,7 +3,7 @@ import dbConnect from '@/lib/mongoose';
 import CashRecord from '@/lib/models/CashRecord';
 import { currentUser } from '@clerk/nextjs/server';
 
-// 개별 현금 기록 삭제
+// 개별 현금 기록 삭제 (통장입금만 허용)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -27,15 +27,11 @@ export async function DELETE(
       return NextResponse.json({ error: '기록을 찾을 수 없습니다.' }, { status: 404 });
     }
     
-    // 마감된 기록인지 확인
-    if (record.isClosed) {
-      return NextResponse.json({ error: '마감된 기록은 삭제할 수 없습니다.' }, { status: 400 });
-    }
-    
-    // 해당 날짜가 마감되었는지 확인
-    const isClosed = await CashRecord.isClosedForDate(record.date);
-    if (isClosed) {
-      return NextResponse.json({ error: '마감된 날짜의 기록은 삭제할 수 없습니다.' }, { status: 400 });
+    // 통장입금만 삭제 허용
+    if (record.type !== '통장입금') {
+      return NextResponse.json({ 
+        error: '수입과 지출은 내원정보와 지출내역에서 관리됩니다. 통장입금만 삭제할 수 있습니다.' 
+      }, { status: 400 });
     }
     
     // 기록 삭제
@@ -53,7 +49,7 @@ export async function DELETE(
   }
 }
 
-// 개별 현금 기록 수정
+// 개별 현금 기록 수정 (통장입금만 허용)
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -79,24 +75,26 @@ export async function PUT(
       return NextResponse.json({ error: '기록을 찾을 수 없습니다.' }, { status: 404 });
     }
     
-    // 마감된 기록인지 확인
-    if (record.isClosed) {
-      return NextResponse.json({ error: '마감된 기록은 수정할 수 없습니다.' }, { status: 400 });
+    // 통장입금만 수정 허용
+    if (record.type !== '통장입금') {
+      return NextResponse.json({ 
+        error: '수입과 지출은 내원정보와 지출내역에서 관리됩니다. 통장입금만 수정할 수 있습니다.' 
+      }, { status: 400 });
     }
     
-    // 해당 날짜가 마감되었는지 확인
-    const isClosed = await CashRecord.isClosedForDate(record.date);
-    if (isClosed) {
-      return NextResponse.json({ error: '마감된 날짜의 기록은 수정할 수 없습니다.' }, { status: 400 });
+    // 타입 변경 불허 (통장입금 → 다른 타입)
+    if (type && type !== '통장입금') {
+      return NextResponse.json({ 
+        error: '통장입금 기록의 타입은 변경할 수 없습니다.' 
+      }, { status: 400 });
     }
     
     // 기록 수정
     const updatedRecord = await CashRecord.findByIdAndUpdate(
       id,
       {
-        type,
         amount: Number(amount),
-        description
+        description: description || '통장입금'
       },
       { new: true }
     );

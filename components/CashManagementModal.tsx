@@ -12,13 +12,13 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { toISODateString } from '@/lib/utils';
 import { useDateContext } from '@/lib/context/dateContext';
+import { Trash2, Edit, Plus, AlertCircle } from 'lucide-react';
 
 interface CashRecord {
   _id: string;
@@ -26,8 +26,8 @@ interface CashRecord {
   type: '수입' | '지출' | '통장입금';
   amount: number;
   description?: string;
-  isClosed: boolean;
-  closingAmount?: number;
+  transactionId?: string;
+  expenseId?: string;
 }
 
 interface Props {
@@ -42,19 +42,20 @@ export default function CashManagementModal({ isOpen, onClose, date }: Props) {
   const [loading, setLoading] = useState(false);
   const [previousAmount, setPreviousAmount] = useState(0);
   const [currentBalance, setCurrentBalance] = useState(0);
-  const [isClosed, setIsClosed] = useState(false);
   
-  // 새 기록 추가 폼
+  // 새 기록 추가 폼 (통장입금만)
   const [showAddForm, setShowAddForm] = useState(false);
   const [formData, setFormData] = useState({
-    type: '수입' as '수입' | '지출' | '통장입금',
     amount: '',
     description: ''
   });
   
-  // 마감 폼
-  const [showCloseForm, setShowCloseForm] = useState(false);
-  const [closingAmount, setClosingAmount] = useState('');
+  // 편집 관련 상태
+  const [editingRecord, setEditingRecord] = useState<string | null>(null);
+  const [editFormData, setEditFormData] = useState({
+    amount: '',
+    description: ''
+  });
   
   // 삭제 관련 상태
   const [deleteRecordId, setDeleteRecordId] = useState<string | null>(null);
@@ -86,10 +87,6 @@ export default function CashManagementModal({ isOpen, onClose, date }: Props) {
           }))
         });
         setRecords(recordsData);
-        
-        // 마감 여부 확인
-        const closedRecord = recordsData.find((record: CashRecord) => record.isClosed);
-        setIsClosed(!!closedRecord);
       } else {
         console.error('시재 기록 조회 실패:', recordsResponse.status, recordsResponse.statusText);
         throw new Error('시재 기록을 조회할 수 없습니다.');
@@ -125,7 +122,6 @@ export default function CashManagementModal({ isOpen, onClose, date }: Props) {
     }, previousAmount);
     
     setCurrentBalance(balance);
-    setClosingAmount(balance.toString());
   }, [records, previousAmount]);
 
   // 모달이 열릴 때 데이터 가져오기
@@ -144,7 +140,7 @@ export default function CashManagementModal({ isOpen, onClose, date }: Props) {
     }
   }, [cashRefreshTrigger, isOpen]);
 
-  // 새 기록 추가
+  // 새 기록 추가 (통장입금만)
   const handleAddRecord = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -161,9 +157,9 @@ export default function CashManagementModal({ isOpen, onClose, date }: Props) {
         },
         body: JSON.stringify({
           date: toISODateString(date),
-          type: formData.type,
+          type: '통장입금',
           amount: Number(formData.amount),
-          description: formData.description
+          description: formData.description || '통장입금'
         }),
       });
       
@@ -172,8 +168,8 @@ export default function CashManagementModal({ isOpen, onClose, date }: Props) {
         throw new Error(errorData.error || '기록 추가에 실패했습니다.');
       }
       
-      toast.success('기록이 추가되었습니다.');
-      setFormData({ type: '수입', amount: '', description: '' });
+      toast.success('통장입금 기록이 추가되었습니다.');
+      setFormData({ amount: '', description: '' });
       setShowAddForm(false);
       fetchData(); // 데이터 새로고침
     } catch (error: any) {
@@ -182,46 +178,71 @@ export default function CashManagementModal({ isOpen, onClose, date }: Props) {
     }
   };
 
-  // 시재 마감
-  const handleClose = async () => {
-    if (!closingAmount || isNaN(Number(closingAmount))) {
-      toast.error('유효한 마감금액을 입력해주세요.');
+  // 편집 시작
+  const handleEditStart = (record: CashRecord) => {
+    if (record.type !== '통장입금') {
+      toast.error('수입과 지출은 내원정보와 지출내역에서 관리됩니다.');
+      return;
+    }
+    
+    setEditingRecord(record._id);
+    setEditFormData({
+      amount: record.amount.toString(),
+      description: record.description || ''
+    });
+  };
+
+  // 편집 저장
+  const handleEditSave = async (recordId: string) => {
+    if (!editFormData.amount || isNaN(Number(editFormData.amount)) || Number(editFormData.amount) <= 0) {
+      toast.error('유효한 금액을 입력해주세요.');
       return;
     }
     
     try {
-      const response = await fetch('/api/cash/close', {
-        method: 'POST',
+      const response = await fetch(`/api/cash/${recordId}`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          date: toISODateString(date),
-          closingAmount: Number(closingAmount)
+          amount: Number(editFormData.amount),
+          description: editFormData.description || '통장입금'
         }),
       });
       
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || '시재 마감에 실패했습니다.');
+        throw new Error(errorData.error || '기록 수정에 실패했습니다.');
       }
       
-      toast.success('시재가 마감되었습니다.');
-      setShowCloseForm(false);
+      toast.success('기록이 수정되었습니다.');
+      setEditingRecord(null);
       fetchData(); // 데이터 새로고침
     } catch (error: any) {
-      console.error('시재 마감 에러:', error);
+      console.error('기록 수정 에러:', error);
       toast.error(error.message);
     }
   };
 
-  // 기록 삭제 확인
-  const handleDeleteClick = (recordId: string) => {
-    setDeleteRecordId(recordId);
+  // 편집 취소
+  const handleEditCancel = () => {
+    setEditingRecord(null);
+    setEditFormData({ amount: '', description: '' });
+  };
+
+  // 삭제 클릭
+  const handleDeleteClick = (record: CashRecord) => {
+    if (record.type !== '통장입금') {
+      toast.error('수입과 지출은 내원정보와 지출내역에서 관리됩니다.');
+      return;
+    }
+    
+    setDeleteRecordId(record._id);
     setShowDeleteConfirm(true);
   };
 
-  // 기록 삭제 실행
+  // 삭제 확인
   const handleDeleteConfirm = async () => {
     if (!deleteRecordId) return;
     
@@ -252,248 +273,307 @@ export default function CashManagementModal({ isOpen, onClose, date }: Props) {
   };
 
   const formatAmount = (amount: number) => {
-    return new Intl.NumberFormat('ko-KR').format(amount);
+    return amount.toLocaleString('ko-KR');
   };
 
   const getTypeColor = (type: string) => {
     switch (type) {
       case '수입': return 'text-blue-600';
       case '지출': return 'text-red-600';
-      case '통장입금': return 'text-green-600';
+      case '통장입금': return 'text-orange-600';
       default: return 'text-gray-600';
     }
   };
 
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case '수입': return '💰';
+      case '지출': return '💸';
+      case '통장입금': return '🏦';
+      default: return '📝';
+    }
+  };
+
+  const isEditable = (record: CashRecord) => {
+    return record.type === '통장입금';
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle className="text-xl font-bold">
             시재관리 - {format(date, 'yyyy년 MM월 dd일', { locale: ko })}
           </DialogTitle>
         </DialogHeader>
-        
-        <div className="flex-1 overflow-y-auto space-y-4">
-          {/* 시재 현황 */}
-          <div className="grid grid-cols-3 gap-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">전일 시재</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-lg font-semibold">{formatAmount(previousAmount)}원</p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">현재 잔액</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-lg font-semibold">{formatAmount(currentBalance)}원</p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">마감 상태</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className={`text-lg font-semibold ${isClosed ? 'text-red-600' : 'text-green-600'}`}>
-                  {isClosed ? '마감됨' : '진행중'}
-                </p>
-              </CardContent>
-            </Card>
-          </div>
 
-          {/* 액션 버튼들 */}
-          <div className="flex gap-2">
-            {!isClosed && (
-              <>
-                <Button 
-                  onClick={() => setShowAddForm(!showAddForm)}
-                  variant={showAddForm ? "secondary" : "default"}
-                >
-                  {showAddForm ? '취소' : '기록 추가'}
-                </Button>
-                <Button 
-                  onClick={() => setShowCloseForm(!showCloseForm)}
-                  variant={showCloseForm ? "secondary" : "destructive"}
-                >
-                  {showCloseForm ? '취소' : '시재 마감'}
-                </Button>
-              </>
+        {loading ? (
+          <div className="flex justify-center items-center py-8">
+            <div className="text-gray-500">데이터를 불러오는 중...</div>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {/* 잔액 요약 */}
+            <div className="grid grid-cols-3 gap-4">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm text-gray-600">전일 이월</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-blue-600">
+                    {formatAmount(previousAmount)}원
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm text-gray-600">당일 변동</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className={`text-2xl font-bold ${currentBalance - previousAmount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {currentBalance - previousAmount >= 0 ? '+' : ''}{formatAmount(currentBalance - previousAmount)}원
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm text-gray-600">현재 잔액</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-green-600">
+                    {formatAmount(currentBalance)}원
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* 안내 메시지 */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-start space-x-2">
+                <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
+                <div className="text-sm text-blue-800">
+                  <p className="font-medium mb-1">시재관리 안내</p>
+                  <ul className="space-y-1 text-xs">
+                    <li>• 수입: 현금 수납 시 자동 등록 (내원정보에서 관리)</li>
+                    <li>• 지출: 현금 지출 시 자동 등록 (지출내역에서 관리)</li>
+                    <li>• 통장입금: 직접 추가/수정/삭제 가능</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* 통장입금 추가 버튼 */}
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-semibold">시재 내역</h3>
+              <Button 
+                onClick={() => setShowAddForm(true)}
+                className="bg-orange-600 hover:bg-orange-700"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                통장입금 추가
+              </Button>
+            </div>
+
+            {/* 통장입금 추가 폼 */}
+            {showAddForm && (
+              <Card className="border-orange-200">
+                <CardHeader>
+                  <CardTitle className="text-lg">통장입금 추가</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleAddRecord} className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="amount">금액</Label>
+                        <Input
+                          id="amount"
+                          type="number"
+                          value={formData.amount}
+                          onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                          placeholder="입금 금액"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="description">설명</Label>
+                        <Input
+                          id="description"
+                          value={formData.description}
+                          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                          placeholder="통장입금 (선택사항)"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button type="submit" className="bg-orange-600 hover:bg-orange-700">
+                        추가
+                      </Button>
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        onClick={() => {
+                          setShowAddForm(false);
+                          setFormData({ amount: '', description: '' });
+                        }}
+                      >
+                        취소
+                      </Button>
+                    </div>
+                  </form>
+                </CardContent>
+              </Card>
             )}
-          </div>
 
-          {/* 기록 추가 폼 */}
-          {showAddForm && !isClosed && (
+            {/* 시재 기록 테이블 */}
             <Card>
-              <CardHeader>
-                <CardTitle className="text-base">새 기록 추가</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleAddRecord} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="type">구분</Label>
-                      <Select value={formData.type} onValueChange={(value: '수입' | '지출' | '통장입금') => setFormData({...formData, type: value})}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="수입">수입</SelectItem>
-                          <SelectItem value="지출">지출</SelectItem>
-                          <SelectItem value="통장입금">통장입금</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="amount">금액</Label>
-                      <Input
-                        id="amount"
-                        type="number"
-                        value={formData.amount}
-                        onChange={(e) => setFormData({...formData, amount: e.target.value})}
-                        placeholder="금액 입력"
-                        required
-                      />
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="description">내용</Label>
-                    <Textarea
-                      id="description"
-                      value={formData.description}
-                      onChange={(e) => setFormData({...formData, description: e.target.value})}
-                      placeholder="내용 입력 (선택사항)"
-                      rows={2}
-                    />
-                  </div>
-                  
-                  <Button type="submit" className="w-full">추가</Button>
-                </form>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* 시재 마감 폼 */}
-          {showCloseForm && !isClosed && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">시재 마감</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="closingAmount">마감 금액</Label>
-                    <Input
-                      id="closingAmount"
-                      type="number"
-                      value={closingAmount}
-                      onChange={(e) => setClosingAmount(e.target.value)}
-                      placeholder="마감 금액 입력"
-                    />
-                    <p className="text-sm text-gray-500 mt-1">
-                      계산된 잔액: {formatAmount(currentBalance)}원
-                    </p>
-                  </div>
-                  
-                  <Button onClick={handleClose} variant="destructive" className="w-full">
-                    시재 마감
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* 기록 목록 */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">현금 기록</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="text-center py-4">로딩 중...</div>
-              ) : records.length === 0 ? (
-                <div className="text-center py-4 text-muted-foreground">
-                  등록된 기록이 없습니다.
-                </div>
-              ) : (
-                <div className="max-h-[300px] overflow-y-auto">
-                  <Table>
-                    <TableHeader>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-16">구분</TableHead>
+                      <TableHead>내용</TableHead>
+                      <TableHead className="text-right w-32">금액</TableHead>
+                      <TableHead className="w-24">작업</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {records.length === 0 ? (
                       <TableRow>
-                        <TableHead>구분</TableHead>
-                        <TableHead>금액</TableHead>
-                        <TableHead>내용</TableHead>
-                        <TableHead>시간</TableHead>
-                        <TableHead className="w-20">관리</TableHead>
+                        <TableCell colSpan={4} className="text-center py-8 text-gray-500">
+                          등록된 시재 기록이 없습니다.
+                        </TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {records.map((record) => (
+                    ) : (
+                      records.map((record) => (
                         <TableRow key={record._id}>
                           <TableCell>
-                            <span className={getTypeColor(record.type)}>
-                              {record.type}
-                            </span>
-                          </TableCell>
-                          <TableCell className={getTypeColor(record.type)}>
-                            {record.type === '수입' ? '+' : '-'}{formatAmount(record.amount)}원
-                          </TableCell>
-                          <TableCell>{record.description || '-'}</TableCell>
-                          <TableCell>
-                            {format(new Date(record.date), 'HH:mm', { locale: ko })}
+                            <div className="flex items-center space-x-2">
+                              <span>{getTypeIcon(record.type)}</span>
+                              <span className={`font-medium ${getTypeColor(record.type)}`}>
+                                {record.type}
+                              </span>
+                            </div>
                           </TableCell>
                           <TableCell>
-                            {/* cashManagement.js 로직: 통장입금 기록만 삭제 가능 */}
-                            {record.type === '통장입금' && !isClosed && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDeleteClick(record._id)}
-                                className="text-red-600 hover:text-red-800"
-                              >
-                                삭제
-                              </Button>
+                            {editingRecord === record._id ? (
+                              <Input
+                                value={editFormData.description}
+                                onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
+                                placeholder="설명"
+                                className="w-full"
+                              />
+                            ) : (
+                              <div>
+                                {record.description || '-'}
+                                {(record.transactionId || record.expenseId) && (
+                                  <div className="text-xs text-gray-500 mt-1">
+                                    {record.transactionId ? '(내원정보 연동)' : '(지출내역 연동)'}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {editingRecord === record._id ? (
+                              <Input
+                                type="number"
+                                value={editFormData.amount}
+                                onChange={(e) => setEditFormData({ ...editFormData, amount: e.target.value })}
+                                className="w-full text-right"
+                              />
+                            ) : (
+                              <span className={`font-medium ${getTypeColor(record.type)}`}>
+                                {record.type === '수입' ? '+' : '-'}{formatAmount(record.amount)}원
+                              </span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {editingRecord === record._id ? (
+                              <div className="flex space-x-1">
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleEditSave(record._id)}
+                                  className="h-8 w-8 p-0"
+                                >
+                                  ✓
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={handleEditCancel}
+                                  className="h-8 w-8 p-0"
+                                >
+                                  ✕
+                                </Button>
+                              </div>
+                            ) : (
+                              <div className="flex space-x-1">
+                                {isEditable(record) ? (
+                                  <>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => handleEditStart(record)}
+                                      className="h-8 w-8 p-0"
+                                    >
+                                      <Edit className="w-3 h-3" />
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => handleDeleteClick(record)}
+                                      className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                    </Button>
+                                  </>
+                                ) : (
+                                  <div className="text-xs text-gray-400 px-2">
+                                    자동 관리
+                                  </div>
+                                )}
+                              </div>
                             )}
                           </TableCell>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* 삭제 확인 다이얼로그 */}
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4">
+              <h3 className="text-lg font-semibold mb-4">기록 삭제</h3>
+              <p className="text-gray-600 mb-6">
+                이 기록을 삭제하시겠습니까?
+              </p>
+              <div className="flex space-x-2">
+                <Button
+                  onClick={handleDeleteConfirm}
+                  className="flex-1 bg-red-600 hover:bg-red-700"
+                >
+                  삭제
+                </Button>
+                <Button
+                  onClick={handleDeleteCancel}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  취소
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </DialogContent>
-      
-      {/* 삭제 확인 다이얼로그 */}
-      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader>
-            <DialogTitle>기록 삭제 확인</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <p>이 기록을 삭제하시겠습니까?</p>
-            <p className="text-sm text-muted-foreground mt-2">
-              삭제된 기록은 복구할 수 없습니다.
-            </p>
-          </div>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={handleDeleteCancel}>
-              취소
-            </Button>
-            <Button variant="destructive" onClick={handleDeleteConfirm}>
-              삭제
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </Dialog>
   );
 }

@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// 현금 기록 추가
+// 현금 기록 추가 (통장입금만 허용)
 export async function POST(request: NextRequest) {
   try {
     // 현재 인증된 사용자 가져오기
@@ -71,10 +71,11 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { date, type, amount, description } = body;
     
-    // 마감 여부 확인
-    const isClosed = await CashRecord.isClosedForDate(new Date(date));
-    if (isClosed) {
-      return NextResponse.json({ error: '이미 마감된 날짜입니다.' }, { status: 400 });
+    // 통장입금만 직접 추가 허용
+    if (type !== '통장입금') {
+      return NextResponse.json({ 
+        error: '수입과 지출은 내원정보와 지출내역에서 관리됩니다. 통장입금만 직접 추가할 수 있습니다.' 
+      }, { status: 400 });
     }
     
     // 날짜 데이터 처리
@@ -84,7 +85,7 @@ export async function POST(request: NextRequest) {
       date: recordDate,
       type,
       amount: Number(amount),
-      description
+      description: description || '통장입금'
     });
     
     await newRecord.save();

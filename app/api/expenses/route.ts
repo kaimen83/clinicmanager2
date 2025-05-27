@@ -3,6 +3,7 @@ import dbConnect from '@/lib/mongoose';
 import Expense from '@/lib/models/Expense';
 import { currentUser } from '@clerk/nextjs/server';
 import { toKstDate } from '@/lib/utils';
+import { createCashExpenseRecord } from '@/lib/utils/cashManagement';
 
 // 지출 목록 조회
 export async function GET(request: NextRequest) {
@@ -141,6 +142,21 @@ export async function POST(request: NextRequest) {
     });
     
     await newExpense.save();
+    
+    // 현금 지출인 경우 시재 기록 생성
+    if (body.method === '현금') {
+      try {
+        await createCashExpenseRecord({
+          _id: newExpense._id,
+          amount: newExpense.amount,
+          description: newExpense.description,
+          date: newExpense.date
+        });
+      } catch (cashError) {
+        console.error('시재 기록 생성 중 오류:', cashError);
+        // 시재 기록 실패는 로그만 남기고 지출은 계속 진행
+      }
+    }
     
     return NextResponse.json({
       success: true,

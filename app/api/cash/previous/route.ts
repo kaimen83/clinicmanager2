@@ -3,7 +3,7 @@ import dbConnect from '@/lib/mongoose';
 import CashRecord from '@/lib/models/CashRecord';
 import { currentUser } from '@clerk/nextjs/server';
 
-// 전일 시재 조회
+// 전일까지의 시재 잔액 조회
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -23,46 +23,17 @@ export async function GET(request: NextRequest) {
     
     await dbConnect();
     
+    // 요청 날짜 이전까지의 모든 거래 조회
     const requestDate = new Date(date);
     const previousDate = new Date(requestDate);
     previousDate.setDate(previousDate.getDate() - 1);
     
-    const startOfPreviousDay = new Date(previousDate);
-    startOfPreviousDay.setHours(0, 0, 0, 0);
-    
     const endOfPreviousDay = new Date(previousDate);
     endOfPreviousDay.setHours(23, 59, 59, 999);
 
-    // 전일의 마감 기록이 있는지 확인
-    const previousDayClosing = await CashRecord.findOne({
-      date: {
-        $gte: startOfPreviousDay,
-        $lt: endOfPreviousDay
-      },
-      isClosed: true
-    }).sort({ date: -1 });
-
-    // 전일 마감 기록이 있으면 그 금액 반환
-    if (previousDayClosing) {
-      return NextResponse.json({ 
-        closingAmount: previousDayClosing.closingAmount 
-      });
-    }
-
-    // 전일 마감 기록이 없으면 그 이전 마지막 마감 찾기
-    const lastClosing = await CashRecord.findOne({
-      date: { $lt: startOfPreviousDay },
-      isClosed: true
-    }).sort({ date: -1 });
-
-    let baseAmount = lastClosing?.closingAmount || 0;
-
-    // 마지막 마감 이후부터 전일까지의 모든 거래 누적 계산
+    // 전일까지의 모든 거래 조회
     const transactions = await CashRecord.find({
-      date: {
-        $gt: lastClosing ? lastClosing.date : new Date(0),
-        $lt: endOfPreviousDay
-      }
+      date: { $lte: endOfPreviousDay }
     }).sort({ date: 1 });
 
     // 거래 내역 누적 계산
@@ -73,7 +44,7 @@ export async function GET(request: NextRequest) {
         return acc - record.amount;
       }
       return acc;
-    }, baseAmount);
+    }, 0);
 
     return NextResponse.json({ 
       closingAmount: balance 

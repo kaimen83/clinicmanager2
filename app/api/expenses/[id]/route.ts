@@ -3,6 +3,7 @@ import dbConnect from '@/lib/mongoose';
 import Expense from '@/lib/models/Expense';
 import { currentUser } from '@clerk/nextjs/server';
 import { toKstDate } from '@/lib/utils';
+import { updateCashExpenseRecord, deleteCashExpenseRecord } from '@/lib/utils/cashManagement';
 
 // 특정 ID 지출 조회
 export async function GET(
@@ -59,10 +60,18 @@ export async function PUT(
     await dbConnect();
     
     // 해당 지출 내역 존재 확인
-    const expense = await Expense.findById(id);
-    if (!expense) {
+    const oldExpense = await Expense.findById(id);
+    if (!oldExpense) {
       return NextResponse.json({ error: '지출 내역을 찾을 수 없습니다.' }, { status: 404 });
     }
+    
+    // 기존 데이터 백업 (시재 기록 업데이트용)
+    const oldExpenseData = {
+      method: oldExpense.method,
+      amount: oldExpense.amount,
+      description: oldExpense.description,
+      date: oldExpense.date
+    };
     
     // 날짜 데이터 처리
     if (body.date) {
@@ -72,12 +81,20 @@ export async function PUT(
     // 필드 업데이트
     Object.keys(body).forEach(key => {
       if (key !== '_id' && key !== 'createdBy' && key !== 'createdAt') {
-        expense[key] = body[key];
+        oldExpense[key] = body[key];
       }
     });
     
     // 저장
-    const updatedExpense = await expense.save();
+    const updatedExpense = await oldExpense.save();
+    
+    // 현금 지출 변경사항이 있는 경우 시재 기록 업데이트
+    try {
+      await updateCashExpenseRecord(oldExpenseData, updatedExpense, id);
+    } catch (cashError) {
+      console.error('시재 기록 업데이트 중 오류:', cashError);
+      // 시재 기록 실패는 로그만 남기고 지출은 계속 진행
+    }
     
     return NextResponse.json({
       success: true,
@@ -120,6 +137,19 @@ export async function DELETE(
     const expense = await Expense.findById(id);
     if (!expense) {
       return NextResponse.json({ error: '지출 내역을 찾을 수 없습니다.' }, { status: 404 });
+    }
+    
+    // 현금 지출인 경우 시재 기록 삭제
+    try {
+      await deleteCashExpenseRecord(id, expense.method);
+    } catch (cashError) {
+      console.error('시재 기록 삭제 중 오류:', cashError);
+      // 시재 기록 삭제 실패 시 지출 삭제도 중단
+      const errorMessage = cashError instanceof Error ? cashError.message : "시재 기록 삭제 중 오류가 발생했습니다.";
+      return NextResponse.json(
+        { error: errorMessage },
+        { status: 400 }
+      );
     }
     
     // 삭제 처리

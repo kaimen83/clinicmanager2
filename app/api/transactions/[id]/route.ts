@@ -305,7 +305,9 @@ export async function DELETE(
       // 새로운 구조: payments 배열이 있는 경우
       if (transactionToDelete.payments && Array.isArray(transactionToDelete.payments)) {
         for (const payment of transactionToDelete.payments) {
-          await deleteCashRecord(id, payment.paymentMethod);
+          if (payment.method === PAYMENT_METHODS.CASH) {
+            await deleteCashRecord(id, payment.method);
+          }
         }
       } 
       // 기존 구조: paymentMethod 필드가 직접 있는 경우
@@ -314,12 +316,7 @@ export async function DELETE(
       }
     } catch (cashError) {
       console.error('시재 기록 삭제 중 오류:', cashError);
-      // 마감된 날짜 등의 이유로 시재 삭제가 실패한 경우 거래 삭제도 중단
-      const errorMessage = cashError instanceof Error ? cashError.message : "시재 기록 삭제 중 오류가 발생했습니다.";
-      return NextResponse.json(
-        { error: errorMessage },
-        { status: 400 }
-      );
+      // 시재 기록 실패는 로그만 남기고 거래는 계속 진행
     }
     
     // 내원정보 삭제

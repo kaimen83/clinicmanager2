@@ -38,9 +38,6 @@ export async function createCashRecord(transaction: any): Promise<void> {
             amount: Number(transaction.amount),
             description: `${transaction.patientName} 현금결제`,
             transactionId: new ObjectId(transaction._id || transaction.transactionId),
-            isCompleted: false,
-            isGrouped: false,
-            isClosed: false,
             createdAt: toKstDate(new Date()),
             updatedAt: toKstDate(new Date())
         };
@@ -94,11 +91,6 @@ export async function updateCashRecord(
         // Case 1: 현금 → 다른 결제방식
         if (wasPaymentMethodCash && !isPaymentMethodCash) {
             if (existingCashRecord) {
-                // 마감 여부 확인
-                const isClosed = await checkIfClosedForDate(existingCashRecord.date);
-                if (isClosed) {
-                    throw new Error('마감된 날짜의 시재 기록은 수정할 수 없습니다.');
-                }
                 await db.collection('cashrecords').deleteOne({ _id: existingCashRecord._id });
             }
         }
@@ -110,9 +102,6 @@ export async function updateCashRecord(
                 amount: Number(newPayment.amount),
                 description: `${newPayment.patientName || '환자'} 현금결제`,
                 transactionId: new ObjectId(transactionId),
-                isCompleted: false,
-                isGrouped: false,
-                isClosed: false,
                 createdAt: toKstDate(new Date()),
                 updatedAt: toKstDate(new Date())
             };
@@ -121,12 +110,6 @@ export async function updateCashRecord(
         // Case 3: 현금 → 현금 (금액 또는 날짜 변경)
         else if (wasPaymentMethodCash && isPaymentMethodCash && (amountChanged || dateChanged)) {
             if (existingCashRecord) {
-                // 마감 여부 확인
-                const isClosed = await checkIfClosedForDate(existingCashRecord.date);
-                if (isClosed) {
-                    throw new Error('마감된 날짜의 시재 기록은 수정할 수 없습니다.');
-                }
-
                 if (dateChanged) {
                     // 날짜가 변경된 경우 새로운 기록 생성
                     await db.collection('cashrecords').deleteOne({ _id: existingCashRecord._id });
@@ -136,9 +119,6 @@ export async function updateCashRecord(
                         amount: Number(newPayment.amount),
                         description: `${newPayment.patientName || '환자'} 현금결제`,
                         transactionId: new ObjectId(transactionId),
-                        isCompleted: false,
-                        isGrouped: false,
-                        isClosed: false,
                         createdAt: toKstDate(new Date()),
                         updatedAt: toKstDate(new Date())
                     };
@@ -178,12 +158,6 @@ export async function deleteCashRecord(transactionId: string, paymentMethod: str
         });
 
         if (cashRecord) {
-            // 마감 여부 확인
-            const isClosed = await checkIfClosedForDate(cashRecord.date);
-            if (isClosed) {
-                throw new Error('마감된 날짜의 시재 기록은 삭제할 수 없습니다.');
-            }
-
             const deleteResult = await db.collection('cashrecords').deleteOne({ _id: cashRecord._id });
             
             if (deleteResult.deletedCount === 0) {
@@ -196,201 +170,221 @@ export async function deleteCashRecord(transactionId: string, paymentMethod: str
     }
 }
 
-// 특정 날짜의 마감 여부 확인
-async function checkIfClosedForDate(date: Date): Promise<boolean> {
+// 현금 지출에 대한 시재 기록 생성
+export async function createCashExpenseRecord(expense: any): Promise<void> {
+    try {
+        console.log('현금 지출 시재 기록 생성 시작:', {
+            expenseId: expense._id || expense.expenseId,
+            amount: expense.amount,
+            description: expense.description,
+            date: expense.date
+        });
+
+        const { db } = await connectToDatabase();
+        
+        // 날짜 처리
+        let recordDate: Date;
+        if (typeof expense.date === 'string') {
+            recordDate = toKstDate(expense.date);
+        } else if (expense.date instanceof Date) {
+            recordDate = expense.date;
+        } else {
+            recordDate = toKstDate(new Date());
+        }
+        
+        const cashRecord = {
+            date: recordDate,
+            type: '지출' as const,
+            amount: Number(expense.amount),
+            description: expense.description || '현금 지출',
+            expenseId: new ObjectId(expense._id || expense.expenseId),
+            createdAt: toKstDate(new Date()),
+            updatedAt: toKstDate(new Date())
+        };
+        
+        const result = await db.collection('cashrecords').insertOne(cashRecord);
+        
+        console.log('현금 지출 시재 기록 생성 성공:', {
+            insertedId: result.insertedId,
+            acknowledged: result.acknowledged
+        });
+    } catch (error) {
+        console.error('현금 지출 시재 기록 생성 중 오류:', error);
+        throw new Error('현금 지출 시재 기록 생성에 실패했습니다.');
+    }
+}
+
+// 지출 수정 시 시재 기록 업데이트
+export async function updateCashExpenseRecord(
+    oldExpense: any,
+    newExpense: any,
+    expenseId: string
+): Promise<void> {
     try {
         const { db } = await connectToDatabase();
         
-        const startOfDay = new Date(date);
-        startOfDay.setHours(0, 0, 0, 0);
-        
-        const endOfDay = new Date(date);
-        endOfDay.setHours(23, 59, 59, 999);
-        
-        const record = await db.collection('cashrecords').findOne({
-            date: {
-                $gte: startOfDay,
-                $lt: endOfDay
-            },
-            isClosed: true
-        });
-        
-        return !!record;
-    } catch (error) {
-        console.error('마감 여부 확인 중 오류:', error);
-        return false; // 오류 시 안전하게 처리
-    }
-}
+        const wasPaymentMethodCash = oldExpense?.method === PAYMENT_METHODS.CASH;
+        const isPaymentMethodCash = newExpense?.method === PAYMENT_METHODS.CASH;
+        const amountChanged = oldExpense?.amount !== newExpense?.amount;
+        const dateChanged = oldExpense?.date !== newExpense?.date;
+        const descriptionChanged = oldExpense?.description !== newExpense?.description;
 
-// payments 배열에서 현금 결제 찾기
-export function findCashPayment(payments: any[]): any | null {
-    if (!payments || !Array.isArray(payments)) {
-        return null;
-    }
-    
-    return payments.find(payment => payment.paymentMethod === PAYMENT_METHODS.CASH) || null;
-}
-
-// 거래 내 모든 현금 결제에 대해 시재 기록 생성
-export async function createCashRecordsForTransaction(transaction: any): Promise<void> {
-    try {
-        console.log('시재 기록 생성 시작:', {
-            transactionId: transaction._id,
-            patientName: transaction.patientName,
-            paymentMethod: transaction.paymentMethod,
-            paymentAmount: transaction.paymentAmount
+        // 기존 시재 기록 찾기
+        const existingCashRecord = await db.collection('cashrecords').findOne({
+            expenseId: new ObjectId(expenseId),
+            type: '지출'
         });
 
-        // 개별 필드에서 현금 결제 확인 (기존 방식)
-        if (transaction.paymentMethod === PAYMENT_METHODS.CASH && transaction.paymentAmount > 0) {
-            console.log('개별 필드에서 현금 결제 감지:', {
-                paymentMethod: transaction.paymentMethod,
-                amount: transaction.paymentAmount
-            });
-            
-            await createCashRecord({
-                _id: transaction._id,
-                transactionId: transaction._id,
-                date: transaction.date,
-                amount: transaction.paymentAmount,
-                patientName: transaction.patientName
-            });
-            
-            console.log('시재 기록 생성 완료 (개별 필드)');
-            return;
-        }
-
-        // payments 배열에서 현금 결제 확인 (새로운 방식)
-        if (transaction.payments && Array.isArray(transaction.payments)) {
-            const cashPayments = transaction.payments.filter(
-                (payment: any) => payment.paymentMethod === PAYMENT_METHODS.CASH
-            );
-
-            console.log('payments 배열에서 현금 결제 감지:', {
-                totalPayments: transaction.payments.length,
-                cashPayments: cashPayments.length
-            });
-
-            for (const payment of cashPayments) {
-                await createCashRecord({
-                    _id: transaction._id,
-                    transactionId: transaction._id,
-                    date: payment.date || transaction.date,
-                    amount: payment.amount || payment.paymentAmount,
-                    patientName: transaction.patientName
-                });
-            }
-            
-            if (cashPayments.length > 0) {
-                console.log('시재 기록 생성 완료 (payments 배열)');
+        // Case 1: 현금 → 다른 결제방식
+        if (wasPaymentMethodCash && !isPaymentMethodCash) {
+            if (existingCashRecord) {
+                await db.collection('cashrecords').deleteOne({ _id: existingCashRecord._id });
             }
         }
-
-        // treatments 배열에서 현금 결제 확인 (추가 방식)
-        if (transaction.treatments && Array.isArray(transaction.treatments)) {
-            const cashTreatments = transaction.treatments.filter(
-                (treatment: any) => treatment.paymentMethod === PAYMENT_METHODS.CASH
-            );
-
-            console.log('treatments 배열에서 현금 결제 감지:', {
-                totalTreatments: transaction.treatments.length,
-                cashTreatments: cashTreatments.length
-            });
-
-            for (const treatment of cashTreatments) {
-                await createCashRecord({
-                    _id: transaction._id,
-                    transactionId: transaction._id,
-                    date: treatment.date || transaction.date,
-                    amount: treatment.paymentAmount,
-                    patientName: transaction.patientName
-                });
-            }
-            
-            if (cashTreatments.length > 0) {
-                console.log('시재 기록 생성 완료 (treatments 배열)');
+        // Case 2: 다른 결제방식 → 현금
+        else if (!wasPaymentMethodCash && isPaymentMethodCash) {
+            const cashRecord = {
+                date: toKstDate(newExpense.date),
+                type: '지출' as const,
+                amount: Number(newExpense.amount),
+                description: newExpense.description || '현금 지출',
+                expenseId: new ObjectId(expenseId),
+                createdAt: toKstDate(new Date()),
+                updatedAt: toKstDate(new Date())
+            };
+            await db.collection('cashrecords').insertOne(cashRecord);
+        }
+        // Case 3: 현금 → 현금 (변경사항 있음)
+        else if (wasPaymentMethodCash && isPaymentMethodCash && (amountChanged || dateChanged || descriptionChanged)) {
+            if (existingCashRecord) {
+                if (dateChanged) {
+                    // 날짜가 변경된 경우 새로운 기록 생성
+                    await db.collection('cashrecords').deleteOne({ _id: existingCashRecord._id });
+                    const newCashRecord = {
+                        date: toKstDate(newExpense.date),
+                        type: '지출' as const,
+                        amount: Number(newExpense.amount),
+                        description: newExpense.description || '현금 지출',
+                        expenseId: new ObjectId(expenseId),
+                        createdAt: toKstDate(new Date()),
+                        updatedAt: toKstDate(new Date())
+                    };
+                    await db.collection('cashrecords').insertOne(newCashRecord);
+                } else {
+                    // 금액이나 설명만 변경된 경우 기존 기록 업데이트
+                    await db.collection('cashrecords').updateOne(
+                        { _id: existingCashRecord._id },
+                        { 
+                            $set: { 
+                                amount: Number(newExpense.amount),
+                                description: newExpense.description || '현금 지출',
+                                updatedAt: toKstDate(new Date())
+                            } 
+                        }
+                    );
+                }
             }
         }
-
-        console.log('시재 기록 생성 과정 완료');
     } catch (error) {
-        console.error('거래 내 현금 결제 시재 기록 생성 중 오류:', error);
+        console.error('현금 지출 시재 기록 업데이트 중 오류:', error);
         throw error;
     }
 }
 
-// 거래 업데이트 시 시재 기록들 업데이트
+// 지출 삭제 시 시재 기록 삭제
+export async function deleteCashExpenseRecord(expenseId: string, paymentMethod: string): Promise<void> {
+    try {
+        if (paymentMethod !== PAYMENT_METHODS.CASH) {
+            return; // 현금 지출이 아니면 시재에 영향 없음
+        }
+
+        const { db } = await connectToDatabase();
+        
+        const cashRecord = await db.collection('cashrecords').findOne({
+            expenseId: new ObjectId(expenseId),
+            type: '지출'
+        });
+
+        if (cashRecord) {
+            const deleteResult = await db.collection('cashrecords').deleteOne({ _id: cashRecord._id });
+            
+            if (deleteResult.deletedCount === 0) {
+                throw new Error(`현금 지출 시재 기록 삭제 실패 (ID: ${cashRecord._id})`);
+            }
+        }
+    } catch (error) {
+        console.error('현금 지출 시재 기록 삭제 중 오류:', error);
+        throw error;
+    }
+}
+
+// 현금 결제 찾기 (기존 함수 유지)
+export function findCashPayment(payments: any[]): any | null {
+    return payments.find(payment => payment.method === PAYMENT_METHODS.CASH) || null;
+}
+
+// 거래에 대한 시재 기록 생성 (기존 함수 업데이트)
+export async function createCashRecordsForTransaction(transaction: any): Promise<void> {
+    try {
+        if (!transaction.payments || !Array.isArray(transaction.payments)) {
+            console.log('결제 정보가 없어 시재 기록을 생성하지 않습니다.');
+            return;
+        }
+
+        const cashPayment = findCashPayment(transaction.payments);
+        
+        if (cashPayment) {
+            console.log('현금 결제 발견, 시재 기록 생성:', {
+                transactionId: transaction._id,
+                amount: cashPayment.amount,
+                patientName: transaction.patientName
+            });
+
+            await createCashRecord({
+                _id: transaction._id,
+                amount: cashPayment.amount,
+                patientName: transaction.patientName,
+                date: transaction.date
+            });
+        }
+    } catch (error) {
+        console.error('거래 시재 기록 생성 중 오류:', error);
+        throw error;
+    }
+}
+
+// 거래 수정 시 시재 기록 업데이트 (기존 함수 업데이트)
 export async function updateCashRecordsForTransaction(
     oldTransaction: any,
     newTransaction: any
 ): Promise<void> {
     try {
-        console.log('시재 기록 업데이트 시작:', {
-            oldTransactionId: oldTransaction._id,
-            newTransactionId: newTransaction._id,
-            oldPaymentMethod: oldTransaction.paymentMethod,
-            newPaymentMethod: newTransaction.paymentMethod,
-            oldAmount: oldTransaction.paymentAmount,
-            newAmount: newTransaction.paymentAmount
+        const oldCashPayment = oldTransaction.payments ? findCashPayment(oldTransaction.payments) : null;
+        const newCashPayment = newTransaction.payments ? findCashPayment(newTransaction.payments) : null;
+
+        console.log('거래 시재 기록 업데이트:', {
+            transactionId: newTransaction._id,
+            oldCashPayment: oldCashPayment ? { amount: oldCashPayment.amount } : null,
+            newCashPayment: newCashPayment ? { amount: newCashPayment.amount } : null
         });
 
-        const { db } = await connectToDatabase();
-
-        // 기존 시재 기록 삭제 (현금 결제였던 경우)
-        if (oldTransaction.paymentMethod === PAYMENT_METHODS.CASH) {
-            await db.collection('cashrecords').deleteMany({
-                transactionId: new ObjectId(oldTransaction._id)
-            });
-            console.log('기존 현금 시재 기록 삭제 완료');
-        }
-
-        // payments 배열의 기존 현금 결제들도 삭제
-        if (oldTransaction.payments && Array.isArray(oldTransaction.payments)) {
-            const oldCashPayments = oldTransaction.payments.filter(
-                (p: any) => p.paymentMethod === PAYMENT_METHODS.CASH
-            );
-            
-            for (const payment of oldCashPayments) {
-                await db.collection('cashrecords').deleteMany({
-                    transactionId: new ObjectId(oldTransaction._id)
-                });
-            }
-            console.log('기존 payments 배열 현금 기록 삭제 완료');
-        }
-
-        // 새로운 현금 결제 시재 기록 생성 (개별 필드)
-        if (newTransaction.paymentMethod === PAYMENT_METHODS.CASH && newTransaction.paymentAmount > 0) {
-            await createCashRecord({
-                _id: newTransaction._id,
-                transactionId: newTransaction._id,
+        await updateCashRecord(
+            oldCashPayment ? { 
+                paymentMethod: PAYMENT_METHODS.CASH, 
+                amount: oldCashPayment.amount,
+                date: oldTransaction.date,
+                patientName: oldTransaction.patientName
+            } : null,
+            newCashPayment ? { 
+                paymentMethod: PAYMENT_METHODS.CASH, 
+                amount: newCashPayment.amount,
                 date: newTransaction.date,
-                amount: newTransaction.paymentAmount,
                 patientName: newTransaction.patientName
-            });
-            console.log('새로운 개별 필드 현금 시재 기록 생성 완료');
-        }
-
-        // payments 배열의 새로운 현금 결제들도 생성
-        if (newTransaction.payments && Array.isArray(newTransaction.payments)) {
-            const newCashPayments = newTransaction.payments.filter(
-                (p: any) => p.paymentMethod === PAYMENT_METHODS.CASH
-            );
-
-            for (const payment of newCashPayments) {
-                await createCashRecord({
-                    _id: newTransaction._id,
-                    transactionId: newTransaction._id,
-                    date: payment.date || newTransaction.date,
-                    amount: payment.amount || payment.paymentAmount,
-                    patientName: newTransaction.patientName
-                });
-            }
-            console.log('새로운 payments 배열 현금 시재 기록 생성 완료');
-        }
-
-        console.log('시재 기록 업데이트 완료');
+            } : null,
+            newTransaction._id
+        );
     } catch (error) {
-        console.error('거래 업데이트 시 시재 기록 처리 중 오류:', error);
+        console.error('거래 시재 기록 업데이트 중 오류:', error);
         throw error;
     }
 } 
