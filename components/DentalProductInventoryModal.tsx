@@ -148,6 +148,13 @@ export default function DentalProductInventoryModal({ isOpen, onClose }: Props) 
     }
   }, [isOpen, activeTab]);
 
+  // 통계 뷰 변경 시 데이터 다시 로드
+  useEffect(() => {
+    if (isOpen && activeTab === 'statistics') {
+      loadStatistics();
+    }
+  }, [statisticsView, dateRange.start, dateRange.end]);
+
   // Radix UI Dialog pointer-events 버그 해결
   useEffect(() => {
     // 모달이 열릴 때와 닫힐 때 pointer-events 관리

@@ -149,7 +149,7 @@ export async function GET(request: NextRequest) {
             const productInfo = productMap.get(product.productId.toString());
             productStats.set(product.productId, {
               _id: product.productId,
-              name: product.name,
+              name: productInfo ? productInfo.name : product.name.split(' ')[0], // 실제 제품명 사용
               specification: productInfo ? productInfo.specification : '',
               sellingPrice: productInfo ? productInfo.sellingPrice : 0,
               purchasePrice: productInfo ? productInfo.purchasePrice : 0,
@@ -164,7 +164,7 @@ export async function GET(request: NextRequest) {
           if (activity.type === 'SALE') {
             stat.totalQuantity += product.quantity;
             stat.totalAmount += product.amount;
-            // 순이익 계산
+            // 순이익 계산 - 실제 제품 정보의 가격 사용
             const productProfit = (stat.sellingPrice - stat.purchasePrice) * product.quantity;
             stat.profit += productProfit;
           }
@@ -181,12 +181,10 @@ export async function GET(request: NextRequest) {
             patientName: activity.patientName
           };
 
-          // 중복 방지
+          // 중복 방지 - 더 정확한 중복 체크
           const activityExists = stat.activities.some((existing: any) => 
-            existing.date === productActivity.date && 
-            existing.type === productActivity.type && 
-            existing.quantity === productActivity.quantity &&
-            existing.amount === productActivity.amount
+            existing._id === productActivity._id && 
+            existing.type === productActivity.type
           );
 
           if (!activityExists) {
@@ -195,7 +193,11 @@ export async function GET(request: NextRequest) {
         });
       });
 
-      (statistics as any).productStats = Array.from(productStats.values());
+      // 판매량이 있는 제품만 필터링하고 정렬
+      const filteredStats = Array.from(productStats.values()).filter((stat: any) => stat.totalQuantity > 0);
+      filteredStats.sort((a: any, b: any) => b.totalAmount - a.totalAmount); // 판매금액 순으로 정렬
+
+      (statistics as any).productStats = filteredStats;
     }
 
     return NextResponse.json(statistics);
