@@ -5,6 +5,7 @@ import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Calendar } from "./ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu";
 import { 
   UserPlus, 
   CreditCard, 
@@ -15,7 +16,8 @@ import {
   Star, 
   Calendar as CalendarIcon,
   ChevronLeft,
-  ChevronRight 
+  ChevronRight,
+  ChevronDown
 } from "lucide-react";
 import { cn, getCurrentKstDate } from "@/lib/utils";
 import { format, addDays, subDays } from "date-fns";
@@ -27,6 +29,7 @@ import ExtraIncomeModal from "./ExtraIncomeModal";
 import ExpenseModal from "./ExpenseModal";
 import CashManagementModal from "./CashManagementModal";
 import SupplyModal from "./SupplyModal";
+import DentalProductInventoryModal from "./DentalProductInventoryModal";
 import { ExtraIncome, Expense } from "@/lib/types";
 import { toast } from "sonner";
 
@@ -37,6 +40,7 @@ export default function ClinicNavigation() {
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
   const [isCashManagementModalOpen, setIsCashManagementModalOpen] = useState(false);
   const [isSupplyModalOpen, setIsSupplyModalOpen] = useState(false);
+  const [isDentalProductInventoryModalOpen, setIsDentalProductInventoryModalOpen] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
   const handleDateSelect = (date: Date | undefined) => {
@@ -96,6 +100,14 @@ export default function ClinicNavigation() {
 
   const handleSupplyModalClose = () => {
     setIsSupplyModalOpen(false);
+  };
+
+  const handleDentalProductInventoryModalOpen = () => {
+    setIsDentalProductInventoryModalOpen(true);
+  };
+
+  const handleDentalProductInventoryModalClose = () => {
+    setIsDentalProductInventoryModalOpen(false);
   };
 
   const handleExtraIncomeSuccess = (data: ExtraIncome) => {
@@ -171,10 +183,23 @@ export default function ClinicNavigation() {
             <span>매입원장</span>
           </Button>
           
-          <Button variant="outline" className="flex items-center gap-2">
-            <ClipboardList className="w-4 h-4" />
-            <span>수불부</span>
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="flex items-center gap-2">
+                <ClipboardList className="w-4 h-4" />
+                <span>수불부</span>
+                <ChevronDown className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={handleDentalProductInventoryModalOpen}>
+                구강용품 수불부
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                임플란트 수불부
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           
           <Button variant="outline" className="flex items-center gap-2">
             <Star className="w-4 h-4" />
@@ -263,6 +288,12 @@ export default function ClinicNavigation() {
         isOpen={isSupplyModalOpen}
         onClose={handleSupplyModalClose}
         date={selectedDate}
+      />
+
+      {/* 구강용품 수불부 모달 */}
+      <DentalProductInventoryModal
+        isOpen={isDentalProductInventoryModalOpen}
+        onClose={handleDentalProductInventoryModalClose}
       />
     </Card>
   );

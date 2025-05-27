@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
     
     const products = await db.collection('dentalproducts').find({}).sort({ name: 1 }).toArray();
     
-    return NextResponse.json({ products }, {
+    return NextResponse.json(products, {
       headers: {
         'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
         'Pragma': 'no-cache',
