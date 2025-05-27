@@ -10,6 +10,8 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
 import { toISODateString } from '@/lib/utils';
 import { useDateContext } from '@/lib/context/dateContext';
@@ -118,32 +120,64 @@ export default function DoctorPatientList({ date }: Props) {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [doctorOrder, setDoctorOrder] = useState<{value: string, order: number}[]>([]);
   
-  // 의사 정보 불러오기 함수를 useCallback으로 감싸기
-  const fetchDoctors = useCallback(async () => {
+  // 설정 데이터 상태
+  const [visitPaths, setVisitPaths] = useState<{value: string}[]>([]);
+  const [doctors, setDoctors] = useState<{value: string}[]>([]);
+  const [treatmentTypes, setTreatmentTypes] = useState<{value: string}[]>([]);
+  const [paymentMethods, setPaymentMethods] = useState<{value: string}[]>([]);
+  const [cardCompanies, setCardCompanies] = useState<{value: string}[]>([]);
+  
+  // 설정 데이터 불러오기 함수들
+  const fetchSettings = useCallback(async () => {
     try {
-      const response = await fetch('/api/settings?type=doctor', {
-        cache: 'default'
-      });
-      
-      if (!response.ok) {
-        throw new Error('의사 정보를 불러오는데 실패했습니다.');
+      // 내원경로 데이터 가져오기
+      const visitPathResponse = await fetch('/api/settings?type=visitPath');
+      if (visitPathResponse.ok) {
+        const data = await visitPathResponse.json();
+        setVisitPaths(data.settings || []);
       }
-      
-      const data = await response.json();
-      // 의사 목록과 순서 정보 저장
-      setDoctorOrder(data.settings.map((doctor: any, index: number) => ({
-        value: doctor.value,
-        order: doctor.order || index // order 값이 없으면 index를 사용
-      })));
+
+      // 의사 데이터 가져오기
+      const doctorResponse = await fetch('/api/settings?type=doctor');
+      if (doctorResponse.ok) {
+        const data = await doctorResponse.json();
+        setDoctors(data.settings || []);
+        // 의사 목록과 순서 정보 저장
+        setDoctorOrder(data.settings.map((doctor: any, index: number) => ({
+          value: doctor.value,
+          order: doctor.order || index // order 값이 없으면 index를 사용
+        })));
+      }
+
+      // 진료내용 데이터 가져오기
+      const treatmentResponse = await fetch('/api/settings?type=treatmentType');
+      if (treatmentResponse.ok) {
+        const data = await treatmentResponse.json();
+        setTreatmentTypes(data.settings || []);
+      }
+
+      // 수납방법 데이터 가져오기
+      const paymentMethodResponse = await fetch('/api/settings?type=paymentMethod');
+      if (paymentMethodResponse.ok) {
+        const data = await paymentMethodResponse.json();
+        setPaymentMethods(data.settings || []);
+      }
+
+      // 카드사 데이터 가져오기
+      const cardCompanyResponse = await fetch('/api/settings?type=cardCompany');
+      if (cardCompanyResponse.ok) {
+        const data = await cardCompanyResponse.json();
+        setCardCompanies(data.settings || []);
+      }
     } catch (err) {
-      console.error('의사 정보 조회 오류:', err);
+      console.error('설정 데이터 조회 오류:', err);
     }
   }, []);
   
-  // 의사 정보 가져오기
+  // 설정 데이터 가져오기
   useEffect(() => {
-    fetchDoctors();
-  }, [fetchDoctors]);
+    fetchSettings();
+  }, [fetchSettings]);
   
   // 트랜잭션 데이터 조회
   useEffect(() => {
@@ -242,12 +276,18 @@ export default function DoctorPatientList({ date }: Props) {
     setEditFormData({
       chartNumber: transaction.chartNumber,
       patientName: transaction.patientName,
-      treatmentType: transaction.treatmentType,
-      paymentAmount: transaction.paymentAmount,
-      paymentMethod: transaction.paymentMethod,
+      visitPath: transaction.visitPath,
       doctor: transaction.doctor,
-      isNew: transaction.isNew
+      treatmentType: transaction.treatmentType,
+      isNew: transaction.isNew,
+      isConsultation: transaction.isConsultation,
+      paymentMethod: transaction.paymentMethod,
+      cardCompany: transaction.cardCompany || '',
+      paymentAmount: transaction.paymentAmount,
+      notes: transaction.notes || '',
+      cashReceipt: transaction.cashReceipt
     });
+    setFormErrors({});
     setIsEditDialogOpen(true);
   };
   
@@ -261,16 +301,20 @@ export default function DoctorPatientList({ date }: Props) {
   const validateForm = () => {
     const errors: Record<string, string> = {};
     
-    if (!editFormData.chartNumber) {
-      errors.chartNumber = '차트번호를 입력해주세요';
-    }
-    
-    if (!editFormData.patientName) {
-      errors.patientName = '환자 성명을 입력해주세요';
-    }
-    
     if (!editFormData.treatmentType) {
       errors.treatmentType = '진료 내용을 입력해주세요';
+    }
+    
+    if (!editFormData.doctor) {
+      errors.doctor = '진료의를 선택해주세요';
+    }
+    
+    if (!editFormData.paymentMethod) {
+      errors.paymentMethod = '수납방법을 선택해주세요';
+    }
+    
+    if (editFormData.paymentMethod === '카드' && !editFormData.cardCompany) {
+      errors.cardCompany = '카드사를 선택해주세요';
     }
     
     setFormErrors(errors);
@@ -282,34 +326,41 @@ export default function DoctorPatientList({ date }: Props) {
     if (!validateForm() || !currentTransaction) return;
     
     try {
+      // treatments 배열도 함께 업데이트하도록 데이터 구성
+      const updateData = {
+        ...editFormData,
+        // treatments 배열이 있는 경우 함께 업데이트
+        treatments: [{
+          doctor: editFormData.doctor,
+          treatmentType: editFormData.treatmentType,
+          paymentMethod: editFormData.paymentMethod,
+          cardCompany: editFormData.cardCompany || '',
+          cashReceipt: editFormData.cashReceipt || false,
+          paymentAmount: editFormData.paymentAmount || 0,
+          notes: editFormData.notes || ''
+        }]
+      };
+
       const response = await fetch(`/api/transactions/${currentTransaction._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(editFormData),
+        body: JSON.stringify(updateData),
       });
       
       if (!response.ok) {
         throw new Error('트랜잭션 수정에 실패했습니다.');
       }
       
-      const updatedTransaction = await response.json();
-      const normalizedTransaction = normalizeId(updatedTransaction);
-      
-      // 트랜잭션 목록 업데이트 (API 응답 데이터 사용)
-      setTransactions(prevTransactions => 
-        prevTransactions.map(transaction => 
-          transaction._id === currentTransaction._id 
-            ? normalizedTransaction as ExtendedTransaction
-            : transaction
-        )
-      );
-      
+      // 다이얼로그 닫기
       setIsEditDialogOpen(false);
+      
+      // 데이터 새로고침 (전체 데이터를 다시 불러와서 최신 상태 반영)
       triggerRefresh(); // 데이터 새로고침
       triggerCashRefresh(); // 시재 데이터 새로고침
       triggerStatsRefresh(); // 통계 데이터 새로고침
+      
       toast({
         title: '성공',
         description: '트랜잭션이 성공적으로 수정되었습니다.',
@@ -361,8 +412,13 @@ export default function DoctorPatientList({ date }: Props) {
   };
   
   // 입력 변경 처리
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
+    
+    // 수납방법이 "수납없음"일 때 수납금액 변경 방지
+    if (name === 'paymentAmount' && editFormData.paymentMethod === '수납없음') {
+      return;
+    }
     
     setEditFormData(prevData => ({
       ...prevData,
@@ -376,6 +432,39 @@ export default function DoctorPatientList({ date }: Props) {
         return newErrors;
       });
     }
+  };
+
+  // Select 변경 처리
+  const handleSelectChange = (name: string, value: string) => {
+    setEditFormData(prevData => {
+      const newData = {
+        ...prevData,
+        [name]: value,
+      };
+      
+      // 수납방법이 "수납없음"으로 변경되면 수납금액을 0으로 설정
+      if (name === 'paymentMethod' && value === '수납없음') {
+        newData.paymentAmount = 0;
+      }
+      
+      return newData;
+    });
+    
+    if (formErrors[name]) {
+      setFormErrors(prevErrors => {
+        const newErrors = { ...prevErrors };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+  };
+
+  // Checkbox 변경 처리
+  const handleCheckboxChange = (name: string, checked: boolean) => {
+    setEditFormData(prevData => ({
+      ...prevData,
+      [name]: checked,
+    }));
   };
   
   // 금액 형식화
@@ -646,11 +735,12 @@ export default function DoctorPatientList({ date }: Props) {
       
       {/* 수정 다이얼로그 */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>환자 정보 수정</DialogTitle>
           </DialogHeader>
           <form className="grid gap-4 py-4">
+            {/* 차트번호 (읽기 전용) */}
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="chartNumber" className="text-right">차트번호</Label>
               <div className="col-span-3">
@@ -658,14 +748,13 @@ export default function DoctorPatientList({ date }: Props) {
                   id="chartNumber"
                   name="chartNumber"
                   value={editFormData.chartNumber || ''}
-                  onChange={handleInputChange}
-                  className={formErrors.chartNumber ? "border-red-500" : ""}
+                  disabled
+                  className="bg-gray-100"
                 />
-                {formErrors.chartNumber && (
-                  <p className="text-red-500 text-xs mt-1">{formErrors.chartNumber}</p>
-                )}
               </div>
             </div>
+
+            {/* 환자성명 (읽기 전용) */}
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="patientName" className="text-right">환자성명</Label>
               <div className="col-span-3">
@@ -673,29 +762,169 @@ export default function DoctorPatientList({ date }: Props) {
                   id="patientName"
                   name="patientName"
                   value={editFormData.patientName || ''}
-                  onChange={handleInputChange}
-                  className={formErrors.patientName ? "border-red-500" : ""}
+                  disabled
+                  className="bg-gray-100"
                 />
-                {formErrors.patientName && (
-                  <p className="text-red-500 text-xs mt-1">{formErrors.patientName}</p>
+              </div>
+            </div>
+
+            {/* 내원경로 */}
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="visitPath" className="text-right">내원경로</Label>
+              <div className="col-span-3">
+                <Select value={editFormData.visitPath || ''} onValueChange={(value) => handleSelectChange('visitPath', value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="내원경로를 선택하세요" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {visitPaths.map((path) => (
+                      <SelectItem key={path.value} value={path.value}>
+                        {path.value}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* 진료의 */}
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="doctor" className="text-right">진료의 <span className="text-red-500">*</span></Label>
+              <div className="col-span-3">
+                <Select value={editFormData.doctor || ''} onValueChange={(value) => handleSelectChange('doctor', value)}>
+                  <SelectTrigger className={formErrors.doctor ? "border-red-500" : ""}>
+                    <SelectValue placeholder="진료의를 선택하세요" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {doctors.map((doctor) => (
+                      <SelectItem key={doctor.value} value={doctor.value}>
+                        {doctor.value}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {formErrors.doctor && (
+                  <p className="text-red-500 text-xs mt-1">{formErrors.doctor}</p>
                 )}
               </div>
             </div>
+
+            {/* 진료내용 */}
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="treatmentType" className="text-right">진료내용</Label>
+              <Label htmlFor="treatmentType" className="text-right">진료내용 <span className="text-red-500">*</span></Label>
               <div className="col-span-3">
-                <Input
-                  id="treatmentType"
-                  name="treatmentType"
-                  value={editFormData.treatmentType || ''}
-                  onChange={handleInputChange}
-                  className={formErrors.treatmentType ? "border-red-500" : ""}
-                />
+                <Select value={editFormData.treatmentType || ''} onValueChange={(value) => handleSelectChange('treatmentType', value)}>
+                  <SelectTrigger className={formErrors.treatmentType ? "border-red-500" : ""}>
+                    <SelectValue placeholder="진료내용을 선택하세요" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {treatmentTypes.map((type) => (
+                      <SelectItem key={type.value} value={type.value}>
+                        {type.value}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 {formErrors.treatmentType && (
                   <p className="text-red-500 text-xs mt-1">{formErrors.treatmentType}</p>
                 )}
               </div>
             </div>
+
+            {/* 신환여부 */}
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="isNew" className="text-right">신환여부</Label>
+              <div className="col-span-3 flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="isNew"
+                  checked={editFormData.isNew || false}
+                  onChange={(e) => handleCheckboxChange('isNew', e.target.checked)}
+                  className="rounded"
+                />
+                <Label htmlFor="isNew" className="text-sm">신환</Label>
+              </div>
+            </div>
+
+            {/* 상담여부 */}
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="isConsultation" className="text-right">상담여부</Label>
+              <div className="col-span-3 flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="isConsultation"
+                  checked={editFormData.isConsultation || false}
+                  onChange={(e) => handleCheckboxChange('isConsultation', e.target.checked)}
+                  className="rounded"
+                />
+                <Label htmlFor="isConsultation" className="text-sm">상담</Label>
+              </div>
+            </div>
+
+            {/* 수납방법 */}
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="paymentMethod" className="text-right">수납방법 <span className="text-red-500">*</span></Label>
+              <div className="col-span-3">
+                <Select value={editFormData.paymentMethod || ''} onValueChange={(value) => handleSelectChange('paymentMethod', value)}>
+                  <SelectTrigger className={formErrors.paymentMethod ? "border-red-500" : ""}>
+                    <SelectValue placeholder="수납방법을 선택하세요" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {paymentMethods.map((method) => (
+                      <SelectItem key={method.value} value={method.value}>
+                        {method.value}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {formErrors.paymentMethod && (
+                  <p className="text-red-500 text-xs mt-1">{formErrors.paymentMethod}</p>
+                )}
+              </div>
+            </div>
+
+            {/* 카드사 (카드 결제시에만 표시) */}
+            {editFormData.paymentMethod === '카드' && (
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="cardCompany" className="text-right">카드사 <span className="text-red-500">*</span></Label>
+                <div className="col-span-3">
+                  <Select value={editFormData.cardCompany || ''} onValueChange={(value) => handleSelectChange('cardCompany', value)}>
+                    <SelectTrigger className={formErrors.cardCompany ? "border-red-500" : ""}>
+                      <SelectValue placeholder="카드사를 선택하세요" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {cardCompanies.map((company) => (
+                        <SelectItem key={company.value} value={company.value}>
+                          {company.value}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {formErrors.cardCompany && (
+                    <p className="text-red-500 text-xs mt-1">{formErrors.cardCompany}</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* 현금영수증 (현금/계좌이체시에만 표시) */}
+            {(editFormData.paymentMethod === '현금' || editFormData.paymentMethod === '계좌이체') && (
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="cashReceipt" className="text-right">현금영수증</Label>
+                <div className="col-span-3 flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="cashReceipt"
+                    checked={editFormData.cashReceipt || false}
+                    onChange={(e) => handleCheckboxChange('cashReceipt', e.target.checked)}
+                    className="rounded"
+                  />
+                  <Label htmlFor="cashReceipt" className="text-sm">현금영수증 발행</Label>
+                </div>
+              </div>
+            )}
+
+            {/* 수납금액 */}
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="paymentAmount" className="text-right">수납금액</Label>
               <div className="col-span-3">
@@ -705,6 +934,24 @@ export default function DoctorPatientList({ date }: Props) {
                   type="number"
                   value={editFormData.paymentAmount || 0}
                   onChange={handleInputChange}
+                  placeholder="0"
+                  disabled={editFormData.paymentMethod === '수납없음'}
+                  className={editFormData.paymentMethod === '수납없음' ? "bg-gray-100" : ""}
+                />
+              </div>
+            </div>
+
+            {/* 메모 */}
+            <div className="grid grid-cols-4 items-start gap-4">
+              <Label htmlFor="notes" className="text-right mt-2">메모</Label>
+              <div className="col-span-3">
+                <Textarea
+                  id="notes"
+                  name="notes"
+                  value={editFormData.notes || ''}
+                  onChange={handleInputChange}
+                  placeholder="메모를 입력하세요"
+                  rows={3}
                 />
               </div>
             </div>
