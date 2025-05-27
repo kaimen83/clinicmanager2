@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { toISODateString, getCurrentKstDate } from '@/lib/utils';
+import { safeRestorePointerEvents, createSafeOnOpenChange } from '@/lib/pointer-events-fix';
 
 interface DentalProduct {
   _id: string;
@@ -147,6 +148,22 @@ export default function DentalProductInventoryModal({ isOpen, onClose }: Props) 
     }
   }, [isOpen, activeTab]);
 
+  // Radix UI Dialog pointer-events 버그 해결
+  useEffect(() => {
+    // 모달이 열릴 때와 닫힐 때 pointer-events 관리
+    if (!isOpen && !showStockModal) {
+      // 모든 모달이 닫혔을 때 안전하게 pointer-events 복원
+      safeRestorePointerEvents();
+    }
+  }, [isOpen, showStockModal]);
+
+  // 컴포넌트 언마운트 시 cleanup
+  useEffect(() => {
+    return () => {
+      safeRestorePointerEvents(100);
+    };
+  }, []);
+
   // 제품 필터링
   useEffect(() => {
     let filtered = products;
@@ -220,16 +237,32 @@ export default function DentalProductInventoryModal({ isOpen, onClose }: Props) 
     e.preventDefault();
     if (!selectedProduct) return;
 
+    const requestedQuantity = parseInt(stockFormData.quantity);
+
+    // 출고 시 재고 부족 체크
+    if (stockModalType === 'OUT' && requestedQuantity > selectedProduct.stock) {
+      toast.error(
+        `재고가 부족합니다. 현재 재고: ${selectedProduct.stock}개, 요청 수량: ${requestedQuantity}개`
+      );
+      return;
+    }
+
+    // 수량 유효성 검사
+    if (requestedQuantity <= 0) {
+      toast.error('수량은 1개 이상이어야 합니다.');
+      return;
+    }
+
     try {
       const endpoint = stockModalType === 'IN' ? 'stock-in' : 'stock-out';
       const body = stockModalType === 'IN' 
         ? {
-            quantity: parseInt(stockFormData.quantity),
+            quantity: requestedQuantity,
             purchasePrice: stockFormData.price ? parseInt(stockFormData.price) : null,
             notes: stockFormData.notes
           }
         : {
-            quantity: parseInt(stockFormData.quantity),
+            quantity: requestedQuantity,
             reason: stockFormData.reason,
             notes: stockFormData.notes
           };
@@ -240,10 +273,35 @@ export default function DentalProductInventoryModal({ isOpen, onClose }: Props) 
         body: JSON.stringify(body)
       });
 
-      if (!response.ok) throw new Error(`${stockModalType === 'IN' ? '입고' : '출고'} 처리 실패`);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        
+        // 서버에서 반환하는 구체적인 오류 메시지 처리
+        if (response.status === 400 && errorData?.message) {
+          if (errorData.message.includes('재고') || errorData.message.includes('stock')) {
+            toast.error(`재고 부족: ${errorData.message}`);
+          } else {
+            toast.error(errorData.message);
+          }
+        } else {
+          throw new Error(`${stockModalType === 'IN' ? '입고' : '출고'} 처리 실패`);
+        }
+        return;
+      }
 
       toast.success(`${stockModalType === 'IN' ? '입고' : '출고'}가 완료되었습니다.`);
       setShowStockModal(false);
+      
+      // 폼 데이터 초기화
+      setStockFormData({
+        quantity: '',
+        price: '',
+        reason: '판매',
+        notes: ''
+      });
+      setSelectedProduct(null);
+      
+      // 제품 목록 새로고침
       loadProducts();
     } catch (error) {
       console.error('재고 처리 오류:', error);
@@ -282,7 +340,12 @@ export default function DentalProductInventoryModal({ isOpen, onClose }: Props) 
 
   return (
     <>
-      <Dialog open={isOpen} onOpenChange={onClose}>
+      {/* 메인 구강용품 수불부 모달 */}
+      <Dialog 
+        open={isOpen && !showStockModal} 
+        onOpenChange={createSafeOnOpenChange(onClose)}
+        modal={true}
+      >
         <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -639,8 +702,21 @@ export default function DentalProductInventoryModal({ isOpen, onClose }: Props) 
         </DialogContent>
       </Dialog>
 
-      {/* 입고/출고 모달 */}
-      <Dialog open={showStockModal} onOpenChange={setShowStockModal}>
+      {/* 입고/출고 모달 - 메인 모달과 같은 레벨로 분리 */}
+      <Dialog 
+        open={showStockModal} 
+        onOpenChange={createSafeOnOpenChange(() => setShowStockModal(false), () => {
+          // 입고/출고 모달이 닫힐 때 폼 데이터 초기화
+          setStockFormData({
+            quantity: '',
+            price: '',
+            reason: '판매',
+            notes: ''
+          });
+          setSelectedProduct(null);
+        })}
+        modal={true}
+      >
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>
@@ -653,17 +729,70 @@ export default function DentalProductInventoryModal({ isOpen, onClose }: Props) 
               <Label>품목명</Label>
               <Input value={selectedProduct?.name || ''} disabled />
             </div>
+
+            {/* 현재 재고량 표시 (출고 시에만) */}
+            {stockModalType === 'OUT' && selectedProduct && (
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-blue-800">현재 재고량</span>
+                  <span className="text-lg font-bold text-blue-900">
+                    {selectedProduct.stock}개
+                  </span>
+                </div>
+                {selectedProduct.stock <= 5 && (
+                  <div className="mt-1 text-xs text-red-600">
+                    ⚠️ 재고가 부족합니다
+                  </div>
+                )}
+              </div>
+            )}
             
             <div>
-              <Label htmlFor="quantity">수량 *</Label>
-              <Input
-                id="quantity"
-                type="number"
-                min="1"
-                value={stockFormData.quantity}
-                onChange={(e) => setStockFormData(prev => ({ ...prev, quantity: e.target.value }))}
-                required
-              />
+              <Label htmlFor="quantity">
+                수량 * 
+                {stockModalType === 'OUT' && selectedProduct && (
+                  <span className="text-sm text-gray-500 ml-2">
+                    (최대 {selectedProduct.stock}개)
+                  </span>
+                )}
+              </Label>
+                              <Input
+                  id="quantity"
+                  type="number"
+                  min="1"
+                  max={stockModalType === 'OUT' ? selectedProduct?.stock : undefined}
+                  value={stockFormData.quantity}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    const numValue = parseInt(value);
+                    
+                    // 출고 시 재고량 초과 체크
+                    if (stockModalType === 'OUT' && selectedProduct && numValue > selectedProduct.stock) {
+                      // 최대 재고량으로 제한
+                      setStockFormData(prev => ({ ...prev, quantity: selectedProduct.stock.toString() }));
+                    } else {
+                      setStockFormData(prev => ({ ...prev, quantity: value }));
+                    }
+                  }}
+                  required
+                  placeholder={stockModalType === 'OUT' ? `1 ~ ${selectedProduct?.stock || 0}` : '수량 입력'}
+                  className={
+                    stockModalType === 'OUT' && 
+                    selectedProduct && 
+                    parseInt(stockFormData.quantity) > selectedProduct.stock
+                      ? 'border-red-500 focus:border-red-500'
+                      : ''
+                  }
+                />
+                {/* 실시간 유효성 검사 메시지 */}
+                {stockModalType === 'OUT' && 
+                 selectedProduct && 
+                 stockFormData.quantity && 
+                 parseInt(stockFormData.quantity) > selectedProduct.stock && (
+                  <div className="text-xs text-red-600 mt-1">
+                    재고량을 초과할 수 없습니다. (현재 재고: {selectedProduct.stock}개)
+                  </div>
+                )}
             </div>
             
             {stockModalType === 'IN' ? (
@@ -707,13 +836,36 @@ export default function DentalProductInventoryModal({ isOpen, onClose }: Props) 
             </div>
             
             <div className="flex gap-2 pt-4">
-              <Button type="submit" className="flex-1">
+              <Button 
+                type="submit" 
+                className="flex-1"
+                disabled={(() => {
+                  if (!stockFormData.quantity) return true;
+                  const quantity = Number(stockFormData.quantity);
+                  if (isNaN(quantity) || quantity <= 0) return true;
+                  if (stockModalType === 'OUT' && selectedProduct && quantity > selectedProduct.stock) return true;
+                  return false;
+                })()}
+              >
                 저장
               </Button>
               <Button 
                 type="button" 
                 variant="outline" 
-                onClick={() => setShowStockModal(false)}
+                onClick={() => {
+                  setShowStockModal(false);
+                  setStockFormData({
+                    quantity: '',
+                    price: '',
+                    reason: '판매',
+                    notes: ''
+                  });
+                  setSelectedProduct(null);
+                  // pointer-events 복원
+                  setTimeout(() => {
+                    document.body.style.pointerEvents = '';
+                  }, 50);
+                }}
                 className="flex-1"
               >
                 취소

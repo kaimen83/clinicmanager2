@@ -5,7 +5,7 @@ import { ObjectId } from 'mongodb';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const body = await request.json();
@@ -23,10 +23,13 @@ export async function POST(
       return NextResponse.json({ error: '인증되지 않은 요청입니다.' }, { status: 401 });
     }
     
+    // params를 await로 기다림
+    const { id } = await params;
+    
     const { db } = await connectToDatabase();
     
     // 제품 조회
-    const product = await db.collection('dentalproducts').findOne({ _id: new ObjectId(params.id) });
+    const product = await db.collection('dentalproducts').findOne({ _id: new ObjectId(id) });
     if (!product) {
       return NextResponse.json({ error: '해당 구강용품을 찾을 수 없습니다.' }, { status: 404 });
     }
@@ -43,13 +46,13 @@ export async function POST(
     }
     
     await db.collection('dentalproducts').updateOne(
-      { _id: new ObjectId(params.id) },
+      { _id: new ObjectId(id) },
       { $set: updateData }
     );
     
     // 입고 기록 저장
     await db.collection('dentalproductinventorylogs').insertOne({
-      productId: new ObjectId(params.id),
+      productId: new ObjectId(id),
       type: 'IN',
       quantity,
       price: purchasePrice || product.purchasePrice,
