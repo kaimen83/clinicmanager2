@@ -6,7 +6,7 @@ import { currentUser } from '@clerk/nextjs/server';
 // 개별 현금 기록 삭제 (통장입금만 허용)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // 현재 인증된 사용자 가져오기
@@ -19,7 +19,7 @@ export async function DELETE(
     
     await dbConnect();
     
-    const { id } = params;
+    const { id } = await params;
     
     // 기록 조회
     const record = await CashRecord.findById(id);
@@ -52,7 +52,7 @@ export async function DELETE(
 // 개별 현금 기록 수정 (통장입금만 허용)
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // 현재 인증된 사용자 가져오기
@@ -65,7 +65,7 @@ export async function PUT(
     
     await dbConnect();
     
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
     const { type, amount, description } = body;
     

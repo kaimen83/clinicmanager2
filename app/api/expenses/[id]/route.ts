@@ -8,10 +8,10 @@ import { updateCashExpenseRecord, deleteCashExpenseRecord } from '@/lib/utils/ca
 // 특정 ID 지출 조회
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = params.id;
+    const { id } = await params;
     
     // 현재 인증된 사용자 가져오기
     const user = await currentUser();
@@ -42,10 +42,10 @@ export async function GET(
 // 지출 내역 수정
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = params.id;
+    const { id } = await params;
     const body = await request.json();
     
     // 현재 인증된 사용자 가져오기
@@ -117,10 +117,10 @@ export async function PUT(
 // 지출 내역 삭제
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = params.id;
+    const { id } = await params;
     
     // 현재 인증된 사용자 가져오기
     const user = await currentUser();

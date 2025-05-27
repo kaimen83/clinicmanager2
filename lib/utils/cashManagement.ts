@@ -146,22 +146,113 @@ export async function updateCashRecord(
 // 거래 삭제 시 시재 기록 삭제
 export async function deleteCashRecord(transactionId: string, paymentMethod: string): Promise<void> {
     try {
+        console.log('시재 기록 삭제 시작:', {
+            transactionId,
+            paymentMethod,
+            isCash: paymentMethod === PAYMENT_METHODS.CASH,
+            PAYMENT_METHODS_CASH: PAYMENT_METHODS.CASH
+        });
+
         if (paymentMethod !== PAYMENT_METHODS.CASH) {
+            console.log('현금 결제가 아니므로 시재 기록 삭제를 건너뜁니다.');
             return; // 현금 결제가 아니면 시재에 영향 없음
         }
 
+        // Mongoose와 MongoDB 직접 접근 모두 시도
+        try {
+            // 1. Mongoose 모델 사용 시도
+            const dbConnect = (await import('@/lib/mongoose')).default;
+            await dbConnect();
+            
+            const CashRecord = (await import('@/lib/models/CashRecord')).default;
+            
+            console.log('Mongoose 모델로 시재 기록 조회 중...');
+            const cashRecordMongoose = await CashRecord.findOne({
+                transactionId: new ObjectId(transactionId),
+                type: '수입'
+            });
+            
+            console.log('Mongoose로 조회된 시재 기록:', cashRecordMongoose);
+            
+            if (cashRecordMongoose) {
+                console.log('Mongoose로 시재 기록 삭제 실행 중:', { cashRecordId: cashRecordMongoose._id });
+                
+                const deleteResult = await CashRecord.deleteOne({ _id: cashRecordMongoose._id });
+                
+                console.log('Mongoose 시재 기록 삭제 결과:', {
+                    deletedCount: deleteResult.deletedCount,
+                    acknowledged: deleteResult.acknowledged
+                });
+                
+                if (deleteResult.deletedCount > 0) {
+                    console.log('Mongoose 시재 기록 삭제 성공');
+                    return;
+                }
+            }
+        } catch (mongooseError) {
+            console.log('Mongoose 삭제 실패, MongoDB 직접 접근 시도:', mongooseError);
+        }
+
+        // 2. MongoDB 직접 접근 시도
         const { db } = await connectToDatabase();
         
+        // 먼저 모든 관련 시재 기록을 조회해보자
+        const allCashRecords = await db.collection('cashrecords').find({
+            transactionId: new ObjectId(transactionId)
+        }).toArray();
+        
+        console.log('MongoDB 직접 접근으로 조회된 모든 시재 기록:', {
+            transactionId,
+            count: allCashRecords.length,
+            records: allCashRecords
+        });
+        
+        // 수입 타입 시재 기록 조회
         const cashRecord = await db.collection('cashrecords').findOne({
             transactionId: new ObjectId(transactionId),
             type: '수입'
         });
 
+        console.log('MongoDB 직접 접근으로 조회된 수입 시재 기록:', cashRecord);
+
         if (cashRecord) {
+            console.log('MongoDB 직접 접근으로 시재 기록 삭제 실행 중:', { cashRecordId: cashRecord._id });
+            
             const deleteResult = await db.collection('cashrecords').deleteOne({ _id: cashRecord._id });
+            
+            console.log('MongoDB 직접 접근 시재 기록 삭제 결과:', {
+                deletedCount: deleteResult.deletedCount,
+                acknowledged: deleteResult.acknowledged
+            });
             
             if (deleteResult.deletedCount === 0) {
                 throw new Error(`시재 기록 삭제 실패 (ID: ${cashRecord._id})`);
+            }
+            
+            console.log('MongoDB 직접 접근 시재 기록 삭제 성공');
+        } else {
+            console.log('삭제할 시재 기록을 찾을 수 없습니다. 다른 조건으로 재시도...');
+            
+            // 혹시 type 없이 저장된 기록이 있는지 확인
+            const anyRecord = await db.collection('cashrecords').findOne({
+                transactionId: new ObjectId(transactionId)
+            });
+            
+            console.log('type 조건 없이 조회된 시재 기록:', anyRecord);
+            
+            if (anyRecord) {
+                console.log('type 조건 없는 시재 기록 삭제 실행 중:', { cashRecordId: anyRecord._id });
+                
+                const deleteResult = await db.collection('cashrecords').deleteOne({ _id: anyRecord._id });
+                
+                console.log('type 조건 없는 시재 기록 삭제 결과:', {
+                    deletedCount: deleteResult.deletedCount,
+                    acknowledged: deleteResult.acknowledged
+                });
+                
+                if (deleteResult.deletedCount > 0) {
+                    console.log('type 조건 없는 시재 기록 삭제 성공');
+                }
             }
         }
     } catch (error) {
@@ -326,15 +417,17 @@ export function findCashPayment(payments: any[]): any | null {
 // 거래에 대한 시재 기록 생성 (기존 함수 업데이트)
 export async function createCashRecordsForTransaction(transaction: any): Promise<void> {
     try {
-        if (!transaction.payments || !Array.isArray(transaction.payments)) {
-            console.log('결제 정보가 없어 시재 기록을 생성하지 않습니다.');
-            return;
+        // 새로운 구조: payments 배열에서 현금 결제 찾기
+        let cashPayment = null;
+        if (transaction.payments && Array.isArray(transaction.payments)) {
+            cashPayment = findCashPayment(transaction.payments);
         }
-
-        const cashPayment = findCashPayment(transaction.payments);
+        
+        // 기존 구조: paymentMethod 필드 확인
+        const isLegacyCashPayment = transaction.paymentMethod === PAYMENT_METHODS.CASH;
         
         if (cashPayment) {
-            console.log('현금 결제 발견, 시재 기록 생성:', {
+            console.log('현금 결제 발견 (새 구조), 시재 기록 생성:', {
                 transactionId: transaction._id,
                 amount: cashPayment.amount,
                 patientName: transaction.patientName
@@ -346,6 +439,21 @@ export async function createCashRecordsForTransaction(transaction: any): Promise
                 patientName: transaction.patientName,
                 date: transaction.date
             });
+        } else if (isLegacyCashPayment && transaction.paymentAmount > 0) {
+            console.log('현금 결제 발견 (기존 구조), 시재 기록 생성:', {
+                transactionId: transaction._id,
+                amount: transaction.paymentAmount,
+                patientName: transaction.patientName
+            });
+
+            await createCashRecord({
+                _id: transaction._id,
+                amount: transaction.paymentAmount,
+                patientName: transaction.patientName,
+                date: transaction.date
+            });
+        } else {
+            console.log('현금 결제가 없어 시재 기록을 생성하지 않습니다.');
         }
     } catch (error) {
         console.error('거래 시재 기록 생성 중 오류:', error);
@@ -359,30 +467,59 @@ export async function updateCashRecordsForTransaction(
     newTransaction: any
 ): Promise<void> {
     try {
+        // 새로운 구조: payments 배열에서 현금 결제 찾기
         const oldCashPayment = oldTransaction.payments ? findCashPayment(oldTransaction.payments) : null;
         const newCashPayment = newTransaction.payments ? findCashPayment(newTransaction.payments) : null;
+        
+        // 기존 구조: paymentMethod 필드 확인
+        const oldIsLegacyCash = oldTransaction.paymentMethod === PAYMENT_METHODS.CASH;
+        const newIsLegacyCash = newTransaction.paymentMethod === PAYMENT_METHODS.CASH;
 
         console.log('거래 시재 기록 업데이트:', {
             transactionId: newTransaction._id,
             oldCashPayment: oldCashPayment ? { amount: oldCashPayment.amount } : null,
-            newCashPayment: newCashPayment ? { amount: newCashPayment.amount } : null
+            newCashPayment: newCashPayment ? { amount: newCashPayment.amount } : null,
+            oldIsLegacyCash,
+            newIsLegacyCash
         });
 
-        await updateCashRecord(
-            oldCashPayment ? { 
-                paymentMethod: PAYMENT_METHODS.CASH, 
+        // 기존 결제 정보 구성
+        let oldPaymentInfo = null;
+        if (oldCashPayment) {
+            oldPaymentInfo = {
+                paymentMethod: PAYMENT_METHODS.CASH,
                 amount: oldCashPayment.amount,
                 date: oldTransaction.date,
                 patientName: oldTransaction.patientName
-            } : null,
-            newCashPayment ? { 
-                paymentMethod: PAYMENT_METHODS.CASH, 
+            };
+        } else if (oldIsLegacyCash && oldTransaction.paymentAmount > 0) {
+            oldPaymentInfo = {
+                paymentMethod: PAYMENT_METHODS.CASH,
+                amount: oldTransaction.paymentAmount,
+                date: oldTransaction.date,
+                patientName: oldTransaction.patientName
+            };
+        }
+
+        // 새로운 결제 정보 구성
+        let newPaymentInfo = null;
+        if (newCashPayment) {
+            newPaymentInfo = {
+                paymentMethod: PAYMENT_METHODS.CASH,
                 amount: newCashPayment.amount,
                 date: newTransaction.date,
                 patientName: newTransaction.patientName
-            } : null,
-            newTransaction._id
-        );
+            };
+        } else if (newIsLegacyCash && newTransaction.paymentAmount > 0) {
+            newPaymentInfo = {
+                paymentMethod: PAYMENT_METHODS.CASH,
+                amount: newTransaction.paymentAmount,
+                date: newTransaction.date,
+                patientName: newTransaction.patientName
+            };
+        }
+
+        await updateCashRecord(oldPaymentInfo, newPaymentInfo, newTransaction._id);
     } catch (error) {
         console.error('거래 시재 기록 업데이트 중 오류:', error);
         throw error;

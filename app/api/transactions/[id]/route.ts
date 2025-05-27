@@ -302,17 +302,35 @@ export async function DELETE(
 
     // 현금 결제가 있는 경우 시재 기록 삭제
     try {
+      console.log('내원정보 삭제 - 시재 기록 삭제 확인:', {
+        transactionId: id,
+        hasPayments: !!transactionToDelete.payments,
+        paymentsLength: transactionToDelete.payments?.length,
+        paymentMethod: transactionToDelete.paymentMethod
+      });
+
+      let cashPaymentFound = false;
+
       // 새로운 구조: payments 배열이 있는 경우
-      if (transactionToDelete.payments && Array.isArray(transactionToDelete.payments)) {
+      if (transactionToDelete.payments && Array.isArray(transactionToDelete.payments) && transactionToDelete.payments.length > 0) {
         for (const payment of transactionToDelete.payments) {
+          console.log('결제 정보 확인:', {
+            method: payment.method,
+            isCash: payment.method === PAYMENT_METHODS.CASH
+          });
+          
           if (payment.method === PAYMENT_METHODS.CASH) {
-            await deleteCashRecord(id, payment.method);
+            console.log('현금 결제 발견 (새 구조), 시재 기록 삭제 시작');
+            await deleteCashRecord(id, PAYMENT_METHODS.CASH);
+            cashPaymentFound = true;
           }
         }
-      } 
-      // 기존 구조: paymentMethod 필드가 직접 있는 경우
-      else if (transactionToDelete.paymentMethod) {
-        await deleteCashRecord(id, transactionToDelete.paymentMethod);
+      }
+      
+      // 기존 구조: paymentMethod 필드가 직접 있는 경우 (새 구조에서 현금 결제를 찾지 못한 경우에만)
+      if (!cashPaymentFound && transactionToDelete.paymentMethod === PAYMENT_METHODS.CASH) {
+        console.log('기존 구조 현금 결제 발견, 시재 기록 삭제 시작');
+        await deleteCashRecord(id, PAYMENT_METHODS.CASH);
       }
     } catch (cashError) {
       console.error('시재 기록 삭제 중 오류:', cashError);
