@@ -22,6 +22,7 @@ import {
 import { StepIndicator } from './patient-transaction/StepComponents';
 import PatientInfoStep from './patient-transaction/PatientInfoStep';
 import TreatmentInfoStep from './patient-transaction/TreatmentInfoStep';
+import NewPatientModal from './NewPatientModal';
 
 export default function PatientTransactionForm({ isOpen, onClose, onTransactionAdded }: PatientTransactionFormProps) {
   const { selectedDate, triggerCashRefresh, triggerStatsRefresh } = useDateContext();
@@ -52,6 +53,10 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
   const [patientNotFound, setPatientNotFound] = useState(false);
   const [patientFound, setPatientFound] = useState(false);
   const [isNewPatientPrompt, setIsNewPatientPrompt] = useState(false);
+  
+  // 신규 환자 등록 모달 상태
+  const [isNewPatientModalOpen, setIsNewPatientModalOpen] = useState(false);
+  const [pendingChartNumber, setPendingChartNumber] = useState('');
   
   // 시스템 설정 데이터
   const [doctors, setDoctors] = useState<{value: string}[]>([]);
@@ -148,7 +153,7 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
       
       if (!response.ok) {
         if (response.status === 404) {
-          // 환자 정보가 없는 경우
+          // 환자 정보가 없는 경우 - 신규 환자 등록 여부 확인
           setPatientNotFound(true);
           // 폼 초기화
           setFormData(prev => ({
@@ -158,11 +163,25 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
             isNew: false
           }));
           
-          toast({
-            title: "환자를 찾을 수 없음",
-            description: "입력한 차트번호로 등록된 환자가 없습니다. 먼저 환자를 등록해주세요.",
-            variant: "destructive",
-          });
+          // 신규 환자 등록 여부 확인
+          const shouldRegister = window.confirm(
+            `차트번호 ${chartNumber}로 등록된 환자가 없습니다.\n새로운 환자로 등록하시겠습니까?`
+          );
+          
+          if (shouldRegister) {
+            // 신규 환자 등록 모달 열기
+            setPendingChartNumber(chartNumber);
+            setIsNewPatientModalOpen(true);
+          } else {
+            // 취소 시 차트번호 필드 초기화
+            setFormData(prev => ({
+              ...prev,
+              chartNumber: '',
+              patientName: '',
+              visitPath: '',
+              isNew: false
+            }));
+          }
         } else {
           throw new Error('환자 정보 조회 중 오류가 발생했습니다.');
         }
@@ -172,6 +191,7 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
       // 환자 정보 가져오기 성공
       const patientData: PatientData = await response.json();
       setPatientFound(true);
+      setPatientNotFound(false);
       
       // 폼 데이터 자동 입력
       setFormData(prev => ({
@@ -195,6 +215,43 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // 신규 환자 등록 성공 콜백
+  const handleNewPatientSuccess = (patientData: { chartNumber: string; name: string; visitPath: string }) => {
+    // 폼에 환자 정보 자동 입력
+    setFormData(prev => ({
+      ...prev,
+      chartNumber: patientData.chartNumber,
+      patientName: patientData.name,
+      visitPath: patientData.visitPath,
+      isNew: false
+    }));
+    
+    // 상태 업데이트
+    setPatientFound(true);
+    setPatientNotFound(false);
+    setPendingChartNumber('');
+    
+    toast({
+      title: "환자 등록 완료",
+      description: `${patientData.name} 환자가 성공적으로 등록되었습니다.`,
+    });
+  };
+
+  // 신규 환자 등록 모달 닫기 콜백
+  const handleNewPatientModalClose = () => {
+    setIsNewPatientModalOpen(false);
+    setPendingChartNumber('');
+    
+    // 모달이 닫히면 차트번호 필드 초기화
+    setFormData(prev => ({
+      ...prev,
+      chartNumber: '',
+      patientName: '',
+      visitPath: '',
+      isNew: false
+    }));
   };
 
   // 차트번호 입력 후 실행되는 함수
@@ -221,6 +278,9 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
     setPatientNotFound(false);
     setPatientFound(false);
     setIsNewPatientPrompt(false);
+    // 신규 환자 등록 모달 관련 상태 초기화
+    setIsNewPatientModalOpen(false);
+    setPendingChartNumber('');
   };
 
   // 현재 진료 그룹 초기화
@@ -686,53 +746,63 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]">
-        <DialogHeader>
-          <DialogTitle>내원 정보 등록</DialogTitle>
-          <DialogDescription>
-            환자의 내원 정보와 진료 내역을 입력해주세요.
-          </DialogDescription>
-          
-          <StepIndicator currentStep={currentStep} totalSteps={totalSteps} />
-        </DialogHeader>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {renderStepContent()}
-          
-          <DialogFooter className="flex justify-between">
-            {currentStep > 1 ? (
-              <Button type="button" variant="outline" onClick={goToPreviousStep}>
-                <ChevronLeft className="mr-2 h-4 w-4" />
-                이전
-              </Button>
-            ) : (
-              <div></div>
-            )}
+    <>
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>내원 정보 등록</DialogTitle>
+            <DialogDescription>
+              환자의 내원 정보와 진료 내역을 입력해주세요.
+            </DialogDescription>
             
-            {currentStep < totalSteps ? (
-              <Button type="button" onClick={goToNextStep}>
-                다음
-                <ChevronRight className="ml-2 h-4 w-4" />
-              </Button>
-            ) : (
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    처리 중...
-                  </>
-                ) : (
-                  <>
-                    <Check className="mr-2 h-4 w-4" />
-                    등록하기
-                  </>
-                )}
-              </Button>
-            )}
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+            <StepIndicator currentStep={currentStep} totalSteps={totalSteps} />
+          </DialogHeader>
+          
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {renderStepContent()}
+            
+            <DialogFooter className="flex justify-between">
+              {currentStep > 1 ? (
+                <Button type="button" variant="outline" onClick={goToPreviousStep}>
+                  <ChevronLeft className="mr-2 h-4 w-4" />
+                  이전
+                </Button>
+              ) : (
+                <div></div>
+              )}
+              
+              {currentStep < totalSteps ? (
+                <Button type="button" onClick={goToNextStep}>
+                  다음
+                  <ChevronRight className="ml-2 h-4 w-4" />
+                </Button>
+              ) : (
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      처리 중...
+                    </>
+                  ) : (
+                    <>
+                      <Check className="mr-2 h-4 w-4" />
+                      등록하기
+                    </>
+                  )}
+                </Button>
+              )}
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* 신규 환자 등록 모달 */}
+      <NewPatientModal
+        isOpen={isNewPatientModalOpen}
+        chartNumber={pendingChartNumber}
+        onClose={handleNewPatientModalClose}
+        onSuccess={handleNewPatientSuccess}
+      />
+    </>
   );
 } 
