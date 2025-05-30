@@ -174,12 +174,16 @@ export async function GET(request: NextRequest) {
       totalExpenses: expenses
         .reduce((sum, expense) => sum + (Number(expense.amount) || 0), 0),
       consultationAgreedAmount: 0,
-      consultationNonAgreedAmount: 0
+      consultationNonAgreedAmount: 0,
+      consultationAgreedCount: 0,
+      consultationNonAgreedCount: 0
     };
     
     // 상담 관련 금액 계산 - consultations 컬렉션에서 직접 조회
     let consultationAgreedAmount = 0;
     let consultationNonAgreedAmount = 0;
+    let consultationAgreedCount = 0;
+    let consultationNonAgreedCount = 0;
     
     // 상담 데이터 날짜 필터링을 위한 날짜 범위 설정
     let consultationStartDate: Date, consultationEndDate: Date;
@@ -251,15 +255,19 @@ export async function GET(request: NextRequest) {
     // 결과 처리
     if (agreedConsultationStats.length > 0) {
       consultationAgreedAmount = agreedConsultationStats[0].totalAmount || 0;
+      consultationAgreedCount = agreedConsultationStats[0].count || 0;
     }
 
     if (nonAgreedConsultationStats.length > 0) {
       consultationNonAgreedAmount = nonAgreedConsultationStats[0].totalAmount || 0;
+      consultationNonAgreedCount = nonAgreedConsultationStats[0].count || 0;
     }
 
     // stats 객체에 상담 통계 설정
     stats.consultationAgreedAmount = consultationAgreedAmount;
     stats.consultationNonAgreedAmount = consultationNonAgreedAmount;
+    stats.consultationAgreedCount = consultationAgreedCount;
+    stats.consultationNonAgreedCount = consultationNonAgreedCount;
 
     // 총 수입 계산 (전체 수납금액 + 진료외수입)
     stats.totalIncome = stats.totalPaymentAmount + stats.nonMedicalIncome;

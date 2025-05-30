@@ -116,6 +116,8 @@ export type DailyStats = {
   totalExpenses: number;
   consultationAgreedAmount: number;
   consultationNonAgreedAmount: number;
+  consultationAgreedCount: number;
+  consultationNonAgreedCount: number;
 };
 
 // 월별 통계 타입

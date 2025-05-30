@@ -139,13 +139,21 @@ export default function ClinicStats({ date }: Props) {
     value: string | number, 
     isAmount: boolean = true, 
     isClickable: boolean = false, 
-    paymentMethod?: string
+    paymentMethod?: string,
+    count?: number
   ) => {
     const content = (
       <>
         <p className="text-xs text-gray-500">{label}</p>
         <p className="text-lg font-semibold">
-          {isAmount ? `₩${formatAmount(value as number)}` : value}
+          {count !== undefined ? (
+            <span>
+              <span className="text-sm text-gray-600">{count}건 / </span>
+              {isAmount ? `₩${formatAmount(value as number)}` : value}
+            </span>
+          ) : (
+            isAmount ? `₩${formatAmount(value as number)}` : value
+          )}
         </p>
       </>
     );
@@ -209,7 +217,9 @@ export default function ClinicStats({ date }: Props) {
     totalIncome: 0,
     totalExpenses: 0,
     consultationAgreedAmount: 0,
-    consultationNonAgreedAmount: 0
+    consultationNonAgreedAmount: 0,
+    consultationAgreedCount: 0,
+    consultationNonAgreedCount: 0
   };
   
   const currentDailyStats = dailyStats || defaultStats;
@@ -226,8 +236,8 @@ export default function ClinicStats({ date }: Props) {
       {renderStatItem('진료외수입', currentDailyStats.nonMedicalIncome, true, true)}
       {renderStatItem('총수입', currentDailyStats.totalIncome)}
       {renderStatItem('총지출', currentDailyStats.totalExpenses)}
-      {renderStatItem('상담 동의금액', currentDailyStats.consultationAgreedAmount, true, true)}
-      {renderStatItem('상담 미동의금액', currentDailyStats.consultationNonAgreedAmount, true, true)}
+      {renderStatItem('상담 동의금액', currentDailyStats.consultationAgreedAmount, true, true, undefined, currentDailyStats.consultationAgreedCount)}
+      {renderStatItem('상담 미동의금액', currentDailyStats.consultationNonAgreedAmount, true, true, undefined, currentDailyStats.consultationNonAgreedCount)}
     </div>
   );
   
@@ -241,8 +251,8 @@ export default function ClinicStats({ date }: Props) {
       {renderStatItem('진료외수입', currentMonthlyStats.nonMedicalIncome, true, true)}
       {renderStatItem('총수입', currentMonthlyStats.totalIncome)}
       {renderStatItem('총지출', currentMonthlyStats.totalExpenses)}
-      {renderStatItem('상담 동의금액', currentMonthlyStats.consultationAgreedAmount, true, true)}
-      {renderStatItem('상담 미동의금액', currentMonthlyStats.consultationNonAgreedAmount, true, true)}
+      {renderStatItem('상담 동의금액', currentMonthlyStats.consultationAgreedAmount, true, true, undefined, currentMonthlyStats.consultationAgreedCount)}
+      {renderStatItem('상담 미동의금액', currentMonthlyStats.consultationNonAgreedAmount, true, true, undefined, currentMonthlyStats.consultationNonAgreedCount)}
     </div>
   );
   
