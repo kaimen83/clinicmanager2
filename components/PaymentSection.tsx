@@ -169,7 +169,7 @@ export default function PaymentSection({
                     onClick={() => togglePaymentType(payment._id!)}
                     className="text-xs h-6 px-2"
                   >
-                    {payment.isConsultation ? '상담' : '일반'}
+                    {payment.isConsultation ? '상담수납' : '일반수납'}
                   </Button>
                 </div>
               </div>
