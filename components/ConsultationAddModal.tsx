@@ -1,8 +1,30 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { toISODateString, getCurrentKstDate } from '@/lib/utils';
+import { 
+  Loader2, 
+  MessageSquare, 
+  Calendar, 
+  User, 
+  UserCheck, 
+  DollarSign, 
+  CheckCircle2, 
+  FileText,
+  Stethoscope,
+  Users
+} from 'lucide-react';
 
 interface ConsultationAddModalProps {
   isOpen: boolean;
@@ -37,25 +59,31 @@ export default function ConsultationAddModal({
   });
   const [settings, setSettings] = useState<Settings>({ doctor: [], staff: [] });
   const [loading, setLoading] = useState(false);
+  const [isLoadingSettings, setIsLoadingSettings] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   // 설정 로드
   useEffect(() => {
     if (isOpen) {
       loadSettings();
+      // 폼 초기화
+      setFormData({
+        date: toISODateString(getCurrentKstDate()),
+        chartNumber,
+        patientName,
+        doctor: '',
+        staff: '',
+        amount: '',
+        agreed: false,
+        notes: ''
+      });
+      setErrors({});
     }
-  }, [isOpen]);
-
-  // 차트번호와 환자명이 변경되면 폼 데이터 업데이트
-  useEffect(() => {
-    setFormData(prev => ({
-      ...prev,
-      chartNumber,
-      patientName
-    }));
-  }, [chartNumber, patientName]);
+  }, [isOpen, chartNumber, patientName]);
 
   const loadSettings = async () => {
     try {
+      setIsLoadingSettings(true);
       // 의사 데이터 가져오기
       const doctorResponse = await fetch('/api/settings?type=doctor');
       let doctorData = [];
@@ -83,24 +111,71 @@ export default function ConsultationAddModal({
         description: "설정을 불러오는데 실패했습니다.",
         variant: "destructive",
       });
+    } finally {
+      setIsLoadingSettings(false);
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value, type } = e.target;
-    
-    if (type === 'checkbox') {
-      const checked = (e.target as HTMLInputElement).checked;
-      setFormData(prev => ({
-        ...prev,
-        [name]: checked
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+
+    // 입력 시 해당 필드의 오류 메시지 삭제
+    if (errors[name]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
     }
+  };
+
+  const handleSelectChange = (name: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+
+    // 선택 시 해당 필드의 오류 메시지 삭제
+    if (errors[name]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+  };
+
+  const handleSwitchChange = (checked: boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      agreed: checked
+    }));
+  };
+
+  // 폼 유효성 검사
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    
+    if (!formData.doctor) {
+      newErrors.doctor = '담당의사는 필수입니다.';
+    }
+    
+    if (!formData.staff) {
+      newErrors.staff = '상담직원은 필수입니다.';
+    }
+    
+    if (!formData.amount) {
+      newErrors.amount = '상담금액은 필수입니다.';
+    } else if (Number(formData.amount) < 0) {
+      newErrors.amount = '상담금액은 0 이상이어야 합니다.';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -115,12 +190,7 @@ export default function ConsultationAddModal({
       return;
     }
 
-    if (!formData.doctor || !formData.staff || !formData.amount) {
-      toast({
-        title: "오류",
-        description: "모든 필수 항목을 입력해주세요.",
-        variant: "destructive",
-      });
+    if (!validateForm()) {
       return;
     }
 
@@ -158,18 +228,6 @@ export default function ConsultationAddModal({
       });
       onSuccess();
       onClose();
-      
-      // 폼 초기화
-      setFormData({
-        date: toISODateString(getCurrentKstDate()),
-        chartNumber: chartNumber,
-        patientName: patientName,
-        doctor: '',
-        staff: '',
-        amount: '',
-        agreed: false,
-        notes: ''
-      });
 
     } catch (error: any) {
       console.error('상담 정보 저장 중 오류:', error);
@@ -183,186 +241,292 @@ export default function ConsultationAddModal({
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b">
-          <h3 className="text-lg font-semibold text-gray-900">상담 정보 입력</h3>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <label htmlFor="consultation-date" className="text-sm font-medium text-gray-700">
-                상담날짜
-              </label>
-              <input
-                type="date"
-                id="consultation-date"
-                name="date"
-                value={formData.date}
-                onChange={handleInputChange}
-                required
-                className="px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* 차트번호와 환자명 */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="chartNumber" className="block text-sm font-medium text-gray-700 mb-2">
-                차트번호
-              </label>
-              <input
-                type="text"
-                id="chartNumber"
-                name="chartNumber"
-                value={formData.chartNumber}
-                readOnly
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 focus:outline-none"
-              />
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[600px] p-0 gap-0 max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="px-6 py-4 border-b bg-gradient-to-r from-green-50 to-emerald-50">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center w-10 h-10 bg-green-100 rounded-full">
+              <MessageSquare className="w-5 h-5 text-green-600" />
             </div>
             <div>
-              <label htmlFor="patientName" className="block text-sm font-medium text-gray-700 mb-2">
-                환자명
-              </label>
-              <input
-                type="text"
-                id="patientName"
-                name="patientName"
-                value={formData.patientName}
-                readOnly
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 focus:outline-none"
-              />
+              <DialogTitle className="text-xl font-semibold text-gray-900">상담 정보 입력</DialogTitle>
+              <p className="text-sm text-gray-600 mt-1">환자의 상담 정보를 입력하고 관리하세요</p>
             </div>
           </div>
+        </DialogHeader>
 
-          {/* 담당의사와 상담직원 */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="doctor" className="block text-sm font-medium text-gray-700 mb-2">
-                담당의사 <span className="text-red-500">*</span>
-              </label>
-              <select
-                id="doctor"
-                name="doctor"
-                value={formData.doctor}
-                onChange={handleInputChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        {isLoadingSettings ? (
+          <div className="py-12 flex flex-col items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-green-600 mb-3" />
+            <p className="text-gray-600">설정을 불러오는 중입니다...</p>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="p-6">
+            <div className="space-y-6">
+              {/* 기본 정보 카드 */}
+              <Card className="border-gray-200">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-gray-500" />
+                    <CardTitle className="text-sm font-medium text-gray-700">기본 정보</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* 상담날짜 */}
+                    <div className="space-y-2">
+                      <Label htmlFor="date" className="text-sm font-medium text-gray-700">
+                        상담날짜
+                      </Label>
+                      <Input
+                        type="date"
+                        id="date"
+                        name="date"
+                        value={formData.date}
+                        onChange={handleInputChange}
+                        required
+                        className="border-gray-300 focus:border-green-500 focus:ring-green-200"
+                      />
+                    </div>
+
+                    {/* 차트번호 */}
+                    <div className="space-y-2">
+                      <Label htmlFor="chartNumber" className="text-sm font-medium text-gray-700">
+                        차트번호
+                      </Label>
+                      <Input
+                        id="chartNumber"
+                        name="chartNumber"
+                        value={formData.chartNumber}
+                        readOnly
+                        className="bg-gray-50 border-gray-200 text-gray-700 font-mono"
+                      />
+                    </div>
+
+                    {/* 환자명 */}
+                    <div className="space-y-2">
+                      <Label htmlFor="patientName" className="text-sm font-medium text-gray-700">
+                        환자명
+                      </Label>
+                      <Input
+                        id="patientName"
+                        name="patientName"
+                        value={formData.patientName}
+                        readOnly
+                        className="bg-gray-50 border-gray-200 text-gray-700"
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Separator />
+
+              {/* 담당자 정보 카드 */}
+              <Card className="border-gray-200">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4 text-gray-500" />
+                    <CardTitle className="text-sm font-medium text-gray-700">담당자 정보</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* 담당의사 */}
+                    <div className="space-y-2">
+                      <Label htmlFor="doctor" className="text-sm font-medium text-gray-700 flex items-center gap-1">
+                        <Stethoscope className="w-3 h-3" />
+                        담당의사
+                        <span className="text-red-500">*</span>
+                      </Label>
+                      <Select value={formData.doctor} onValueChange={(value) => handleSelectChange('doctor', value)}>
+                        <SelectTrigger className={`transition-all duration-200 ${
+                          errors.doctor 
+                            ? "border-red-300 focus:border-red-500 focus:ring-red-200" 
+                            : "border-gray-300 focus:border-green-500 focus:ring-green-200"
+                        }`}>
+                          <SelectValue placeholder="담당의사를 선택하세요" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {settings.doctor.map((doctor, index) => (
+                            <SelectItem key={index} value={doctor.value} className="cursor-pointer">
+                              {doctor.value}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {errors.doctor && (
+                        <p className="text-red-500 text-xs flex items-center gap-1">
+                          <span className="w-1 h-1 bg-red-500 rounded-full"></span>
+                          {errors.doctor}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* 상담직원 */}
+                    <div className="space-y-2">
+                      <Label htmlFor="staff" className="text-sm font-medium text-gray-700 flex items-center gap-1">
+                        <UserCheck className="w-3 h-3" />
+                        상담직원
+                        <span className="text-red-500">*</span>
+                      </Label>
+                      <Select value={formData.staff} onValueChange={(value) => handleSelectChange('staff', value)}>
+                        <SelectTrigger className={`transition-all duration-200 ${
+                          errors.staff 
+                            ? "border-red-300 focus:border-red-500 focus:ring-red-200" 
+                            : "border-gray-300 focus:border-green-500 focus:ring-green-200"
+                        }`}>
+                          <SelectValue placeholder="상담직원을 선택하세요" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {settings.staff.map((staff, index) => (
+                            <SelectItem key={index} value={staff.value} className="cursor-pointer">
+                              {staff.value}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {errors.staff && (
+                        <p className="text-red-500 text-xs flex items-center gap-1">
+                          <span className="w-1 h-1 bg-red-500 rounded-full"></span>
+                          {errors.staff}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Separator />
+
+              {/* 상담 상세 정보 카드 */}
+              <Card className="border-gray-200">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="w-4 h-4 text-gray-500" />
+                    <CardTitle className="text-sm font-medium text-gray-700">상담 상세 정보</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="space-y-4">
+                    {/* 상담금액과 동의여부 */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* 상담금액 */}
+                      <div className="space-y-2">
+                        <Label htmlFor="amount" className="text-sm font-medium text-gray-700 flex items-center gap-1">
+                          상담금액
+                          <span className="text-red-500">*</span>
+                        </Label>
+                        <Input
+                          type="number"
+                          id="amount"
+                          name="amount"
+                          value={formData.amount}
+                          onChange={handleInputChange}
+                          required
+                          min="0"
+                          className={`transition-all duration-200 ${
+                            errors.amount 
+                              ? "border-red-300 focus:border-red-500 focus:ring-red-200" 
+                              : "border-gray-300 focus:border-green-500 focus:ring-green-200"
+                          }`}
+                          placeholder="금액을 입력하세요"
+                        />
+                        {errors.amount && (
+                          <p className="text-red-500 text-xs flex items-center gap-1">
+                            <span className="w-1 h-1 bg-red-500 rounded-full"></span>
+                            {errors.amount}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* 동의여부 */}
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium text-gray-700">동의여부</Label>
+                        <div className="flex items-center space-x-3 h-10">
+                          <Switch
+                            id="agreed"
+                            checked={formData.agreed}
+                            onCheckedChange={handleSwitchChange}
+                          />
+                          <Label htmlFor="agreed" className="cursor-pointer flex items-center gap-2">
+                            {formData.agreed ? (
+                              <>
+                                <CheckCircle2 className="w-4 h-4 text-green-600" />
+                                <span className="text-green-700 font-medium">동의함</span>
+                                <Badge variant="default" className="bg-green-100 text-green-800">
+                                  확인됨
+                                </Badge>
+                              </>
+                            ) : (
+                              <>
+                                <span className="text-gray-600">동의 안함</span>
+                                <Badge variant="secondary" className="bg-gray-100 text-gray-600">
+                                  미확인
+                                </Badge>
+                              </>
+                            )}
+                          </Label>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 비고 */}
+                    <div className="space-y-2">
+                      <Label htmlFor="notes" className="text-sm font-medium text-gray-700 flex items-center gap-1">
+                        <FileText className="w-3 h-3" />
+                        비고
+                      </Label>
+                      <Textarea
+                        id="notes"
+                        name="notes"
+                        value={formData.notes}
+                        onChange={handleInputChange}
+                        rows={3}
+                        className="border-gray-300 focus:border-green-500 focus:ring-green-200 resize-none"
+                        placeholder="추가 메모나 특이사항을 입력하세요"
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Separator className="my-6" />
+
+            {/* 버튼 영역 */}
+            <div className="flex justify-end gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                disabled={loading}
+                className="px-6"
               >
-                <option value="">선택하세요</option>
-                {settings.doctor.map((doctor, index) => (
-                  <option key={index} value={doctor.value}>
-                    {doctor.value}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label htmlFor="staff" className="block text-sm font-medium text-gray-700 mb-2">
-                상담직원 <span className="text-red-500">*</span>
-              </label>
-              <select
-                id="staff"
-                name="staff"
-                value={formData.staff}
-                onChange={handleInputChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                취소
+              </Button>
+              <Button
+                type="submit"
+                disabled={loading}
+                className="px-6 bg-green-600 hover:bg-green-700"
               >
-                <option value="">선택하세요</option>
-                {settings.staff.map((staff, index) => (
-                  <option key={index} value={staff.value}>
-                    {staff.value}
-                  </option>
-                ))}
-              </select>
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    저장 중...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="mr-2 h-4 w-4" />
+                    저장
+                  </>
+                )}
+              </Button>
             </div>
-          </div>
-
-          {/* 상담금액과 동의여부 */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-2">
-                상담금액 <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="number"
-                id="amount"
-                name="amount"
-                value={formData.amount}
-                onChange={handleInputChange}
-                required
-                min="0"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="금액을 입력하세요"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                동의여부
-              </label>
-              <div className="flex items-center h-10">
-                <label className="flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    name="agreed"
-                    checked={formData.agreed}
-                    onChange={handleInputChange}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <span className="ml-2 text-sm text-gray-700">동의</span>
-                </label>
-              </div>
-            </div>
-          </div>
-
-          {/* 비고 */}
-          <div>
-            <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-2">
-              비고
-            </label>
-            <textarea
-              id="notes"
-              name="notes"
-              value={formData.notes}
-              onChange={handleInputChange}
-              rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="추가 메모를 입력하세요"
-            />
-          </div>
-
-          {/* 버튼 */}
-          <div className="flex justify-end gap-3 pt-4 border-t">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
-            >
-              취소
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {loading ? '저장 중...' : '저장'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+          </form>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 } 

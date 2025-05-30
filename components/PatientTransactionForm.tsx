@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from '@/hooks/use-toast';
 import { useDateContext } from '@/lib/context/dateContext';
 import { PatientData } from '@/lib/types';
-import { Check, ChevronLeft, ChevronRight, Loader2, Plus, Trash2 } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight, Loader2, Plus, Trash2, UserPlus } from 'lucide-react';
 import { toISODateString } from '@/lib/utils';
 
 // 타입 및 컴포넌트 임포트
@@ -28,6 +28,7 @@ import PaymentSection from './PaymentSection';
 
 export default function PatientTransactionForm({ isOpen, onClose, onTransactionAdded }: PatientTransactionFormProps) {
   const { selectedDate, triggerCashRefresh, triggerStatsRefresh } = useDateContext();
+  const chartNumberRef = useRef<HTMLInputElement>(null);
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 2;
   
@@ -722,6 +723,7 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
             isLoading={isLoading}
             patientNotFound={patientNotFound}
             isNewPatientPrompt={isNewPatientPrompt}
+            chartNumberRef={chartNumberRef}
             handleInputChange={handleInputChange}
             handleChartNumberBlur={handleChartNumberBlur}
             handleSwitchChange={handleSwitchChange}
@@ -753,25 +755,36 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="sm:max-w-[1200px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>내원 정보 등록</DialogTitle>
-            <DialogDescription>
-              환자의 내원 정보와 진료 내역을 입력해주세요.
-            </DialogDescription>
+        <DialogContent className="sm:max-w-[1200px] max-h-[90vh] overflow-y-auto p-0 gap-0">
+          <DialogHeader className="px-6 py-4 border-b bg-gradient-to-r from-purple-50 to-pink-50">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-10 h-10 bg-purple-100 rounded-full">
+                <UserPlus className="w-5 h-5 text-purple-600" />
+              </div>
+              <div>
+                <DialogTitle className="text-xl font-semibold text-gray-900">내원 정보 등록</DialogTitle>
+                <DialogDescription className="text-sm text-gray-600 mt-1">
+                  환자의 내원 정보와 진료 내역을 단계별로 입력해주세요
+                </DialogDescription>
+              </div>
+            </div>
             
-            <StepIndicator currentStep={currentStep} totalSteps={totalSteps} />
+            <div className="mt-4">
+              <StepIndicator currentStep={currentStep} totalSteps={totalSteps} />
+            </div>
           </DialogHeader>
           
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 p-6">
             {/* 좌측: 내원정보 입력 폼 */}
-            <div className="lg:col-span-2">
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {renderStepContent()}
+            <div className="lg:col-span-3">
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="bg-white rounded-lg border border-gray-200 p-6">
+                  {renderStepContent()}
+                </div>
                 
-                <DialogFooter className="flex justify-between">
+                <div className="flex justify-between items-center pt-4 border-t border-gray-200">
                   {currentStep > 1 ? (
-                    <Button type="button" variant="outline" onClick={goToPreviousStep}>
+                    <Button type="button" variant="outline" onClick={goToPreviousStep} className="px-6">
                       <ChevronLeft className="mr-2 h-4 w-4" />
                       이전
                     </Button>
@@ -780,12 +793,12 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
                   )}
                   
                   {currentStep < totalSteps ? (
-                    <Button type="button" onClick={goToNextStep}>
+                    <Button type="button" onClick={goToNextStep} className="px-6 bg-purple-600 hover:bg-purple-700">
                       다음
                       <ChevronRight className="ml-2 h-4 w-4" />
                     </Button>
                   ) : (
-                    <Button type="submit" disabled={isSubmitting}>
+                    <Button type="submit" disabled={isSubmitting} className="px-6 bg-purple-600 hover:bg-purple-700">
                       {isSubmitting ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -799,26 +812,30 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
                       )}
                     </Button>
                   )}
-                </DialogFooter>
+                </div>
               </form>
             </div>
 
             {/* 우측: 상담/수납 관리 */}
-            <div className="lg:col-span-1 space-y-4">
-              <ConsultationSection
-                chartNumber={formData.chartNumber}
-                patientName={formData.patientName}
-                consultationPaymentTotal={consultationPaymentTotal}
-                onConsultationChange={() => {
-                  // 상담 내역 변경 시 필요한 처리
-                }}
-              />
+            <div className="lg:col-span-2 flex flex-col space-y-4 min-h-0">
+              <div className="flex-1 min-h-0">
+                <ConsultationSection
+                  chartNumber={formData.chartNumber}
+                  patientName={formData.patientName}
+                  consultationPaymentTotal={consultationPaymentTotal}
+                  onConsultationChange={() => {
+                    // 상담 내역 변경 시 필요한 처리
+                  }}
+                />
+              </div>
               
-              <PaymentSection
-                chartNumber={formData.chartNumber}
-                patientName={formData.patientName}
-                onPaymentChange={setConsultationPaymentTotal}
-              />
+              <div className="flex-1 min-h-0">
+                <PaymentSection
+                  chartNumber={formData.chartNumber}
+                  patientName={formData.patientName}
+                  onPaymentChange={setConsultationPaymentTotal}
+                />
+              </div>
             </div>
           </div>
         </DialogContent>

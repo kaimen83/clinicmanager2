@@ -152,8 +152,8 @@ export default function ConsultationSection({
   const statusInfo = getStatusInfo();
 
   return (
-    <Card className="h-full">
-      <CardHeader className="pb-3">
+    <Card className="flex flex-col h-full">
+      <CardHeader className="pb-3 flex-shrink-0">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base">상담 내역</CardTitle>
           <Button
@@ -167,9 +167,9 @@ export default function ConsultationSection({
         </div>
       </CardHeader>
       
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 flex-1 min-h-0">
         {/* 상담 내역 목록 */}
-        <div className="space-y-2 max-h-48 overflow-y-auto">
+        <div className="space-y-2 overflow-y-auto max-h-64">
           {loading ? (
             <div className="text-center py-4 text-sm text-gray-500">
               불러오는 중...
