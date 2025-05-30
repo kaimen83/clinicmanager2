@@ -23,6 +23,8 @@ import { StepIndicator } from './patient-transaction/StepComponents';
 import PatientInfoStep from './patient-transaction/PatientInfoStep';
 import TreatmentInfoStep from './patient-transaction/TreatmentInfoStep';
 import NewPatientModal from './NewPatientModal';
+import ConsultationSection from './ConsultationSection';
+import PaymentSection from './PaymentSection';
 
 export default function PatientTransactionForm({ isOpen, onClose, onTransactionAdded }: PatientTransactionFormProps) {
   const { selectedDate, triggerCashRefresh, triggerStatsRefresh } = useDateContext();
@@ -79,6 +81,9 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // 상담수납 금액 상태 추가
+  const [consultationPaymentTotal, setConsultationPaymentTotal] = useState(0);
   
   // 시스템 설정 데이터 가져오기
   const fetchSettings = async () => {
@@ -748,7 +753,7 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[1200px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>내원 정보 등록</DialogTitle>
             <DialogDescription>
@@ -758,41 +763,64 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
             <StepIndicator currentStep={currentStep} totalSteps={totalSteps} />
           </DialogHeader>
           
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {renderStepContent()}
-            
-            <DialogFooter className="flex justify-between">
-              {currentStep > 1 ? (
-                <Button type="button" variant="outline" onClick={goToPreviousStep}>
-                  <ChevronLeft className="mr-2 h-4 w-4" />
-                  이전
-                </Button>
-              ) : (
-                <div></div>
-              )}
-              
-              {currentStep < totalSteps ? (
-                <Button type="button" onClick={goToNextStep}>
-                  다음
-                  <ChevronRight className="ml-2 h-4 w-4" />
-                </Button>
-              ) : (
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      처리 중...
-                    </>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* 좌측: 내원정보 입력 폼 */}
+            <div className="lg:col-span-2">
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {renderStepContent()}
+                
+                <DialogFooter className="flex justify-between">
+                  {currentStep > 1 ? (
+                    <Button type="button" variant="outline" onClick={goToPreviousStep}>
+                      <ChevronLeft className="mr-2 h-4 w-4" />
+                      이전
+                    </Button>
                   ) : (
-                    <>
-                      <Check className="mr-2 h-4 w-4" />
-                      등록하기
-                    </>
+                    <div></div>
                   )}
-                </Button>
-              )}
-            </DialogFooter>
-          </form>
+                  
+                  {currentStep < totalSteps ? (
+                    <Button type="button" onClick={goToNextStep}>
+                      다음
+                      <ChevronRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  ) : (
+                    <Button type="submit" disabled={isSubmitting}>
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          처리 중...
+                        </>
+                      ) : (
+                        <>
+                          <Check className="mr-2 h-4 w-4" />
+                          등록하기
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </DialogFooter>
+              </form>
+            </div>
+
+            {/* 우측: 상담/수납 관리 */}
+            <div className="lg:col-span-1 space-y-4">
+              <ConsultationSection
+                chartNumber={formData.chartNumber}
+                patientName={formData.patientName}
+                consultationPaymentTotal={consultationPaymentTotal}
+                onConsultationChange={() => {
+                  // 상담 내역 변경 시 필요한 처리
+                }}
+              />
+              
+              <PaymentSection
+                chartNumber={formData.chartNumber}
+                patientName={formData.patientName}
+                onPaymentChange={setConsultationPaymentTotal}
+              />
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 

@@ -37,6 +37,7 @@ export interface Consultation {
   agreed: boolean;
   confirmedDate?: Date | null;
   notes?: string;
+  createdBy: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -48,6 +49,7 @@ export interface Payment {
   method: string;
   cardCompany?: string;
   amount: number;
+  isConsultation?: boolean;
 }
 
 // Transaction 타입 (MongoDB 데이터 모델)
@@ -117,4 +119,16 @@ export type DailyStats = {
 };
 
 // 월별 통계 타입
-export type MonthlyStats = DailyStats; 
+export type MonthlyStats = DailyStats;
+
+// 상담 등록/수정 폼 데이터 타입
+export interface ConsultationFormData {
+  date: string;
+  chartNumber: string;
+  patientName: string;
+  doctor: string;
+  staff: string;
+  amount: number;
+  agreed: boolean;
+  notes?: string;
+} 
