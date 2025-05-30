@@ -8,6 +8,7 @@ import { toISODateString } from '@/lib/utils';
 import PaymentListModal from './PaymentListModal';
 import CardCompanyStatsModal from './CardCompanyStatsModal';
 import ExtraIncomeListModal from './ExtraIncomeListModal';
+import ConsultationStatsModal from './ConsultationStatsModal';
 import { useDateContext } from '@/lib/context/dateContext';
 
 type Props = {
@@ -25,6 +26,7 @@ export default function ClinicStats({ date }: Props) {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isCardStatsModalOpen, setIsCardStatsModalOpen] = useState(false);
   const [isExtraIncomeModalOpen, setIsExtraIncomeModalOpen] = useState(false);
+  const [isConsultationStatsModalOpen, setIsConsultationStatsModalOpen] = useState(false);
   const [modalTitle, setModalTitle] = useState('');
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | undefined>(undefined);
   
@@ -90,6 +92,12 @@ export default function ClinicStats({ date }: Props) {
   
   // 결제 목록 모달 열기
   const handleOpenPaymentModal = (label: string, paymentMethod?: string) => {
+    // 상담 통계인 경우 상담 통계 모달 열기
+    if (label === '상담 동의금액' || label === '상담 미동의금액') {
+      setIsConsultationStatsModalOpen(true);
+      return;
+    }
+    
     // 카드 결제인 경우 카드사별 통계 모달 열기
     if (paymentMethod === '카드') {
       setModalTitle(`${label} 통계`);
@@ -218,8 +226,8 @@ export default function ClinicStats({ date }: Props) {
       {renderStatItem('진료외수입', currentDailyStats.nonMedicalIncome, true, true)}
       {renderStatItem('총수입', currentDailyStats.totalIncome)}
       {renderStatItem('총지출', currentDailyStats.totalExpenses)}
-      {renderStatItem('상담 동의금액', currentDailyStats.consultationAgreedAmount)}
-      {renderStatItem('상담 미동의금액', currentDailyStats.consultationNonAgreedAmount)}
+      {renderStatItem('상담 동의금액', currentDailyStats.consultationAgreedAmount, true, true)}
+      {renderStatItem('상담 미동의금액', currentDailyStats.consultationNonAgreedAmount, true, true)}
     </div>
   );
   
@@ -233,8 +241,8 @@ export default function ClinicStats({ date }: Props) {
       {renderStatItem('진료외수입', currentMonthlyStats.nonMedicalIncome, true, true)}
       {renderStatItem('총수입', currentMonthlyStats.totalIncome)}
       {renderStatItem('총지출', currentMonthlyStats.totalExpenses)}
-      {renderStatItem('상담 동의금액', currentMonthlyStats.consultationAgreedAmount)}
-      {renderStatItem('상담 미동의금액', currentMonthlyStats.consultationNonAgreedAmount)}
+      {renderStatItem('상담 동의금액', currentMonthlyStats.consultationAgreedAmount, true, true)}
+      {renderStatItem('상담 미동의금액', currentMonthlyStats.consultationNonAgreedAmount, true, true)}
     </div>
   );
   
@@ -287,6 +295,14 @@ export default function ClinicStats({ date }: Props) {
         onClose={handleCloseExtraIncomeModal}
         title={modalTitle}
         date={date}
+        type={activeTab as 'daily' | 'monthly'}
+      />
+      
+      {/* 상담 통계 모달 */}
+      <ConsultationStatsModal
+        isOpen={isConsultationStatsModalOpen}
+        onClose={() => setIsConsultationStatsModalOpen(false)}
+        date={toISODateString(date)}
         type={activeTab as 'daily' | 'monthly'}
       />
     </>

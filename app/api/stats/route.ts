@@ -177,25 +177,90 @@ export async function GET(request: NextRequest) {
       consultationNonAgreedAmount: 0
     };
     
-    // 상담 관련 금액 계산
+    // 상담 관련 금액 계산 - consultations 컬렉션에서 직접 조회
     let consultationAgreedAmount = 0;
     let consultationNonAgreedAmount = 0;
     
-    transactions.forEach(transaction => {
-      if (transaction.consultations && transaction.consultations.length > 0) {
-        transaction.consultations.forEach((consultation: any) => {
-          if (consultation.agreed) {
-            consultationAgreedAmount += Number(consultation.amount) || 0;
-          } else {
-            consultationNonAgreedAmount += Number(consultation.amount) || 0;
-          }
-        });
-      }
-    });
+    // 상담 데이터 날짜 필터링을 위한 날짜 범위 설정
+    let consultationStartDate: Date, consultationEndDate: Date;
     
+    if (type === 'daily') {
+      // 일별: 해당 날짜의 00:00:00 ~ 23:59:59.999 (한국 시간)
+      const dateParts = date.split('-').map(Number);
+      const startDateObj = new Date(dateParts[0], dateParts[1] - 1, dateParts[2], 0, 0, 0, 0);
+      const endDateObj = new Date(dateParts[0], dateParts[1] - 1, dateParts[2], 23, 59, 59, 999);
+      
+      // 한국 시간과 UTC 간의 시차 조정 (9시간)
+      const kstOffset = 9 * 60 * 60 * 1000;
+      consultationStartDate = new Date(startDateObj.getTime() - kstOffset);
+      consultationEndDate = new Date(endDateObj.getTime() - kstOffset);
+    } else {
+      // 월별: 해당 월의 첫날 00:00:00 ~ 마지막날 23:59:59.999 (한국 시간)
+      const [year, month] = date.split('-').map(Number);
+      const startDateObj = new Date(year, month - 1, 1, 0, 0, 0, 0);
+      const endDateObj = new Date(year, month, 0, 23, 59, 59, 999);
+      
+      // 한국 시간과 UTC 간의 시차 조정 (9시간)
+      const kstOffset = 9 * 60 * 60 * 1000;
+      consultationStartDate = new Date(startDateObj.getTime() - kstOffset);
+      consultationEndDate = new Date(endDateObj.getTime() - kstOffset);
+    }
+
+    // consultations 컬렉션에서 MongoDB aggregation을 사용해서 통계 계산
+    // 동의한 상담 통계 (confirmedDate 기준)
+    const agreedConsultationStats = await db.collection('consultations').aggregate([
+      {
+        $match: {
+          agreed: true,
+          confirmedDate: { 
+            $gte: consultationStartDate, 
+            $lte: consultationEndDate,
+            $ne: null  // confirmedDate가 null이 아닌 경우만 포함
+          }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          totalAmount: { $sum: "$amount" },
+          count: { $sum: 1 }
+        }
+      }
+    ]).toArray();
+
+    // 미동의한 상담 통계 (date 기준)
+    const nonAgreedConsultationStats = await db.collection('consultations').aggregate([
+      {
+        $match: {
+          agreed: false,
+          date: { 
+            $gte: consultationStartDate, 
+            $lte: consultationEndDate
+          }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          totalAmount: { $sum: "$amount" },
+          count: { $sum: 1 }
+        }
+      }
+    ]).toArray();
+
+    // 결과 처리
+    if (agreedConsultationStats.length > 0) {
+      consultationAgreedAmount = agreedConsultationStats[0].totalAmount || 0;
+    }
+
+    if (nonAgreedConsultationStats.length > 0) {
+      consultationNonAgreedAmount = nonAgreedConsultationStats[0].totalAmount || 0;
+    }
+
+    // stats 객체에 상담 통계 설정
     stats.consultationAgreedAmount = consultationAgreedAmount;
     stats.consultationNonAgreedAmount = consultationNonAgreedAmount;
-    
+
     // 총 수입 계산 (전체 수납금액 + 진료외수입)
     stats.totalIncome = stats.totalPaymentAmount + stats.nonMedicalIncome;
     
