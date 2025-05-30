@@ -10,23 +10,17 @@ export async function GET(
   try {
     const { db } = await connectToDatabase();
     
-    // 트랜잭션에서 해당 상담 내역 찾기
-    const transaction = await db
-      .collection('transactions')
-      .findOne({
-        'consultations._id': new ObjectId(params.id)
-      });
+    // consultations 컬렉션에서 직접 조회
+    const consultation = await db
+      .collection('consultations')
+      .findOne({ _id: new ObjectId(params.id) });
 
-    if (!transaction) {
+    if (!consultation) {
       return NextResponse.json(
         { error: "상담 정보를 찾을 수 없습니다." },
         { status: 404 }
       );
     }
-
-    const consultation = transaction.consultations.find(
-      (c: any) => c._id.toString() === params.id
-    );
 
     return NextResponse.json(consultation);
   } catch (error) {
@@ -48,13 +42,11 @@ export async function PUT(
     const { db } = await connectToDatabase();
 
     // 기존 상담 정보 조회
-    const transaction = await db
-      .collection('transactions')
-      .findOne({
-        'consultations._id': new ObjectId(params.id)
-      });
+    const existingConsultation = await db
+      .collection('consultations')
+      .findOne({ _id: new ObjectId(params.id) });
 
-    if (!transaction) {
+    if (!existingConsultation) {
       return NextResponse.json(
         { error: "상담 정보를 찾을 수 없습니다." },
         { status: 404 }
@@ -63,20 +55,20 @@ export async function PUT(
 
     // 상담 정보 업데이트
     const result = await db
-      .collection('transactions')
+      .collection('consultations')
       .updateOne(
-        { 'consultations._id': new ObjectId(params.id) },
+        { _id: new ObjectId(params.id) },
         {
           $set: {
-            'consultations.$.date': new Date(body.date),
-            'consultations.$.chartNumber': body.chartNumber,
-            'consultations.$.patientName': body.patientName,
-            'consultations.$.doctor': body.doctor,
-            'consultations.$.staff': body.staff,
-            'consultations.$.amount': body.amount,
-            'consultations.$.agreed': body.agreed,
-            'consultations.$.notes': body.notes,
-            'consultations.$.updatedAt': new Date()
+            date: new Date(body.date),
+            chartNumber: body.chartNumber,
+            patientName: body.patientName,
+            doctor: body.doctor,
+            staff: body.staff,
+            amount: body.amount,
+            agreed: body.agreed,
+            notes: body.notes,
+            updatedAt: new Date()
           }
         }
       );
@@ -89,22 +81,9 @@ export async function PUT(
     }
 
     // 업데이트된 상담 정보 반환
-    const updatedTransaction = await db
-      .collection('transactions')
-      .findOne({
-        'consultations._id': new ObjectId(params.id)
-      });
-
-    if (!updatedTransaction) {
-      return NextResponse.json(
-        { error: "업데이트된 상담 정보를 찾을 수 없습니다." },
-        { status: 404 }
-      );
-    }
-
-    const updatedConsultation = updatedTransaction.consultations.find(
-      (c: any) => c._id.toString() === params.id
-    );
+    const updatedConsultation = await db
+      .collection('consultations')
+      .findOne({ _id: new ObjectId(params.id) });
 
     return NextResponse.json(updatedConsultation);
   } catch (error) {
@@ -126,17 +105,10 @@ export async function DELETE(
 
     // 상담 내역 삭제
     const result = await db
-      .collection('transactions')
-      .updateOne(
-        { 'consultations._id': new ObjectId(params.id) },
-        {
-          $pull: {
-            consultations: { _id: new ObjectId(params.id) } as any
-          }
-        }
-      );
+      .collection('consultations')
+      .deleteOne({ _id: new ObjectId(params.id) });
 
-    if (result.matchedCount === 0) {
+    if (result.deletedCount === 0) {
       return NextResponse.json(
         { error: "상담 내역을 찾을 수 없습니다." },
         { status: 404 }

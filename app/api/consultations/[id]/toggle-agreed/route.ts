@@ -12,22 +12,9 @@ export async function PATCH(
     const { db } = await connectToDatabase();
 
     // 기존 상담 정보 조회
-    const transaction = await db
-      .collection('transactions')
-      .findOne({
-        'consultations._id': new ObjectId(params.id)
-      });
-
-    if (!transaction) {
-      return NextResponse.json(
-        { error: "상담 내역을 찾을 수 없습니다." },
-        { status: 404 }
-      );
-    }
-
-    const consultation = transaction.consultations.find(
-      (c: any) => c._id.toString() === params.id
-    );
+    const consultation = await db
+      .collection('consultations')
+      .findOne({ _id: new ObjectId(params.id) });
 
     if (!consultation) {
       return NextResponse.json(
@@ -39,23 +26,23 @@ export async function PATCH(
     // 동의 상태 변경
     const newAgreedStatus = !consultation.agreed;
     const updateData: any = {
-      'consultations.$.agreed': newAgreedStatus,
-      'consultations.$.updatedAt': new Date()
+      agreed: newAgreedStatus,
+      updatedAt: new Date()
     };
 
     // 미동의로 변경되는 경우 confirmedDate를 null로 설정
     if (!newAgreedStatus) {
-      updateData['consultations.$.confirmedDate'] = null;
+      updateData.confirmedDate = null;
     } else {
       // 동의로 변경되는 경우 confirmedDate를 현재 날짜로 설정
-      updateData['consultations.$.confirmedDate'] = body.confirmedDate ? new Date(body.confirmedDate) : new Date();
+      updateData.confirmedDate = body.confirmedDate ? new Date(body.confirmedDate) : new Date();
     }
 
     // 상담 정보 업데이트
     const result = await db
-      .collection('transactions')
+      .collection('consultations')
       .updateOne(
-        { 'consultations._id': new ObjectId(params.id) },
+        { _id: new ObjectId(params.id) },
         { $set: updateData }
       );
 
@@ -67,22 +54,9 @@ export async function PATCH(
     }
 
     // 업데이트된 상담 정보 반환
-    const updatedTransaction = await db
-      .collection('transactions')
-      .findOne({
-        'consultations._id': new ObjectId(params.id)
-      });
-
-    if (!updatedTransaction) {
-      return NextResponse.json(
-        { error: "업데이트된 상담 정보를 찾을 수 없습니다." },
-        { status: 404 }
-      );
-    }
-
-    const updatedConsultation = updatedTransaction.consultations.find(
-      (c: any) => c._id.toString() === params.id
-    );
+    const updatedConsultation = await db
+      .collection('consultations')
+      .findOne({ _id: new ObjectId(params.id) });
 
     return NextResponse.json(updatedConsultation);
   } catch (error) {
