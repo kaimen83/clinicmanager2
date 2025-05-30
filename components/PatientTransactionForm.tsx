@@ -77,7 +77,8 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
     cardCompany: '',
     cashReceipt: false,
     paymentAmount: 0,
-    notes: ''
+    notes: '',
+    isConsultation: false
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -301,7 +302,8 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
       cardCompany: '',
       cashReceipt: false,
       paymentAmount: 0,
-      notes: ''
+      notes: '',
+      isConsultation: false
     });
   };
 
@@ -635,6 +637,7 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
           cashReceipt: group.cashReceipt,
           paymentAmount: group.paymentAmount,
           notes: group.notes,
+          isConsultation: group.isConsultation,
           // API가 treatments 필드를 필요로 함
           treatments: [{
             doctor: group.doctor,
@@ -643,7 +646,8 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
             cardCompany: group.cardCompany,
             cashReceipt: group.cashReceipt,
             paymentAmount: group.paymentAmount,
-            notes: group.notes
+            notes: group.notes,
+            isConsultation: group.isConsultation
           }]
         };
         

@@ -15,6 +15,7 @@ export type TreatmentGroup = {
   cashReceipt: boolean;
   paymentAmount: number;
   notes: string;
+  isConsultation: boolean;
 };
 
 // 환자 정보 폼 데이터 타입

@@ -171,6 +171,12 @@ export default function TreatmentInfoStep({
                         )}
                         <Separator orientation="vertical" className="h-3" />
                         <span className="font-medium">{group.paymentAmount.toLocaleString()}원</span>
+                        {group.isConsultation && (
+                          <>
+                            <Separator orientation="vertical" className="h-3" />
+                            <Badge variant="secondary" className="text-[10px] h-4 px-1 bg-blue-100 text-blue-700">상담</Badge>
+                          </>
+                        )}
                       </div>
                     </div>
                     <Button
@@ -333,17 +339,26 @@ export default function TreatmentInfoStep({
                   )}
                 </div>
                 
-                {(currentTreatmentGroup.paymentMethod === '현금' || currentTreatmentGroup.paymentMethod === '계좌이체') && (
-                  <div className="flex items-center space-x-2 h-10 mt-1">
-                    <Label htmlFor="cashReceipt" className="flex-grow text-sm">현금영수증 발행</Label>
-                    <Switch
-                      id="cashReceipt"
-                      checked={currentTreatmentGroup.cashReceipt}
-                      onCheckedChange={(checked) => handleTreatmentSwitchChange('cashReceipt', checked)}
-                    />
-                  </div>
-                )}
+                <div className="flex items-center space-x-2 h-10 mt-1">
+                  <Label htmlFor="isConsultation" className="flex-grow text-sm">상담수납</Label>
+                  <Switch
+                    id="isConsultation"
+                    checked={currentTreatmentGroup.isConsultation}
+                    onCheckedChange={(checked) => handleTreatmentSwitchChange('isConsultation', checked)}
+                  />
+                </div>
               </div>
+              
+              {(currentTreatmentGroup.paymentMethod === '현금' || currentTreatmentGroup.paymentMethod === '계좌이체') && (
+                <div className="flex items-center space-x-2 h-10 mt-3">
+                  <Label htmlFor="cashReceipt" className="flex-grow text-sm">현금영수증 발행</Label>
+                  <Switch
+                    id="cashReceipt"
+                    checked={currentTreatmentGroup.cashReceipt}
+                    onCheckedChange={(checked) => handleTreatmentSwitchChange('cashReceipt', checked)}
+                  />
+                </div>
+              )}
               
               <div className="space-y-1.5 mt-3">
                 <Label htmlFor="notes" className="text-sm">메모</Label>

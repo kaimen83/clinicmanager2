@@ -55,13 +55,13 @@ export const StepTitle = ({ step }: StepTitleProps) => {
   const IconComponent = currentStepInfo.icon;
   
   return (
-    <div className="flex items-center gap-3 mb-6 p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-100">
-      <div className="flex items-center justify-center w-8 h-8 bg-purple-100 rounded-full">
-        <IconComponent className="w-4 h-4 text-purple-600" />
+    <div className="flex items-center gap-2 mb-3 p-2 bg-gradient-to-r from-purple-50 to-pink-50 rounded-md border border-purple-100">
+      <div className="flex items-center justify-center w-6 h-6 bg-purple-100 rounded-full">
+        <IconComponent className="w-3 h-3 text-purple-600" />
       </div>
       <div>
-        <h3 className="text-lg font-semibold text-gray-900">{currentStepInfo.title}</h3>
-        <p className="text-sm text-gray-600">{currentStepInfo.description}</p>
+        <h3 className="text-sm font-semibold text-gray-900">{currentStepInfo.title}</h3>
+        <p className="text-xs text-gray-600">{currentStepInfo.description}</p>
       </div>
     </div>
   );
