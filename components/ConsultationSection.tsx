@@ -8,6 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Trash2, Plus, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
 import { Consultation } from '@/lib/types';
 import { toast } from 'sonner';
+import ConsultationAddModal from './ConsultationAddModal';
 
 interface ConsultationSectionProps {
   chartNumber: string;
@@ -52,6 +53,12 @@ export default function ConsultationSection({
   useEffect(() => {
     fetchConsultations();
   }, [chartNumber, patientName]);
+
+  // 상담 추가 성공 콜백
+  const handleConsultationAddSuccess = () => {
+    fetchConsultations(); // 상담 내역 새로고침
+    onConsultationChange?.(); // 부모 컴포넌트에 변경 알림
+  };
 
   // 동의여부 토글
   const toggleAgreed = async (consultationId: string) => {
@@ -235,6 +242,15 @@ export default function ConsultationSection({
           </div>
         )}
       </CardContent>
+
+      {/* 상담 추가 모달 */}
+      <ConsultationAddModal
+        isOpen={isConsultationModalOpen}
+        onClose={() => setIsConsultationModalOpen(false)}
+        chartNumber={chartNumber}
+        patientName={patientName}
+        onSuccess={handleConsultationAddSuccess}
+      />
     </Card>
   );
 } 

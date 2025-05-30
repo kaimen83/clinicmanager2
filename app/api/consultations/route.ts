@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
+import { createNewDate } from '@/lib/utils';
 
 // GET 요청 처리 - 상담 내역 목록 조회
 export async function GET(request: NextRequest) {
@@ -95,6 +96,54 @@ export async function GET(request: NextRequest) {
     console.error('상담 내역 목록 조회 중 에러:', error);
     return NextResponse.json(
       { error: "상담 내역 목록 조회 중 오류가 발생했습니다." },
+      { status: 500 }
+    );
+  }
+}
+
+// POST 요청 처리 - 상담 내역 추가
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { db } = await connectToDatabase();
+
+    // 필수 필드 검증
+    if (!body.chartNumber || !body.patientName || !body.doctor || !body.staff || !body.amount) {
+      return NextResponse.json(
+        { error: "필수 필드가 누락되었습니다." },
+        { status: 400 }
+      );
+    }
+
+    const now = createNewDate();
+    
+    const consultationData = {
+      date: new Date(body.date),
+      chartNumber: body.chartNumber,
+      patientName: body.patientName,
+      doctor: body.doctor,
+      staff: body.staff,
+      amount: Number(body.amount),
+      agreed: Boolean(body.agreed),
+      confirmedDate: body.agreed && body.confirmedDate ? new Date(body.confirmedDate) : null,
+      notes: body.notes || '',
+      createdAt: now,
+      updatedAt: now
+    };
+
+    // 상담 내역 저장
+    const result = await db.collection('consultations').insertOne(consultationData);
+    
+    // 저장된 상담 내역 조회
+    const savedConsultation = await db.collection('consultations').findOne({
+      _id: result.insertedId
+    });
+
+    return NextResponse.json(savedConsultation, { status: 201 });
+  } catch (error) {
+    console.error('상담 내역 저장 중 에러:', error);
+    return NextResponse.json(
+      { error: "상담 내역 저장 중 오류가 발생했습니다." },
       { status: 500 }
     );
   }

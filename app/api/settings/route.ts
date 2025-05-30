@@ -8,24 +8,54 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type');
     
-    if (!type) {
-      return NextResponse.json({ error: '설정 유형이 필요합니다.' }, { status: 400 });
-    }
-    
     const { db } = await connectToDatabase();
     
-    const settings = await db.collection('settings').find({ 
-      type: type,
-    }).sort({ order: 1 }).toArray();
-    
-    // 캐싱 비활성화 헤더 추가
-    return NextResponse.json({ settings }, {
-      headers: {
-        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0',
-      }
-    });
+    if (type) {
+      // 특정 타입의 설정만 조회
+      const settings = await db.collection('settings').find({ 
+        type: type,
+      }).sort({ order: 1 }).toArray();
+      
+      return NextResponse.json({ settings }, {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        }
+      });
+    } else {
+      // 모든 설정을 타입별로 그룹화해서 반환
+      const allSettings = await db.collection('settings').find({}).sort({ order: 1 }).toArray();
+      
+      // 타입별로 그룹화
+      const groupedSettings: { [key: string]: any[] } = {};
+      allSettings.forEach(setting => {
+        if (!groupedSettings[setting.type]) {
+          groupedSettings[setting.type] = [];
+        }
+        groupedSettings[setting.type].push({
+          value: setting.value,
+          label: setting.value,
+          isActive: setting.isActive,
+          order: setting.order
+        });
+      });
+      
+      // 각 타입별로 활성화된 항목만 필터링하고 순서대로 정렬
+      Object.keys(groupedSettings).forEach(type => {
+        groupedSettings[type] = groupedSettings[type]
+          .filter(item => item.isActive)
+          .sort((a, b) => a.order - b.order);
+      });
+      
+      return NextResponse.json(groupedSettings, {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        }
+      });
+    }
   } catch (error) {
     console.error('설정 조회 오류:', error);
     return NextResponse.json({ error: '설정을 조회하는 중 오류가 발생했습니다.' }, { status: 500 });
