@@ -153,23 +153,24 @@ export default function ConsultationSection({
 
   return (
     <Card className="flex flex-col h-full">
-      <CardHeader className="pb-3 flex-shrink-0">
+      <CardHeader className="pb-2 flex-shrink-0">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base">상담 내역</CardTitle>
+          <CardTitle className="text-sm">상담 내역</CardTitle>
           <Button
             size="sm"
             onClick={() => setIsConsultationModalOpen(true)}
             disabled={!chartNumber || !patientName}
+            className="h-7 px-2 text-xs"
           >
-            <Plus className="h-4 w-4 mr-1" />
+            <Plus className="h-3 w-3 mr-1" />
             추가
           </Button>
         </div>
       </CardHeader>
       
-      <CardContent className="space-y-4 flex-1 min-h-0">
-        {/* 상담 내역 목록 */}
-        <div className="space-y-2 overflow-y-auto max-h-64">
+      {/* 상담 내역 목록 - 고정 높이 스크롤 영역 */}
+      <div className="flex-1 min-h-0 px-6">
+        <div className="space-y-1 overflow-y-auto h-48">
           {loading ? (
             <div className="text-center py-4 text-sm text-gray-500">
               불러오는 중...
@@ -182,40 +183,44 @@ export default function ConsultationSection({
             consultations.map((consultation) => (
               <div
                 key={consultation._id}
-                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                className="flex items-center justify-between p-2 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors"
               >
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className="font-medium">
-                      {new Date(consultation.date).toLocaleDateString()}
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="font-medium text-gray-900">
+                      {new Date(consultation.date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
+                    </span>
+                    <span className="text-gray-600">|</span>
+                    <span className="font-semibold text-blue-600">
+                      {consultation.amount.toLocaleString()}원
                     </span>
                     {consultation.confirmedDate && (
-                      <span className="text-xs text-gray-500">
-                        (확정: {new Date(consultation.confirmedDate).toLocaleDateString()})
-                      </span>
+                      <>
+                        <span className="text-gray-400">|</span>
+                        <span className="text-xs text-green-600 font-medium">
+                          확정({new Date(consultation.confirmedDate).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })})
+                        </span>
+                      </>
                     )}
-                  </div>
-                  <div className="text-sm text-gray-600 mt-1">
-                    {consultation.doctor} | {consultation.amount.toLocaleString()}원
-                  </div>
-                  <div className="text-xs text-gray-500 mt-1">
-                    담당: {consultation.staff}
+                    <span className="text-gray-400">|</span>
+                    <span className="text-gray-500">{consultation.staff}</span>
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
                   <div className="flex items-center gap-1">
-                    <span className="text-xs text-gray-500">동의</span>
+                    <span className="text-xs text-gray-400">동의</span>
                     <Switch
                       checked={consultation.agreed}
                       onCheckedChange={() => toggleAgreed(consultation._id)}
+                      className="scale-75"
                     />
                   </div>
                   <Button
                     size="sm"
                     variant="ghost"
                     onClick={() => deleteConsultation(consultation._id)}
-                    className="text-red-500 hover:text-red-700"
+                    className="text-red-500 hover:text-red-700 h-6 w-6 p-0"
                   >
                     <Trash2 className="h-3 w-3" />
                   </Button>
@@ -224,24 +229,47 @@ export default function ConsultationSection({
             ))
           )}
         </div>
+      </div>
 
+      {/* 하단 고정 영역 - 합계 및 상태 */}
+      <div className="flex-shrink-0 px-6 pb-4 space-y-2">
         {/* 상담 동의금액 합계 */}
-        <div className="border-t pt-3">
-          <div className="flex justify-between items-center text-sm">
-            <span className="font-medium">상담 동의금액 합계:</span>
-            <span className="font-bold">{agreedTotal.toLocaleString()}원</span>
+        <div className="border-t pt-2">
+          <div className="flex justify-between items-center text-xs bg-gray-50 p-2 rounded-md">
+            <span className="font-medium text-gray-700">상담 동의금액 합계</span>
+            <span className="font-bold text-gray-900">{agreedTotal.toLocaleString()}원</span>
           </div>
         </div>
 
-        {/* 상담 수납 상태 */}
+        {/* 상담 수납 상태 - 컴팩트한 디자인 */}
         {consultations.length > 0 && (
-          <div className={`flex items-center gap-2 p-2 rounded-lg bg-gray-50 ${statusInfo.className}`}>
-            {statusInfo.icon}
-            <span className="text-sm font-medium">{statusInfo.text}</span>
-            <span className="text-sm font-bold ml-auto">{statusInfo.amount}</span>
+          <div className={`relative overflow-hidden rounded-md border ${
+            statusInfo.status === 'underpaid' ? 'border-red-200 bg-red-50' :
+            statusInfo.status === 'overpaid' ? 'border-orange-200 bg-orange-50' :
+            'border-green-200 bg-green-50'
+          }`}>
+            <div className="flex items-center justify-between p-2">
+              <div className="flex items-center gap-2">
+                <div className={`p-0.5 rounded-full ${
+                  statusInfo.status === 'underpaid' ? 'bg-red-100' :
+                  statusInfo.status === 'overpaid' ? 'bg-orange-100' :
+                  'bg-green-100'
+                }`}>
+                  {statusInfo.icon}
+                </div>
+                <div>
+                  <div className={`text-xs font-semibold ${statusInfo.className}`}>
+                    {statusInfo.text}
+                  </div>
+                </div>
+              </div>
+              <div className={`text-xs font-bold ${statusInfo.className}`}>
+                {statusInfo.amount}
+              </div>
+            </div>
           </div>
         )}
-      </CardContent>
+      </div>
 
       {/* 상담 추가 모달 */}
       <ConsultationAddModal

@@ -4,15 +4,15 @@ import { StepIndicatorProps, StepTitleProps } from '@/types/patient-transaction'
 // 스텝 인디케이터 컴포넌트
 export const StepIndicator = ({ currentStep, totalSteps }: StepIndicatorProps) => {
   return (
-    <div className="flex items-center justify-center gap-4">
+    <div className="flex items-center justify-center gap-2">
       {Array.from({ length: totalSteps }).map((_, index) => (
         <div key={index} className="flex items-center">
           <div
             className={`
-              flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all duration-200
+              flex items-center justify-center w-7 h-7 rounded-full border-2 transition-all duration-200
               ${
                 index + 1 === currentStep
-                  ? 'bg-purple-600 text-white border-purple-600 shadow-lg'
+                  ? 'bg-purple-600 text-white border-purple-600 shadow-md'
                   : index + 1 < currentStep
                   ? 'bg-purple-100 text-purple-600 border-purple-300'
                   : 'bg-gray-100 text-gray-400 border-gray-300'
@@ -20,16 +20,16 @@ export const StepIndicator = ({ currentStep, totalSteps }: StepIndicatorProps) =
             `}
           >
             {index + 1 < currentStep ? (
-              <Check className="h-5 w-5" />
+              <Check className="h-3 w-3" />
             ) : (
-              <span className="font-semibold">{index + 1}</span>
+              <span className="font-semibold text-sm">{index + 1}</span>
             )}
           </div>
           
           {index < totalSteps - 1 && (
             <div 
               className={`
-                w-16 h-0.5 mx-2 transition-all duration-200
+                w-12 h-0.5 mx-1 transition-all duration-200
                 ${
                   index + 1 < currentStep 
                     ? 'bg-purple-300' 

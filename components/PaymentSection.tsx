@@ -124,13 +124,13 @@ export default function PaymentSection({
 
   return (
     <Card className="flex flex-col h-full">
-      <CardHeader className="pb-3 flex-shrink-0">
-        <CardTitle className="text-base">수납 내역</CardTitle>
+      <CardHeader className="pb-2 flex-shrink-0">
+        <CardTitle className="text-sm">수납 내역</CardTitle>
       </CardHeader>
       
       <CardContent className="space-y-4 flex-1 min-h-0">
         {/* 수납 내역 목록 */}
-        <div className="space-y-2 overflow-y-auto max-h-64">
+        <div className="space-y-1 overflow-y-auto max-h-64">
           {loading ? (
             <div className="text-center py-4 text-sm text-gray-500">
               불러오는 중...
@@ -143,31 +143,33 @@ export default function PaymentSection({
             payments.map((payment) => (
               <div
                 key={payment._id}
-                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                className="flex items-center justify-between p-2 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors"
               >
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className="font-medium">
-                      {new Date(payment.date).toLocaleDateString()}
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="font-medium text-gray-900">
+                      {new Date(payment.date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
                     </span>
-                    <span className="font-bold">
+                    <span className="text-gray-600">|</span>
+                    <span className="font-semibold text-blue-600">
                       {payment.amount.toLocaleString()}원
                     </span>
-                  </div>
-                  <div className="flex items-center gap-1 text-xs text-gray-500 mt-1">
-                    {getPaymentIcon(payment.method)}
-                    <span>{getPaymentMethodDisplay(payment)}</span>
+                    <span className="text-gray-400">|</span>
+                    <div className="flex items-center gap-1">
+                      {getPaymentIcon(payment.method)}
+                      <span className="text-gray-600">{getPaymentMethodDisplay(payment)}</span>
+                    </div>
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center">
                   <Button
                     size="sm"
                     variant={payment.isConsultation ? "default" : "outline"}
                     onClick={() => togglePaymentType(payment._id!)}
-                    className="text-xs"
+                    className="text-xs h-6 px-2"
                   >
-                    {payment.isConsultation ? '상담수납' : '일반수납'}
+                    {payment.isConsultation ? '상담' : '일반'}
                   </Button>
                 </div>
               </div>
@@ -176,9 +178,9 @@ export default function PaymentSection({
         </div>
 
         {/* 상담수납금액 합계 */}
-        <div className="border-t pt-3">
-          <div className="flex justify-between items-center text-sm">
-            <span className="font-medium">상담수납금액 합계:</span>
+        <div className="border-t pt-2">
+          <div className="flex justify-between items-center text-xs bg-gray-50 p-2 rounded-md">
+            <span className="font-medium text-gray-700">상담수납금액 합계</span>
             <span className="font-bold text-blue-600">
               {consultationPaymentTotal.toLocaleString()}원
             </span>

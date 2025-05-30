@@ -756,33 +756,33 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="sm:max-w-[1200px] max-h-[90vh] overflow-y-auto p-0 gap-0">
-          <DialogHeader className="px-6 py-4 border-b bg-gradient-to-r from-purple-50 to-pink-50">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-10 h-10 bg-purple-100 rounded-full">
-                <UserPlus className="w-5 h-5 text-purple-600" />
+          <DialogHeader className="px-4 py-3 border-b bg-gradient-to-r from-purple-50 to-pink-50">
+            <div className="flex items-center gap-2">
+              <div className="flex items-center justify-center w-8 h-8 bg-purple-100 rounded-full">
+                <UserPlus className="w-4 h-4 text-purple-600" />
               </div>
               <div>
-                <DialogTitle className="text-xl font-semibold text-gray-900">내원 정보 등록</DialogTitle>
-                <DialogDescription className="text-sm text-gray-600 mt-1">
+                <DialogTitle className="text-lg font-semibold text-gray-900">내원 정보 등록</DialogTitle>
+                <DialogDescription className="text-xs text-gray-600">
                   환자의 내원 정보와 진료 내역을 단계별로 입력해주세요
                 </DialogDescription>
               </div>
             </div>
             
-            <div className="mt-4">
+            <div className="mt-2">
               <StepIndicator currentStep={currentStep} totalSteps={totalSteps} />
             </div>
           </DialogHeader>
           
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 p-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-4">
             {/* 좌측: 내원정보 입력 폼 */}
-            <div className="lg:col-span-3">
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="lg:col-span-1">
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="bg-white rounded-lg border border-gray-200 p-4">
                   {renderStepContent()}
                 </div>
                 
-                <div className="flex justify-between items-center pt-4 border-t border-gray-200">
+                <div className="flex justify-between items-center pt-3 border-t border-gray-200">
                   {currentStep > 1 ? (
                     <Button type="button" variant="outline" onClick={goToPreviousStep} className="px-6">
                       <ChevronLeft className="mr-2 h-4 w-4" />
@@ -817,7 +817,7 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
             </div>
 
             {/* 우측: 상담/수납 관리 */}
-            <div className="lg:col-span-2 flex flex-col space-y-4 min-h-0">
+            <div className="lg:col-span-1 flex flex-col space-y-3 min-h-0">
               <div className="flex-1 min-h-0">
                 <ConsultationSection
                   chartNumber={formData.chartNumber}
