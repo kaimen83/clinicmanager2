@@ -5,15 +5,16 @@ import { ObjectId } from 'mongodb';
 // GET 요청 처리 - 단일 상담 정보 조회
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const { db } = await connectToDatabase();
     
     // consultations 컬렉션에서 직접 조회
     const consultation = await db
       .collection('consultations')
-      .findOne({ _id: new ObjectId(params.id) });
+      .findOne({ _id: new ObjectId(id) });
 
     if (!consultation) {
       return NextResponse.json(
@@ -35,16 +36,17 @@ export async function GET(
 // PUT 요청 처리 - 상담 정보 수정
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await request.json();
     const { db } = await connectToDatabase();
 
     // 기존 상담 정보 조회
     const existingConsultation = await db
       .collection('consultations')
-      .findOne({ _id: new ObjectId(params.id) });
+      .findOne({ _id: new ObjectId(id) });
 
     if (!existingConsultation) {
       return NextResponse.json(
@@ -57,7 +59,7 @@ export async function PUT(
     const result = await db
       .collection('consultations')
       .updateOne(
-        { _id: new ObjectId(params.id) },
+        { _id: new ObjectId(id) },
         {
           $set: {
             date: new Date(body.date),
@@ -83,7 +85,7 @@ export async function PUT(
     // 업데이트된 상담 정보 반환
     const updatedConsultation = await db
       .collection('consultations')
-      .findOne({ _id: new ObjectId(params.id) });
+      .findOne({ _id: new ObjectId(id) });
 
     return NextResponse.json(updatedConsultation);
   } catch (error) {
@@ -98,15 +100,16 @@ export async function PUT(
 // DELETE 요청 처리 - 상담 내역 삭제
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const { db } = await connectToDatabase();
 
     // 상담 내역 삭제
     const result = await db
       .collection('consultations')
-      .deleteOne({ _id: new ObjectId(params.id) });
+      .deleteOne({ _id: new ObjectId(id) });
 
     if (result.deletedCount === 0) {
       return NextResponse.json(

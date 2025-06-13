@@ -5,16 +5,17 @@ import { ObjectId } from 'mongodb';
 // PATCH 요청 처리 - 동의여부 토글
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await request.json();
     const { db } = await connectToDatabase();
 
     // 기존 상담 정보 조회
     const consultation = await db
       .collection('consultations')
-      .findOne({ _id: new ObjectId(params.id) });
+      .findOne({ _id: new ObjectId(id) });
 
     if (!consultation) {
       return NextResponse.json(
@@ -42,7 +43,7 @@ export async function PATCH(
     const result = await db
       .collection('consultations')
       .updateOne(
-        { _id: new ObjectId(params.id) },
+        { _id: new ObjectId(id) },
         { $set: updateData }
       );
 
@@ -56,7 +57,7 @@ export async function PATCH(
     // 업데이트된 상담 정보 반환
     const updatedConsultation = await db
       .collection('consultations')
-      .findOne({ _id: new ObjectId(params.id) });
+      .findOne({ _id: new ObjectId(id) });
 
     return NextResponse.json(updatedConsultation);
   } catch (error) {
