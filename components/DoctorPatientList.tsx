@@ -765,7 +765,7 @@ export default function DoctorPatientList({ date }: Props) {
                           <TableHead>{renderSortableHeader('진료내용', 'treatmentType')}</TableHead>
                           <TableHead className="w-28 text-right">{renderSortableHeader('수납금액', 'paymentAmount')}</TableHead>
                           <TableHead className="w-44">{renderSortableHeader('수납방법', 'paymentMethod')}</TableHead>
-                          <TableHead className="w-24 text-right">관리</TableHead>
+                          <TableHead className="w-24 text-right">  </TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody style={{
