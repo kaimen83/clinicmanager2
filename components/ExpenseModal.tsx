@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, DollarSign } from 'lucide-react';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { cn, createNewDate, toISODateString } from '@/lib/utils';
@@ -228,145 +228,181 @@ export default function ExpenseModal({ isOpen, onClose, onSuccess, defaultDate, 
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>{isEditMode ? '지출 수정' : '지출 등록'}</DialogTitle>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader className="space-y-3">
+          <DialogTitle className="text-lg font-semibold flex items-center gap-2">
+            <DollarSign className="w-5 h-5 text-primary" />
+            {isEditMode ? '지출 수정' : '지출 등록'}
+          </DialogTitle>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* 날짜 선택 */}
-          <div className="space-y-2">
-            <Label htmlFor="date">날짜</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !formData.date && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {formData.date ? (
-                    format(formData.date, 'PPP', { locale: ko })
-                  ) : (
-                    <span>날짜 선택</span>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={formData.date}
-                  onSelect={handleDateChange}
-                  initialFocus
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* 기본 정보 */}
+          <div className="space-y-4">
+            <h3 className="text-base font-medium text-foreground border-b pb-2">기본 정보</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* 날짜 선택 */}
+              <div className="space-y-2">
+                <Label htmlFor="date" className="text-sm font-medium">
+                  날짜 <span className="text-destructive">*</span>
+                </Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !formData.date && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {formData.date ? (
+                        format(formData.date, 'PPP', { locale: ko })
+                      ) : (
+                        <span>날짜 선택</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={formData.date}
+                      onSelect={handleDateChange}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              
+              {/* 금액 입력 */}
+              <div className="space-y-2">
+                <Label htmlFor="amount" className="text-sm font-medium">
+                  금액 <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="amount"
+                  name="amount"
+                  type="number"
+                  value={formData.amount}
+                  onChange={handleChange}
+                  required
+                  placeholder="금액을 입력하세요"
+                  className="text-right"
                 />
-              </PopoverContent>
-            </Popover>
+              </div>
+            </div>
+            
+            {/* 지출 내역 입력 */}
+            <div className="space-y-2">
+              <Label htmlFor="details" className="text-sm font-medium">
+                지출 내역 <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="details"
+                name="details"
+                value={formData.details}
+                onChange={handleChange}
+                required
+                placeholder="지출 내역을 입력하세요"
+              />
+            </div>
           </div>
           
-          {/* 지출 내역 입력 */}
-          <div className="space-y-2">
-            <Label htmlFor="details">지출 내역</Label>
-            <Input
-              id="details"
-              name="details"
-              value={formData.details}
-              onChange={handleChange}
-              required
-              placeholder="지출 내역 입력"
-            />
+          {/* 결제 정보 */}
+          <div className="space-y-4">
+            <h3 className="text-base font-medium text-foreground border-b pb-2">결제 정보</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* 지불 방법 선택 */}
+              <div className="space-y-2">
+                <Label htmlFor="method" className="text-sm font-medium">
+                  지불 방법 <span className="text-destructive">*</span>
+                </Label>
+                <Select value={formData.method} onValueChange={handleMethodChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="지불 방법을 선택하세요" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="현금">현금</SelectItem>
+                    <SelectItem value="카드">카드</SelectItem>
+                    <SelectItem value="계좌이체">계좌이체</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* 영수증 여부 */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">영수증</Label>
+                <div className="flex items-center space-x-2 h-10">
+                  <Switch
+                    id="hasReceipt"
+                    checked={formData.hasReceipt}
+                    onCheckedChange={handleReceiptChange}
+                  />
+                  <Label htmlFor="hasReceipt" className="text-sm">영수증 있음</Label>
+                </div>
+              </div>
+            </div>
           </div>
           
-          {/* 금액 입력 */}
-          <div className="space-y-2">
-            <Label htmlFor="amount">금액</Label>
-            <Input
-              id="amount"
-              name="amount"
-              type="number"
-              value={formData.amount}
-              onChange={handleChange}
-              required
-              placeholder="금액 입력"
-            />
+          {/* 추가 정보 */}
+          <div className="space-y-4">
+            <h3 className="text-base font-medium text-foreground border-b pb-2">추가 정보 (선택사항)</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* 거래처 선택 */}
+              <div className="space-y-2">
+                <Label htmlFor="vendor" className="text-sm font-medium">거래처</Label>
+                <Select value={formData.vendor} onValueChange={handleVendorChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="거래처를 선택하세요" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">선택 안함</SelectItem>
+                    {vendors.map(vendor => (
+                      <SelectItem key={vendor._id} value={vendor.name}>
+                        {vendor.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* 계정과목 선택 */}
+              <div className="space-y-2">
+                <Label htmlFor="account" className="text-sm font-medium">계정과목</Label>
+                <Select value={formData.account} onValueChange={handleAccountChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="계정과목을 선택하세요" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">선택 안함</SelectItem>
+                    {accountTypes.map(account => (
+                      <SelectItem key={account._id} value={account.value}>
+                        {account.value}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            {/* 비고 입력 */}
+            <div className="space-y-2">
+              <Label htmlFor="notes" className="text-sm font-medium">비고</Label>
+              <Textarea
+                id="notes"
+                name="notes"
+                value={formData.notes}
+                onChange={handleChange}
+                placeholder="비고 사항을 입력하세요"
+                rows={3}
+                className="resize-none"
+              />
+            </div>
           </div>
           
-          {/* 지불 방법 선택 */}
-          <div className="space-y-2">
-            <Label htmlFor="method">지불 방법</Label>
-            <Select value={formData.method} onValueChange={handleMethodChange}>
-              <SelectTrigger>
-                <SelectValue placeholder="지불 방법 선택" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="현금">현금</SelectItem>
-                <SelectItem value="카드">카드</SelectItem>
-                <SelectItem value="계좌이체">계좌이체</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          
-          {/* 영수증 여부 */}
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="hasReceipt"
-              checked={formData.hasReceipt}
-              onCheckedChange={handleReceiptChange}
-            />
-            <Label htmlFor="hasReceipt">영수증 있음</Label>
-          </div>
-          
-          {/* 거래처 선택 */}
-          <div className="space-y-2">
-            <Label htmlFor="vendor">거래처</Label>
-            <Select value={formData.vendor} onValueChange={handleVendorChange}>
-              <SelectTrigger>
-                <SelectValue placeholder="거래처 선택 (선택사항)" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">선택 안함</SelectItem>
-                {vendors.map(vendor => (
-                  <SelectItem key={vendor._id} value={vendor.name}>
-                    {vendor.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          {/* 계정과목 선택 */}
-          <div className="space-y-2">
-            <Label htmlFor="account">계정과목</Label>
-            <Select value={formData.account} onValueChange={handleAccountChange}>
-              <SelectTrigger>
-                <SelectValue placeholder="계정과목 선택 (선택사항)" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">선택 안함</SelectItem>
-                {accountTypes.map(account => (
-                  <SelectItem key={account._id} value={account.value}>
-                    {account.value}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          {/* 비고 입력 */}
-          <div className="space-y-2">
-            <Label htmlFor="notes">비고</Label>
-            <Textarea
-              id="notes"
-              name="notes"
-              value={formData.notes}
-              onChange={handleChange}
-              placeholder="비고 입력 (선택사항)"
-              rows={3}
-            />
-          </div>
-          
-          <DialogFooter>
+          <DialogFooter className="gap-2 pt-4">
             <Button 
               variant="outline" 
               type="button" 

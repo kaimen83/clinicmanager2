@@ -343,10 +343,11 @@ export default function CashManagementModal({ isOpen, onClose, date: initialDate
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl max-h-[95vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-6xl max-h-[95vh] overflow-hidden flex flex-col">
         <DialogHeader className="flex-shrink-0 pb-4">
           <div className="flex items-center justify-between">
-            <DialogTitle className="text-2xl font-bold text-gray-900">
+            <DialogTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
+              <Wallet className="w-5 h-5 text-primary" />
               시재관리
             </DialogTitle>
             
@@ -383,8 +384,6 @@ export default function CashManagementModal({ isOpen, onClose, date: initialDate
                     mode="single"
                     selected={selectedDate}
                     onSelect={handleDateSelect}
-                    initialFocus
-                    locale={ko}
                   />
                 </PopoverContent>
               </Popover>
@@ -403,60 +402,60 @@ export default function CashManagementModal({ isOpen, onClose, date: initialDate
 
         {loading ? (
           <div className="flex justify-center items-center py-16">
-            <div className="text-gray-500">데이터를 불러오는 중...</div>
+            <div className="text-muted-foreground">데이터를 불러오는 중...</div>
           </div>
         ) : (
           <div className="flex-1 overflow-y-auto space-y-6">
             {/* 잔액 요약 카드 */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card className="border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100">
+              <Card className="border-border bg-card">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-blue-600 mb-1">전일 이월</p>
-                      <p className="text-2xl font-bold text-blue-900">
+                      <p className="text-sm font-medium text-muted-foreground mb-1">전일 이월</p>
+                      <p className="text-2xl font-bold text-foreground">
                         ₩{formatAmount(previousAmount)}
                       </p>
                     </div>
-                    <div className="p-3 bg-blue-200 rounded-full">
-                      <Wallet className="w-6 h-6 text-blue-700" />
+                    <div className="p-3 bg-muted rounded-full">
+                      <Wallet className="w-6 h-6 text-muted-foreground" />
                     </div>
                   </div>
                 </CardContent>
               </Card>
               
-              <Card className={`border-2 ${dailyChange >= 0 ? 'border-emerald-200 bg-gradient-to-br from-emerald-50 to-emerald-100' : 'border-red-200 bg-gradient-to-br from-red-50 to-red-100'}`}>
+              <Card className={`border-2 ${dailyChange >= 0 ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className={`text-sm font-medium mb-1 ${dailyChange >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                      <p className={`text-sm font-medium mb-1 ${dailyChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                         당일 변동
                       </p>
-                      <p className={`text-2xl font-bold ${dailyChange >= 0 ? 'text-emerald-900' : 'text-red-900'}`}>
+                      <p className={`text-2xl font-bold ${dailyChange >= 0 ? 'text-green-900' : 'text-red-900'}`}>
                         {dailyChange >= 0 ? '+' : ''}₩{formatAmount(dailyChange)}
                       </p>
                     </div>
-                    <div className={`p-3 rounded-full ${dailyChange >= 0 ? 'bg-emerald-200' : 'bg-red-200'}`}>
+                    <div className={`p-3 rounded-full ${dailyChange >= 0 ? 'bg-green-100' : 'bg-red-100'}`}>
                       {dailyChange >= 0 ? 
-                        <TrendingUp className={`w-6 h-6 ${dailyChange >= 0 ? 'text-emerald-700' : 'text-red-700'}`} /> :
-                        <TrendingDown className="w-6 h-6 text-red-700" />
+                        <TrendingUp className={`w-6 h-6 ${dailyChange >= 0 ? 'text-green-600' : 'text-red-600'}`} /> :
+                        <TrendingDown className="w-6 h-6 text-red-600" />
                       }
                     </div>
                   </div>
                 </CardContent>
               </Card>
               
-              <Card className="border-green-200 bg-gradient-to-br from-green-50 to-green-100">
+              <Card className="border-border bg-card">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-green-600 mb-1">현재 잔액</p>
-                      <p className="text-2xl font-bold text-green-900">
+                      <p className="text-sm font-medium text-muted-foreground mb-1">현재 잔액</p>
+                      <p className="text-2xl font-bold text-foreground">
                         ₩{formatAmount(currentBalance)}
                       </p>
                     </div>
-                    <div className="p-3 bg-green-200 rounded-full">
-                      <Wallet className="w-6 h-6 text-green-700" />
+                    <div className="p-3 bg-primary/10 rounded-full">
+                      <Wallet className="w-6 h-6 text-primary" />
                     </div>
                   </div>
                 </CardContent>
@@ -465,10 +464,10 @@ export default function CashManagementModal({ isOpen, onClose, date: initialDate
 
             {/* 통장입금 추가 버튼 */}
             <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-gray-900">시재 내역</h3>
+              <h3 className="text-base font-medium text-foreground">시재 내역</h3>
               <Button 
                 onClick={() => setShowAddForm(true)}
-                className="bg-blue-600 hover:bg-blue-700 shadow-md"
+                className="shadow-sm"
                 disabled={showAddForm}
               >
                 <Plus className="w-4 h-4 mr-2" />
@@ -478,10 +477,10 @@ export default function CashManagementModal({ isOpen, onClose, date: initialDate
 
             {/* 통장입금 추가 폼 */}
             {showAddForm && (
-              <Card className="border-blue-200 shadow-md">
-                <CardHeader className="bg-blue-50">
-                  <CardTitle className="text-lg text-blue-900 flex items-center">
-                    <Plus className="w-5 h-5 mr-2" />
+              <Card className="border-border shadow-sm">
+                <CardHeader className="bg-muted/50">
+                  <CardTitle className="text-base font-medium text-foreground flex items-center">
+                    <Plus className="w-4 h-4 mr-2" />
                     통장입금 추가
                   </CardTitle>
                 </CardHeader>
@@ -489,8 +488,8 @@ export default function CashManagementModal({ isOpen, onClose, date: initialDate
                   <form onSubmit={handleAddRecord} className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor="amount" className="text-sm font-medium text-gray-700">
-                          입금 금액 *
+                        <Label htmlFor="amount" className="text-sm font-medium text-foreground">
+                          입금 금액 <span className="text-destructive">*</span>
                         </Label>
                         <Input
                           id="amount"
@@ -503,7 +502,7 @@ export default function CashManagementModal({ isOpen, onClose, date: initialDate
                         />
                       </div>
                       <div>
-                        <Label htmlFor="description" className="text-sm font-medium text-gray-700">
+                        <Label htmlFor="description" className="text-sm font-medium text-foreground">
                           설명
                         </Label>
                         <Input
@@ -518,7 +517,7 @@ export default function CashManagementModal({ isOpen, onClose, date: initialDate
                     <div className="flex space-x-3 pt-2">
                       <Button 
                         type="submit" 
-                        className="bg-blue-600 hover:bg-blue-700"
+                        className="shadow-sm"
                       >
                         <Save className="w-4 h-4 mr-2" />
                         저장
@@ -541,31 +540,31 @@ export default function CashManagementModal({ isOpen, onClose, date: initialDate
             )}
 
             {/* 시재 기록 테이블 */}
-            <Card className="shadow-md">
+            <Card className="shadow-sm">
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
-                      <TableRow className="bg-gray-50">
-                        <TableHead className="font-semibold text-gray-900">구분</TableHead>
-                        <TableHead className="font-semibold text-gray-900">내용</TableHead>
-                        <TableHead className="font-semibold text-gray-900 text-right">금액</TableHead>
-                        <TableHead className="font-semibold text-gray-900 text-center w-32">작업</TableHead>
+                      <TableRow className="bg-muted/50">
+                        <TableHead className="font-medium text-foreground">구분</TableHead>
+                        <TableHead className="font-medium text-foreground">내용</TableHead>
+                        <TableHead className="font-medium text-foreground text-right">금액</TableHead>
+                        <TableHead className="font-medium text-foreground text-center w-32">작업</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {records.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={4} className="text-center py-12 text-gray-500">
+                          <TableCell colSpan={4} className="text-center py-12 text-muted-foreground">
                             <div className="flex flex-col items-center space-y-2">
-                              <Wallet className="w-12 h-12 text-gray-300" />
+                              <Wallet className="w-12 h-12 text-muted-foreground/50" />
                               <p>등록된 시재 기록이 없습니다.</p>
                             </div>
                           </TableCell>
                         </TableRow>
                       ) : (
                         records.map((record) => (
-                          <TableRow key={record._id} className="hover:bg-gray-50">
+                          <TableRow key={record._id} className="hover:bg-muted/50">
                             <TableCell>
                               <div className={`inline-flex items-center space-x-2 px-3 py-1 rounded-full border ${getTypeBgColor(record.type)}`}>
                                 <span className={getTypeColor(record.type)}>
@@ -588,7 +587,7 @@ export default function CashManagementModal({ isOpen, onClose, date: initialDate
                                 <div>
                                   <p className="font-medium">{record.description || '-'}</p>
                                   {(record.transactionId || record.expenseId) && (
-                                    <p className="text-xs text-gray-500 mt-1">
+                                    <p className="text-xs text-muted-foreground mt-1">
                                       {record.transactionId ? '내원정보 연동' : '지출내역 연동'}
                                     </p>
                                   )}
@@ -616,7 +615,7 @@ export default function CashManagementModal({ isOpen, onClose, date: initialDate
                                     <Button
                                       size="sm"
                                       onClick={() => handleEditSave(record._id)}
-                                      className="h-8 w-8 p-0 bg-green-600 hover:bg-green-700"
+                                      className="h-8 w-8 p-0"
                                     >
                                       <Check className="w-4 h-4" />
                                     </Button>
@@ -637,7 +636,7 @@ export default function CashManagementModal({ isOpen, onClose, date: initialDate
                                           size="sm"
                                           variant="outline"
                                           onClick={() => handleEditStart(record)}
-                                          className="h-8 w-8 p-0 hover:bg-blue-50"
+                                          className="h-8 w-8 p-0"
                                         >
                                           <Edit className="w-3 h-3" />
                                         </Button>
@@ -645,13 +644,13 @@ export default function CashManagementModal({ isOpen, onClose, date: initialDate
                                           size="sm"
                                           variant="outline"
                                           onClick={() => handleDeleteClick(record)}
-                                          className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                          className="h-8 w-8 p-0 text-destructive hover:text-destructive"
                                         >
                                           <Trash2 className="w-3 h-3" />
                                         </Button>
                                       </>
                                     ) : (
-                                      <span className="text-xs text-gray-400 px-2 py-1 bg-gray-100 rounded">
+                                      <span className="text-xs text-muted-foreground px-2 py-1 bg-muted rounded">
                                         자동 관리
                                       </span>
                                     )}
@@ -672,28 +671,33 @@ export default function CashManagementModal({ isOpen, onClose, date: initialDate
 
         {/* 삭제 확인 다이얼로그 */}
         {showDeleteConfirm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4 shadow-xl">
-              <h3 className="text-lg font-semibold mb-4 text-gray-900">기록 삭제</h3>
-              <p className="text-gray-600 mb-6">
-                이 기록을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
-              </p>
-              <div className="flex space-x-3">
-                <Button
-                  onClick={handleDeleteConfirm}
-                  className="flex-1 bg-red-600 hover:bg-red-700"
-                >
-                  삭제
-                </Button>
-                <Button
-                  onClick={handleDeleteCancel}
-                  variant="outline"
-                  className="flex-1"
-                >
-                  취소
-                </Button>
-              </div>
-            </div>
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <Card className="max-w-sm w-full mx-4 shadow-lg">
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold text-foreground">기록 삭제</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground mb-6">
+                  이 기록을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
+                </p>
+                <div className="flex space-x-3">
+                  <Button
+                    onClick={handleDeleteConfirm}
+                    variant="destructive"
+                    className="flex-1"
+                  >
+                    삭제
+                  </Button>
+                  <Button
+                    onClick={handleDeleteCancel}
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    취소
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         )}
       </DialogContent>

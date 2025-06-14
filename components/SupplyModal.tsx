@@ -36,8 +36,7 @@ import {
   X,
   Check,
   ShoppingCart,
-  Filter,
-  Calendar as CalendarDays
+  Filter
 } from 'lucide-react';
 
 interface Props {
@@ -319,10 +318,10 @@ export default function SupplyModal({ isOpen, onClose, date: initialDate }: Prop
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-7xl max-h-[95vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-6xl max-h-[95vh] overflow-hidden flex flex-col">
         <DialogHeader className="flex-shrink-0 pb-4">
-          <DialogTitle className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <ShoppingCart className="w-6 h-6" />
+          <DialogTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
+            <ShoppingCart className="w-5 h-5 text-primary" />
             매입원장
           </DialogTitle>
         </DialogHeader>
@@ -330,23 +329,23 @@ export default function SupplyModal({ isOpen, onClose, date: initialDate }: Prop
         <div className="flex-1 overflow-auto space-y-6">
           {/* 통계 카드 */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100">
+            <Card className="border-border bg-card">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-blue-600 mb-1">총 매입액</p>
-                    <p className="text-xl font-bold text-blue-900">
+                    <p className="text-sm font-medium text-muted-foreground mb-1">총 매입액</p>
+                    <p className="text-xl font-bold text-foreground">
                       ₩{formatAmount(totalAmount)}
                     </p>
                   </div>
-                  <div className="p-2 bg-blue-200 rounded-full">
-                    <ShoppingCart className="w-5 h-5 text-blue-700" />
+                  <div className="p-2 bg-primary/10 rounded-full">
+                    <ShoppingCart className="w-5 h-5 text-primary" />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="border-green-200 bg-gradient-to-br from-green-50 to-green-100">
+            <Card className="border-green-200 bg-green-50">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -355,14 +354,14 @@ export default function SupplyModal({ isOpen, onClose, date: initialDate }: Prop
                       ₩{formatAmount(paidAmount)}
                     </p>
                   </div>
-                  <div className="p-2 bg-green-200 rounded-full">
-                    <Check className="w-5 h-5 text-green-700" />
+                  <div className="p-2 bg-green-100 rounded-full">
+                    <Check className="w-5 h-5 text-green-600" />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="border-red-200 bg-gradient-to-br from-red-50 to-red-100">
+            <Card className="border-red-200 bg-red-50">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -371,27 +370,27 @@ export default function SupplyModal({ isOpen, onClose, date: initialDate }: Prop
                       ₩{formatAmount(unpaidAmount)}
                     </p>
                   </div>
-                  <div className="p-2 bg-red-200 rounded-full">
-                    <X className="w-5 h-5 text-red-700" />
+                  <div className="p-2 bg-red-100 rounded-full">
+                    <X className="w-5 h-5 text-red-600" />
                   </div>
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* 날짜 필터 및 검색 (reference 파일 참고) */}
-          <Card>
+          {/* 날짜 필터 및 검색 */}
+          <Card className="shadow-sm">
             <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <CalendarDays className="w-5 h-5" />
-                날짜 필터 및 검색
+              <CardTitle className="text-base font-medium text-foreground flex items-center gap-2">
+                <Filter className="w-4 h-4" />
+                필터 및 검색
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* 날짜 범위 필터 */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 <div>
-                  <Label htmlFor="startDate">시작일</Label>
+                  <Label htmlFor="startDate" className="text-sm font-medium">시작일</Label>
                   <Input
                     id="startDate"
                     type="date"
@@ -401,7 +400,7 @@ export default function SupplyModal({ isOpen, onClose, date: initialDate }: Prop
                 </div>
 
                 <div>
-                  <Label htmlFor="endDate">종료일</Label>
+                  <Label htmlFor="endDate" className="text-sm font-medium">종료일</Label>
                   <Input
                     id="endDate"
                     type="date"
@@ -411,9 +410,9 @@ export default function SupplyModal({ isOpen, onClose, date: initialDate }: Prop
                 </div>
 
                 <div>
-                  <Label htmlFor="search">검색</Label>
+                  <Label htmlFor="search" className="text-sm font-medium">검색</Label>
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                     <Input
                       id="search"
                       placeholder="거래처명, 메모 검색..."
@@ -425,7 +424,7 @@ export default function SupplyModal({ isOpen, onClose, date: initialDate }: Prop
                 </div>
 
                 <div>
-                  <Label htmlFor="filterVendor">거래처</Label>
+                  <Label htmlFor="filterVendor" className="text-sm font-medium">거래처</Label>
                   <Select value={filterVendor} onValueChange={setFilterVendor}>
                     <SelectTrigger>
                       <SelectValue placeholder="전체 거래처" />
@@ -442,7 +441,7 @@ export default function SupplyModal({ isOpen, onClose, date: initialDate }: Prop
                 </div>
 
                 <div>
-                  <Label htmlFor="filterPaid">결제상태</Label>
+                  <Label htmlFor="filterPaid" className="text-sm font-medium">결제상태</Label>
                   <Select value={filterPaid} onValueChange={setFilterPaid}>
                     <SelectTrigger>
                       <SelectValue />
@@ -460,6 +459,7 @@ export default function SupplyModal({ isOpen, onClose, date: initialDate }: Prop
                 <Button 
                   onClick={() => setShowAddForm(true)}
                   disabled={showAddForm}
+                  className="shadow-sm"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   매입 추가
@@ -470,10 +470,10 @@ export default function SupplyModal({ isOpen, onClose, date: initialDate }: Prop
 
           {/* 매입 추가/수정 폼 */}
           {showAddForm && (
-            <Card className="border-blue-200 shadow-md">
-              <CardHeader className="bg-blue-50">
-                <CardTitle className="text-lg text-blue-900 flex items-center">
-                  <Plus className="w-5 h-5 mr-2" />
+            <Card className="border-border shadow-sm">
+              <CardHeader className="bg-muted/50">
+                <CardTitle className="text-base font-medium text-foreground flex items-center">
+                  <Plus className="w-4 h-4 mr-2" />
                   {editingId ? '매입 내역 수정' : '매입 내역 추가'}
                 </CardTitle>
               </CardHeader>
@@ -481,7 +481,9 @@ export default function SupplyModal({ isOpen, onClose, date: initialDate }: Prop
                 <form onSubmit={editingId ? handleEditSupply : handleAddSupply} className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div>
-                      <Label htmlFor="date">날짜 *</Label>
+                      <Label htmlFor="date" className="text-sm font-medium">
+                        날짜 <span className="text-destructive">*</span>
+                      </Label>
                       <Input
                         id="date"
                         type="date"
@@ -492,7 +494,9 @@ export default function SupplyModal({ isOpen, onClose, date: initialDate }: Prop
                     </div>
 
                     <div>
-                      <Label htmlFor="vendor">거래처 *</Label>
+                      <Label htmlFor="vendor" className="text-sm font-medium">
+                        거래처 <span className="text-destructive">*</span>
+                      </Label>
                       <Select 
                         value={formData.vendor} 
                         onValueChange={(value) => setFormData({ ...formData, vendor: value })}
@@ -511,7 +515,9 @@ export default function SupplyModal({ isOpen, onClose, date: initialDate }: Prop
                     </div>
 
                     <div>
-                      <Label htmlFor="amount">금액 *</Label>
+                      <Label htmlFor="amount" className="text-sm font-medium">
+                        금액 <span className="text-destructive">*</span>
+                      </Label>
                       <Input
                         id="amount"
                         type="text"
@@ -519,6 +525,7 @@ export default function SupplyModal({ isOpen, onClose, date: initialDate }: Prop
                         onChange={handleAmountChange}
                         placeholder="0"
                         required
+                        className="text-right"
                       />
                     </div>
 
@@ -530,23 +537,24 @@ export default function SupplyModal({ isOpen, onClose, date: initialDate }: Prop
                         onChange={(e) => setFormData({ ...formData, isPaid: e.target.checked })}
                         className="rounded"
                       />
-                      <Label htmlFor="isPaid">결제완료</Label>
+                      <Label htmlFor="isPaid" className="text-sm">결제완료</Label>
                     </div>
                   </div>
 
                   <div>
-                    <Label htmlFor="note">메모</Label>
+                    <Label htmlFor="note" className="text-sm font-medium">메모</Label>
                     <Textarea
                       id="note"
                       value={formData.note}
                       onChange={(e) => setFormData({ ...formData, note: e.target.value })}
                       placeholder="메모를 입력하세요..."
                       rows={3}
+                      className="resize-none"
                     />
                   </div>
 
                   <div className="flex space-x-3 pt-2">
-                    <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+                    <Button type="submit" className="shadow-sm">
                       <Save className="w-4 h-4 mr-2" />
                       {editingId ? '수정' : '저장'}
                     </Button>
@@ -560,20 +568,22 @@ export default function SupplyModal({ isOpen, onClose, date: initialDate }: Prop
             </Card>
           )}
 
-          {/* 매입 내역 테이블 (reference 파일의 헤더 스타일 참고) */}
-          <Card>
+          {/* 매입 내역 테이블 */}
+          <Card className="shadow-sm">
             <CardHeader>
-              <CardTitle className="text-lg">매입 내역 ({filteredSupplies.length}건)</CardTitle>
+              <CardTitle className="text-base font-medium text-foreground">
+                매입 내역 ({filteredSupplies.length}건)
+              </CardTitle>
             </CardHeader>
             <CardContent>
               {isLoading ? (
                 <div className="text-center py-8">
-                  <p>로딩 중...</p>
+                  <p className="text-muted-foreground">로딩 중...</p>
                 </div>
               ) : (
                 <div className="border rounded-md overflow-hidden">
-                  {/* 헤더 스타일 개선 (reference 파일 참고) */}
-                  <div className="bg-gray-50 border-b grid grid-cols-6 gap-4 p-3 font-semibold text-sm text-gray-700">
+                  {/* 헤더 */}
+                  <div className="bg-muted/50 border-b grid grid-cols-6 gap-4 p-3 font-medium text-sm text-foreground">
                     <div>날짜</div>
                     <div>거래처</div>
                     <div className="text-right">금액</div>
@@ -583,7 +593,7 @@ export default function SupplyModal({ isOpen, onClose, date: initialDate }: Prop
                   </div>
                   
                   {filteredSupplies.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
+                    <div className="text-center py-8 text-muted-foreground">
                       매입 내역이 없습니다.
                     </div>
                   ) : (
@@ -591,21 +601,21 @@ export default function SupplyModal({ isOpen, onClose, date: initialDate }: Prop
                       {filteredSupplies
                         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
                         .map((supply) => (
-                          <div key={supply._id} className="grid grid-cols-6 gap-4 p-3 hover:bg-gray-50 transition-colors">
+                          <div key={supply._id} className="grid grid-cols-6 gap-4 p-3 hover:bg-muted/50 transition-colors">
                             <div className="text-sm">{formatDate(supply.date)}</div>
                             <div className="text-sm font-medium">{supply.vendor}</div>
                             <div className="text-sm text-right font-mono">
                               {supply.amount < 0 ? '-' : ''}₩{formatAmount(supply.amount)}
                             </div>
-                                                         <div className="text-center">
-                               <input
-                                 type="checkbox"
-                                 checked={supply.isPaid}
-                                 disabled
-                                 className="opacity-60 rounded"
-                               />
-                             </div>
-                            <div className="text-sm text-gray-600 truncate" title={supply.note || ''}>
+                            <div className="text-center">
+                              <input
+                                type="checkbox"
+                                checked={supply.isPaid}
+                                disabled
+                                className="opacity-60 rounded"
+                              />
+                            </div>
+                            <div className="text-sm text-muted-foreground truncate" title={supply.note || ''}>
                               {supply.note || '-'}
                             </div>
                             <div className="flex justify-center gap-1">
@@ -621,7 +631,7 @@ export default function SupplyModal({ isOpen, onClose, date: initialDate }: Prop
                                 size="sm"
                                 variant="outline"
                                 onClick={() => handleDeleteSupply(supply._id)}
-                                className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                                className="h-8 w-8 p-0 text-destructive hover:text-destructive"
                               >
                                 <Trash2 className="w-3 h-3" />
                               </Button>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -8,13 +8,12 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { CalendarIcon } from 'lucide-react';
-import { format, parse } from 'date-fns';
+import { CalendarIcon, CreditCard } from 'lucide-react';
+import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
+import { cn, createNewDate, toISODateString } from '@/lib/utils';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { toISODateString, createNewDate } from '@/lib/utils';
 import { ExtraIncome } from '@/lib/types';
 
 type Props = {
@@ -175,15 +174,20 @@ export default function ExtraIncomeModal({ isOpen, onClose, onSuccess, defaultDa
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>{isEditMode ? '진료외수입 수정' : '진료외수입 등록'}</DialogTitle>
+      <DialogContent className="max-w-md">
+        <DialogHeader className="space-y-3">
+          <DialogTitle className="text-lg font-semibold flex items-center gap-2">
+            <CreditCard className="w-5 h-5 text-primary" />
+            {isEditMode ? '진료외수입 수정' : '진료외수입 등록'}
+          </DialogTitle>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
           {/* 날짜 선택 */}
           <div className="space-y-2">
-            <Label htmlFor="date">날짜</Label>
+            <Label htmlFor="date" className="text-sm font-medium">
+              날짜 <span className="text-destructive">*</span>
+            </Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -206,7 +210,6 @@ export default function ExtraIncomeModal({ isOpen, onClose, onSuccess, defaultDa
                   mode="single"
                   selected={formData.date}
                   onSelect={handleDateChange}
-                  initialFocus
                 />
               </PopoverContent>
             </Popover>
@@ -214,10 +217,12 @@ export default function ExtraIncomeModal({ isOpen, onClose, onSuccess, defaultDa
           
           {/* 수입 유형 선택 */}
           <div className="space-y-2">
-            <Label htmlFor="type">수입 유형</Label>
+            <Label htmlFor="type" className="text-sm font-medium">
+              수입 유형 <span className="text-destructive">*</span>
+            </Label>
             <Select value={formData.type} onValueChange={handleTypeChange}>
               <SelectTrigger>
-                <SelectValue placeholder="수입 유형 선택" />
+                <SelectValue placeholder="수입 유형을 선택하세요" />
               </SelectTrigger>
               <SelectContent>
                 {incomeTypes.map((type) => (
@@ -231,7 +236,9 @@ export default function ExtraIncomeModal({ isOpen, onClose, onSuccess, defaultDa
           
           {/* 금액 입력 */}
           <div className="space-y-2">
-            <Label htmlFor="amount">금액</Label>
+            <Label htmlFor="amount" className="text-sm font-medium">
+              금액 <span className="text-destructive">*</span>
+            </Label>
             <Input
               id="amount"
               name="amount"
@@ -239,24 +246,26 @@ export default function ExtraIncomeModal({ isOpen, onClose, onSuccess, defaultDa
               value={formData.amount}
               onChange={handleChange}
               required
-              placeholder="금액 입력"
+              placeholder="금액을 입력하세요"
+              className="text-right"
             />
           </div>
           
           {/* 비고 입력 */}
           <div className="space-y-2">
-            <Label htmlFor="notes">비고</Label>
+            <Label htmlFor="notes" className="text-sm font-medium">비고</Label>
             <Textarea
               id="notes"
               name="notes"
               value={formData.notes}
               onChange={handleChange}
-              placeholder="비고 사항 입력"
+              placeholder="비고 사항을 입력하세요"
               rows={3}
+              className="resize-none"
             />
           </div>
           
-          <DialogFooter>
+          <DialogFooter className="gap-2 pt-4">
             <Button 
               type="button" 
               variant="outline" 
