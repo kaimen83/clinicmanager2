@@ -255,9 +255,6 @@ export default function ClinicNavigation() {
                   mode="single"
                   selected={selectedDate}
                   onSelect={handleDateSelect}
-                  initialFocus
-                  locale={ko}
-                  defaultMonth={selectedDate}
                 />
               </PopoverContent>
             </Popover>
