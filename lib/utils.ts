@@ -56,3 +56,11 @@ export function toKoreanDateString(
 export function createNewDate(): Date {
   return getCurrentKstDate();
 }
+
+// 통화 포맷팅 함수
+export function formatCurrency(amount: number | null | undefined): string {
+  if (amount === null || amount === undefined || isNaN(amount)) {
+    return '0원';
+  }
+  return `${amount.toLocaleString('ko-KR')}원`;
+}

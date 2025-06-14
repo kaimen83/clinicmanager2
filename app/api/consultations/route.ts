@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
     
     // 검색 쿼리 구성
     let searchQuery: any = {};
+    let dateConditions: any[] = [];
     
     if (query) {
       searchQuery['$or'] = [
@@ -44,137 +45,91 @@ export async function GET(request: NextRequest) {
       searchQuery['agreed'] = agreed === 'true';
     }
     
-    // 날짜 필터 추가 - 동의 여부에 따라 다른 날짜 필드 사용 (한국 시간 기준)
-    let hasDateFilter = false;
-    let targetDateStrings: string[] = [];
-    
-    if (dateStart || dateEnd) {
-      hasDateFilter = true;
+    // 날짜 필터 추가 (상담일 또는 동의일 기준)
+    if (dateStart && dateEnd) {
+      // 시작 날짜: 해당 날짜의 00:00:00 (한국 시간)
+      const startParts = dateStart.split('-').map(Number);
+      const startDateObj = new Date(startParts[0], startParts[1] - 1, startParts[2], 0, 0, 0, 0);
       
-      // 날짜 범위 문자열 배열 생성
-      if (dateStart && dateEnd) {
-        const start = new Date(dateStart);
-        const end = new Date(dateEnd);
-        
-        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-          const year = d.getFullYear();
-          const month = String(d.getMonth() + 1).padStart(2, '0');
-          const day = String(d.getDate()).padStart(2, '0');
-          targetDateStrings.push(`${year}-${month}-${day}`);
-        }
-      } else if (dateStart) {
-        targetDateStrings = [dateStart];
-      } else if (dateEnd) {
-        targetDateStrings = [dateEnd];
-      }
-    }
-    
-    // MongoDB aggregation을 사용하여 한국 시간 기준 날짜 필터링
-    let pipeline: any[] = [];
-    
-    // 날짜 필드를 한국 시간으로 변환하여 추가
-    if (hasDateFilter) {
-      pipeline.push({
-        $addFields: {
-          confirmedDateKST: {
-            $cond: {
-              if: { $ne: ["$confirmedDate", null] },
-              then: {
-                $dateToString: {
-                  format: "%Y-%m-%d",
-                  date: { $add: ["$confirmedDate", 9 * 60 * 60 * 1000] },
-                  timezone: "UTC"
-                }
-              },
-              else: null
-            }
-          },
-          dateKST: {
-            $dateToString: {
-              format: "%Y-%m-%d",
-              date: { $add: ["$date", 9 * 60 * 60 * 1000] },
-              timezone: "UTC"
-            }
+      // 종료 날짜: 다음 날 00:00:00 (한국 시간) - 1ms
+      const endParts = dateEnd.split('-').map(Number);
+      const endDateObj = new Date(endParts[0], endParts[1] - 1, endParts[2] + 1, 0, 0, 0, 0);
+      endDateObj.setMilliseconds(-1);
+      
+      // 한국 시간과 UTC 간의 시차 조정 (9시간)
+      const kstOffset = 9 * 60 * 60 * 1000;
+      const startUtc = new Date(startDateObj.getTime() - kstOffset);
+      const endUtc = new Date(endDateObj.getTime() - kstOffset);
+      
+      // 상담일 또는 동의일이 범위에 포함되는 경우
+      dateConditions = [
+        // 상담일이 범위에 포함
+        {
+          date: {
+            $gte: startUtc,
+            $lte: endUtc
+          }
+        },
+        // 동의일이 범위에 포함 (동의한 상담만)
+        {
+          agreed: true,
+          confirmedDate: {
+            $gte: startUtc,
+            $lte: endUtc,
+            $ne: null
           }
         }
-      });
-    }
-    
-    // 필터 조건 구성
-    let matchConditions: any = {};
-    
-    // 기본 검색 조건
-    if (query) {
-      matchConditions['$or'] = [
-        { chartNumber: { $regex: query, $options: 'i' } },
-        { patientName: { $regex: query, $options: 'i' } }
+      ];
+    } else if (dateStart) {
+      const startParts = dateStart.split('-').map(Number);
+      const startDateObj = new Date(startParts[0], startParts[1] - 1, startParts[2], 0, 0, 0, 0);
+      const kstOffset = 9 * 60 * 60 * 1000;
+      const startUtc = new Date(startDateObj.getTime() - kstOffset);
+      
+      dateConditions = [
+        { date: { $gte: startUtc } },
+        { agreed: true, confirmedDate: { $gte: startUtc, $ne: null } }
+      ];
+    } else if (dateEnd) {
+      const endParts = dateEnd.split('-').map(Number);
+      const endDateObj = new Date(endParts[0], endParts[1] - 1, endParts[2] + 1, 0, 0, 0, 0);
+      endDateObj.setMilliseconds(-1);
+      const kstOffset = 9 * 60 * 60 * 1000;
+      const endUtc = new Date(endDateObj.getTime() - kstOffset);
+      
+      dateConditions = [
+        { date: { $lte: endUtc } },
+        { agreed: true, confirmedDate: { $lte: endUtc, $ne: null } }
       ];
     }
     
-    if (chartNumber) {
-      matchConditions['chartNumber'] = chartNumber;
-    }
-    
-    if (patientName) {
-      matchConditions['patientName'] = patientName;
-    }
-    
-    if (agreed) {
-      matchConditions['agreed'] = agreed === 'true';
-    }
-    
-    // 날짜 필터 조건 추가
-    if (hasDateFilter) {
-      if (agreed === 'true') {
-        // 동의한 상담: confirmedDate 기준
-        matchConditions['confirmedDate'] = { $ne: null };
-        matchConditions['confirmedDateKST'] = { $in: targetDateStrings };
-      } else if (agreed === 'false') {
-        // 미동의한 상담: date 기준
-        matchConditions['dateKST'] = { $in: targetDateStrings };
+    // 날짜 조건과 기존 조건을 결합
+    if (dateConditions.length > 0) {
+      if (searchQuery['$or']) {
+        // 기존 $or 조건이 있으면 $and로 결합
+        searchQuery = {
+          $and: [
+            { $or: searchQuery['$or'] },
+            { $or: dateConditions }
+          ],
+          ...Object.fromEntries(Object.entries(searchQuery).filter(([key]) => key !== '$or'))
+        };
       } else {
-        // 동의 여부 필터가 없는 경우: 두 조건을 OR로 결합
-        const dateOrConditions = [
-          { agreed: true, confirmedDate: { $ne: null }, confirmedDateKST: { $in: targetDateStrings } },
-          { agreed: false, dateKST: { $in: targetDateStrings } }
-        ];
-        
-        if (matchConditions['$or']) {
-          // 기존 $or 조건이 있다면 $and로 결합
-          matchConditions = {
-            $and: [
-              { $or: matchConditions['$or'] },
-              { $or: dateOrConditions }
-            ]
-          };
-          delete matchConditions['$or'];
-        } else {
-          matchConditions['$or'] = dateOrConditions;
-        }
+        searchQuery['$or'] = dateConditions;
       }
     }
-    
-    pipeline.push({ $match: matchConditions });
-    pipeline.push({ $sort: { date: -1 } });
-    pipeline.push({ $skip: skip });
-    pipeline.push({ $limit: limit });
-    
-    // consultations 컬렉션에서 aggregation으로 조회
+
+    // 상담 내역 목록 조회
     const consultations = await db
       .collection('consultations')
-      .aggregate(pipeline)
+      .find(searchQuery)
+      .sort({ date: -1 })
+      .skip(skip)
+      .limit(limit)
       .toArray();
-    
-    // 전체 개수 조회를 위한 별도 pipeline
-    const countPipeline = pipeline.slice(0, -2); // sort, skip, limit 제외
-    countPipeline.push({ $count: "total" });
-    
-    const countResult = await db
-      .collection('consultations')
-      .aggregate(countPipeline)
-      .toArray();
-    
-    const total = countResult.length > 0 ? countResult[0].total : 0;
+
+    // 전체 상담 내역 수 조회
+    const total = await db.collection('consultations').countDocuments(searchQuery);
     
     return NextResponse.json({
       consultations: consultations,
