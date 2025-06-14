@@ -10,41 +10,43 @@ export async function GET(request: NextRequest) {
 
     const { db } = await connectToDatabase();
 
-    // 날짜 범위 설정
-    let startDate: Date, endDate: Date;
+    // 날짜 문자열 설정 (한국 시간 기준)
+    let targetDateStrings: string[];
     
     if (type === 'daily') {
-      // 일별: 해당 날짜의 00:00:00 ~ 23:59:59.999 (한국 시간)
-      const dateParts = date.split('-').map(Number);
-      const startDateObj = new Date(dateParts[0], dateParts[1] - 1, dateParts[2], 0, 0, 0, 0);
-      const endDateObj = new Date(dateParts[0], dateParts[1] - 1, dateParts[2], 23, 59, 59, 999);
-      
-      // 한국 시간과 UTC 간의 시차 조정 (9시간)
-      const kstOffset = 9 * 60 * 60 * 1000;
-      startDate = new Date(startDateObj.getTime() - kstOffset);
-      endDate = new Date(endDateObj.getTime() - kstOffset);
+      // 일별: 해당 날짜만
+      targetDateStrings = [date]; // 예: ["2025-06-14"]
     } else {
-      // 월별: 해당 월의 첫날 00:00:00 ~ 마지막날 23:59:59.999 (한국 시간)
+      // 월별: 해당 월의 모든 날짜
       const [year, month] = date.split('-').map(Number);
-      const startDateObj = new Date(year, month - 1, 1, 0, 0, 0, 0);
-      const endDateObj = new Date(year, month, 0, 23, 59, 59, 999);
+      const lastDayOfMonth = new Date(year, month, 0).getDate();
+      targetDateStrings = [];
       
-      // 한국 시간과 UTC 간의 시차 조정 (9시간)
-      const kstOffset = 9 * 60 * 60 * 1000;
-      startDate = new Date(startDateObj.getTime() - kstOffset);
-      endDate = new Date(endDateObj.getTime() - kstOffset);
+      for (let day = 1; day <= lastDayOfMonth; day++) {
+        const dayStr = String(day).padStart(2, '0');
+        targetDateStrings.push(`${year}-${String(month).padStart(2, '0')}-${dayStr}`);
+      }
     }
 
-    // 동의한 상담 통계 조회 (confirmedDate 기준)
+    // 동의한 상담 통계 조회 (confirmedDate를 한국 시간 기준으로 변환하여 날짜 비교)
     const agreedConsultationStats = await db.collection('consultations').aggregate([
+      {
+        $addFields: {
+          // confirmedDate를 한국 시간으로 변환하여 날짜 부분만 추출
+          confirmedDateKST: {
+            $dateToString: {
+              format: "%Y-%m-%d",
+              date: { $add: ["$confirmedDate", 9 * 60 * 60 * 1000] }, // UTC + 9시간
+              timezone: "UTC"
+            }
+          }
+        }
+      },
       {
         $match: {
           agreed: true,
-          confirmedDate: { 
-            $gte: startDate, 
-            $lte: endDate,
-            $ne: null  // confirmedDate가 null이 아닌 경우만 포함
-          }
+          confirmedDate: { $ne: null },
+          confirmedDateKST: { $in: targetDateStrings }
         }
       },
       {
@@ -56,15 +58,24 @@ export async function GET(request: NextRequest) {
       }
     ]).toArray();
 
-    // 미동의한 상담 통계 조회 (date 기준)
+    // 미동의한 상담 통계 조회 (date를 한국 시간 기준으로 변환하여 날짜 비교)
     const nonAgreedConsultationStats = await db.collection('consultations').aggregate([
+      {
+        $addFields: {
+          // date를 한국 시간으로 변환하여 날짜 부분만 추출
+          dateKST: {
+            $dateToString: {
+              format: "%Y-%m-%d",
+              date: { $add: ["$date", 9 * 60 * 60 * 1000] }, // UTC + 9시간
+              timezone: "UTC"
+            }
+          }
+        }
+      },
       {
         $match: {
           agreed: false,
-          date: { 
-            $gte: startDate, 
-            $lte: endDate
-          }
+          dateKST: { $in: targetDateStrings }
         }
       },
       {
@@ -76,16 +87,25 @@ export async function GET(request: NextRequest) {
       }
     ]).toArray();
 
-    // 의사별 동의한 상담 통계 (confirmedDate 기준)
+    // 의사별 동의한 상담 통계 (confirmedDate를 한국 시간 기준으로 변환하여 날짜 비교)
     const agreedDoctorStats = await db.collection('consultations').aggregate([
+      {
+        $addFields: {
+          // confirmedDate를 한국 시간으로 변환하여 날짜 부분만 추출
+          confirmedDateKST: {
+            $dateToString: {
+              format: "%Y-%m-%d",
+              date: { $add: ["$confirmedDate", 9 * 60 * 60 * 1000] }, // UTC + 9시간
+              timezone: "UTC"
+            }
+          }
+        }
+      },
       {
         $match: {
           agreed: true,
-          confirmedDate: { 
-            $gte: startDate, 
-            $lte: endDate,
-            $ne: null  // confirmedDate가 null이 아닌 경우만 포함
-          }
+          confirmedDate: { $ne: null },
+          confirmedDateKST: { $in: targetDateStrings }
         }
       },
       {
@@ -97,15 +117,24 @@ export async function GET(request: NextRequest) {
       }
     ]).toArray();
 
-    // 의사별 미동의한 상담 통계 (date 기준)
+    // 의사별 미동의한 상담 통계 (date를 한국 시간 기준으로 변환하여 날짜 비교)
     const nonAgreedDoctorStats = await db.collection('consultations').aggregate([
+      {
+        $addFields: {
+          // date를 한국 시간으로 변환하여 날짜 부분만 추출
+          dateKST: {
+            $dateToString: {
+              format: "%Y-%m-%d",
+              date: { $add: ["$date", 9 * 60 * 60 * 1000] }, // UTC + 9시간
+              timezone: "UTC"
+            }
+          }
+        }
+      },
       {
         $match: {
           agreed: false,
-          date: { 
-            $gte: startDate, 
-            $lte: endDate
-          }
+          dateKST: { $in: targetDateStrings }
         }
       },
       {
@@ -191,8 +220,8 @@ export async function GET(request: NextRequest) {
       type,
       date,
       dateRange: {
-        start: startDate.toISOString(),
-        end: endDate.toISOString()
+        start: targetDateStrings[0],
+        end: targetDateStrings[targetDateStrings.length - 1]
       },
       summary: {
         consultationAgreedAmount,
