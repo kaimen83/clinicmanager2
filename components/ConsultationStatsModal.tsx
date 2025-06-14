@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CheckCircle, XCircle, TrendingUp, Users, DollarSign } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { TrendingUp, CheckCircle, XCircle, DollarSign, Users, Edit, Trash2, Calendar } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface ConsultationStatsModalProps {
   isOpen: boolean;
@@ -46,6 +44,21 @@ interface ConsultationStats {
   }>;
 }
 
+interface Consultation {
+  _id: string;
+  date: string;
+  chartNumber: string;
+  patientName: string;
+  doctor: string;
+  staff: string;
+  amount: number;
+  agreed: boolean;
+  confirmedDate?: string | null;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export default function ConsultationStatsModal({
   isOpen,
   onClose,
@@ -53,8 +66,11 @@ export default function ConsultationStatsModal({
   type
 }: ConsultationStatsModalProps) {
   const [stats, setStats] = useState<ConsultationStats | null>(null);
+  const [consultations, setConsultations] = useState<Consultation[]>([]);
   const [loading, setLoading] = useState(false);
+  const [consultationsLoading, setConsultationsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'agreed' | 'non-agreed'>('agreed');
 
   // 통계 데이터 조회
   const fetchStats = async () => {
@@ -80,9 +96,69 @@ export default function ConsultationStatsModal({
     }
   };
 
+  // 상담내역 조회
+  const fetchConsultations = async () => {
+    if (!isOpen || !stats) return;
+    
+    setConsultationsLoading(true);
+    
+    try {
+      // 원래 요청한 날짜를 기준으로 날짜 범위 계산 (시간대 문제 해결)
+      let dateStart: string, dateEnd: string;
+      
+      if (type === 'daily') {
+        // 일간: 해당 날짜만
+        dateStart = date;
+        dateEnd = date;
+      } else {
+        // 월간: 해당 월의 첫날부터 마지막날까지
+        const [year, month] = date.split('-').map(Number);
+        const lastDayOfMonth = new Date(year, month, 0).getDate();
+        
+        // 시간대 변환 없이 직접 날짜 문자열 생성
+        dateStart = `${year}-${String(month).padStart(2, '0')}-01`;
+        dateEnd = `${year}-${String(month).padStart(2, '0')}-${String(lastDayOfMonth).padStart(2, '0')}`;
+      }
+      
+      // 동의한 상담내역과 미동의한 상담내역을 각각 조회
+      const [agreedResponse, nonAgreedResponse] = await Promise.all([
+        fetch(`/api/consultations?dateStart=${dateStart}&dateEnd=${dateEnd}&agreed=true&limit=1000`),
+        fetch(`/api/consultations?dateStart=${dateStart}&dateEnd=${dateEnd}&agreed=false&limit=1000`)
+      ]);
+      
+      if (agreedResponse.ok && nonAgreedResponse.ok) {
+        const [agreedData, nonAgreedData] = await Promise.all([
+          agreedResponse.json(),
+          nonAgreedResponse.json()
+        ]);
+        
+        // 두 결과를 합쳐서 설정
+        const allConsultations = [
+          ...(agreedData.consultations || []),
+          ...(nonAgreedData.consultations || [])
+        ];
+        
+        setConsultations(allConsultations);
+      } else {
+        throw new Error('상담내역 조회에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('상담내역 조회 중 에러:', error);
+      toast.error('상담내역을 불러오는데 실패했습니다.');
+    } finally {
+      setConsultationsLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchStats();
   }, [isOpen, date, type]);
+
+  useEffect(() => {
+    if (stats) {
+      fetchConsultations();
+    }
+  }, [stats]);
 
   const formatAmount = (amount: number) => {
     return new Intl.NumberFormat('ko-KR').format(amount);
@@ -96,11 +172,55 @@ export default function ConsultationStatsModal({
     });
   };
 
+  const formatDateShort = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('ko-KR', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+  };
+
+  // 상담 수정
+  const handleEdit = (consultation: Consultation) => {
+    // TODO: 상담 수정 모달 열기
+    toast.info('상담 수정 기능은 추후 구현 예정입니다.');
+  };
+
+  // 상담 삭제
+  const handleDelete = async (consultation: Consultation) => {
+    if (!confirm(`${consultation.patientName}님의 상담내역을 삭제하시겠습니까?`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/consultations/${consultation._id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        toast.success('상담내역이 삭제되었습니다.');
+        fetchConsultations(); // 목록 새로고침
+        fetchStats(); // 통계 새로고침
+      } else {
+        throw new Error('삭제에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('상담내역 삭제 중 에러:', error);
+      toast.error('상담내역 삭제에 실패했습니다.');
+    }
+  };
+
+  // 동의한 상담내역 필터링
+  const agreedConsultations = consultations.filter(c => c.agreed);
+  
+  // 미동의한 상담내역 필터링
+  const nonAgreedConsultations = consultations.filter(c => !c.agreed);
+
   if (!isOpen) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-blue-600" />
@@ -121,88 +241,100 @@ export default function ConsultationStatsModal({
         )}
 
         {stats && (
-          <div className="space-y-6">
-            {/* 전체 요약 */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-green-500" />
-                    상담 동의금액
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-green-600">
-                    ₩{formatAmount(stats.summary.consultationAgreedAmount)}
-                  </div>
-                  <div className="text-sm text-gray-500 mt-1">
-                    {stats.summary.agreedCount}건 ({stats.summary.agreedPercentage}%)
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
-                    <XCircle className="w-4 h-4 text-red-500" />
-                    상담 미동의금액
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-red-600">
-                    ₩{formatAmount(stats.summary.consultationNonAgreedAmount)}
-                  </div>
-                  <div className="text-sm text-gray-500 mt-1">
-                    {stats.summary.nonAgreedCount}건 ({100 - stats.summary.agreedPercentage}%)
+          <div className="space-y-4">
+            {/* 전체 요약 - 컴팩트하게 수정 */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <Card className="border-l-4 border-l-green-500">
+                <CardContent className="p-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-xs font-medium text-gray-600 flex items-center gap-1">
+                        <CheckCircle className="w-3 h-3 text-green-500" />
+                        상담 동의금액
+                      </div>
+                      <div className="text-lg font-bold text-green-600">
+                        ₩{formatAmount(stats.summary.consultationAgreedAmount)}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xs text-gray-500">{stats.summary.agreedCount}건</div>
+                      <div className="text-xs font-semibold text-green-600">{stats.summary.agreedPercentage}%</div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
-                    <DollarSign className="w-4 h-4 text-blue-500" />
-                    전체 상담금액
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-blue-600">
-                    ₩{formatAmount(stats.summary.totalConsultationAmount)}
+              <Card className="border-l-4 border-l-red-500">
+                <CardContent className="p-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-xs font-medium text-gray-600 flex items-center gap-1">
+                        <XCircle className="w-3 h-3 text-red-500" />
+                        상담 미동의금액
+                      </div>
+                      <div className="text-lg font-bold text-red-600">
+                        ₩{formatAmount(stats.summary.consultationNonAgreedAmount)}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xs text-gray-500">{stats.summary.nonAgreedCount}건</div>
+                      <div className="text-xs font-semibold text-red-600">{100 - stats.summary.agreedPercentage}%</div>
+                    </div>
                   </div>
-                  <div className="text-sm text-gray-500 mt-1">
-                    총 {stats.summary.totalConsultationCount}건
+                </CardContent>
+              </Card>
+
+              <Card className="border-l-4 border-l-blue-500">
+                <CardContent className="p-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-xs font-medium text-gray-600 flex items-center gap-1">
+                        <DollarSign className="w-3 h-3 text-blue-500" />
+                        전체 상담금액
+                      </div>
+                      <div className="text-lg font-bold text-blue-600">
+                        ₩{formatAmount(stats.summary.totalConsultationAmount)}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xs text-gray-500">총 {stats.summary.totalConsultationCount}건</div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
             </div>
 
-            {/* 동의율 진행바 */}
+            {/* 동의율 진행바 - 컴팩트하게 수정 */}
             <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">상담 동의율</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold">상담 동의율</h3>
+                  <div className="flex gap-4 text-xs">
+                    <span className="text-green-600 font-semibold">건수: {stats.summary.agreedPercentage}%</span>
+                    <span className="text-blue-600 font-semibold">금액: {stats.summary.agreedAmountPercentage}%</span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <div className="flex justify-between text-sm mb-2">
-                      <span>건수 기준 동의율</span>
+                    <div className="flex justify-between text-xs mb-1">
+                      <span>건수 기준</span>
                       <span className="font-semibold">{stats.summary.agreedPercentage}%</span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="w-full bg-gray-200 rounded-full h-1.5">
                       <div 
-                        className="bg-green-500 h-2 rounded-full transition-all duration-300"
+                        className="bg-green-500 h-1.5 rounded-full transition-all duration-300"
                         style={{ width: `${stats.summary.agreedPercentage}%` }}
                       ></div>
                     </div>
                   </div>
                   <div>
-                    <div className="flex justify-between text-sm mb-2">
-                      <span>금액 기준 동의율</span>
+                    <div className="flex justify-between text-xs mb-1">
+                      <span>금액 기준</span>
                       <span className="font-semibold">{stats.summary.agreedAmountPercentage}%</span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="w-full bg-gray-200 rounded-full h-1.5">
                       <div 
-                        className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                        className="bg-blue-500 h-1.5 rounded-full transition-all duration-300"
                         style={{ width: `${stats.summary.agreedAmountPercentage}%` }}
                       ></div>
                     </div>
@@ -211,70 +343,169 @@ export default function ConsultationStatsModal({
               </CardContent>
             </Card>
 
-            {/* 의사별 통계 */}
-            {stats.doctorStats.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Users className="w-5 h-5" />
-                    의사별 상담 통계
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {stats.doctorStats.map((doctor, index) => (
-                      <div key={doctor.doctor} className="border rounded-lg p-4">
-                        <div className="flex justify-between items-center mb-3">
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline">{doctor.doctor}</Badge>
-                            <span className="text-sm text-gray-500">
-                              총 {doctor.totalCount}건
-                            </span>
-                          </div>
-                          <div className="text-lg font-semibold">
-                            ₩{formatAmount(doctor.totalAmount)}
-                          </div>
-                        </div>
-                        
-                        <div className="grid grid-cols-2 gap-4 mb-3">
-                          <div className="text-center p-2 bg-green-50 rounded">
-                            <div className="text-sm text-gray-600">동의</div>
-                            <div className="font-semibold text-green-600">
-                              ₩{formatAmount(doctor.agreedAmount)}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              {doctor.agreedCount}건
-                            </div>
-                          </div>
-                          <div className="text-center p-2 bg-red-50 rounded">
-                            <div className="text-sm text-gray-600">미동의</div>
-                            <div className="font-semibold text-red-600">
-                              ₩{formatAmount(doctor.nonAgreedAmount)}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              {doctor.nonAgreedCount}건
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <div className="flex justify-between text-sm mb-1">
-                            <span>동의율</span>
-                            <span>{doctor.agreedPercentage}%</span>
-                          </div>
-                          <div className="w-full bg-gray-200 rounded-full h-1">
-                            <div 
-                              className="bg-green-500 h-1 rounded-full transition-all duration-300"
-                              style={{ width: `${doctor.agreedPercentage}%` }}
-                            ></div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+            {/* 상담내역 리스트 */}
+            <Card className="flex-1">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Calendar className="w-5 h-5" />
+                  상담내역 목록
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'agreed' | 'non-agreed')}>
+                  <div className="px-6">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="agreed" className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4" />
+                        상담동의 ({agreedConsultations.length}건)
+                      </TabsTrigger>
+                      <TabsTrigger value="non-agreed" className="flex items-center gap-2">
+                        <XCircle className="w-4 h-4" />
+                        상담미동의 ({nonAgreedConsultations.length}건)
+                      </TabsTrigger>
+                    </TabsList>
                   </div>
-                </CardContent>
-              </Card>
-            )}
+
+                  <TabsContent value="agreed" className="mt-4 px-6 pb-6">
+                    {consultationsLoading ? (
+                      <div className="flex justify-center items-center py-8">
+                        <div className="text-gray-500">상담내역을 불러오는 중...</div>
+                      </div>
+                    ) : agreedConsultations.length > 0 ? (
+                      <div className="border rounded-lg overflow-hidden">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>차트번호</TableHead>
+                              <TableHead>이름</TableHead>
+                              <TableHead>담당의사</TableHead>
+                              <TableHead>상담직원</TableHead>
+                              <TableHead className="text-right">상담금액</TableHead>
+                              <TableHead>상담날짜</TableHead>
+                              <TableHead>확정날짜</TableHead>
+                              <TableHead className="text-center">관리</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {agreedConsultations.map((consultation) => (
+                              <TableRow key={consultation._id}>
+                                <TableCell className="font-medium">{consultation.chartNumber}</TableCell>
+                                <TableCell>{consultation.patientName}</TableCell>
+                                <TableCell>{consultation.doctor}</TableCell>
+                                <TableCell>{consultation.staff}</TableCell>
+                                <TableCell className="text-right font-semibold">
+                                  ₩{formatAmount(consultation.amount)}
+                                </TableCell>
+                                <TableCell>{formatDateShort(consultation.date)}</TableCell>
+                                <TableCell>
+                                  {consultation.confirmedDate ? (
+                                    <Badge variant="outline" className="text-green-600 border-green-600">
+                                      {formatDateShort(consultation.confirmedDate)}
+                                    </Badge>
+                                  ) : (
+                                    <span className="text-gray-400">-</span>
+                                  )}
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex items-center justify-center gap-1">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleEdit(consultation)}
+                                      className="h-8 w-8 p-0"
+                                    >
+                                      <Edit className="w-4 h-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleDelete(consultation)}
+                                      className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-gray-500">
+                        해당 기간에 동의한 상담내역이 없습니다.
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  <TabsContent value="non-agreed" className="mt-4 px-6 pb-6">
+                    {consultationsLoading ? (
+                      <div className="flex justify-center items-center py-8">
+                        <div className="text-gray-500">상담내역을 불러오는 중...</div>
+                      </div>
+                    ) : nonAgreedConsultations.length > 0 ? (
+                      <div className="border rounded-lg overflow-hidden">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>차트번호</TableHead>
+                              <TableHead>이름</TableHead>
+                              <TableHead>담당의사</TableHead>
+                              <TableHead>상담직원</TableHead>
+                              <TableHead className="text-right">상담금액</TableHead>
+                              <TableHead>상담날짜</TableHead>
+                              <TableHead>확정날짜</TableHead>
+                              <TableHead className="text-center">관리</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {nonAgreedConsultations.map((consultation) => (
+                              <TableRow key={consultation._id}>
+                                <TableCell className="font-medium">{consultation.chartNumber}</TableCell>
+                                <TableCell>{consultation.patientName}</TableCell>
+                                <TableCell>{consultation.doctor}</TableCell>
+                                <TableCell>{consultation.staff}</TableCell>
+                                <TableCell className="text-right font-semibold">
+                                  ₩{formatAmount(consultation.amount)}
+                                </TableCell>
+                                <TableCell>{formatDateShort(consultation.date)}</TableCell>
+                                <TableCell>
+                                  <span className="text-gray-400">-</span>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex items-center justify-center gap-1">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleEdit(consultation)}
+                                      className="h-8 w-8 p-0"
+                                    >
+                                      <Edit className="w-4 h-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleDelete(consultation)}
+                                      className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-gray-500">
+                        해당 기간에 미동의한 상담내역이 없습니다.
+                      </div>
+                    )}
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
           </div>
         )}
       </DialogContent>

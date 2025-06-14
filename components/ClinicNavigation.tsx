@@ -219,9 +219,15 @@ export default function ClinicNavigation() {
           <SystemSettingsModal />
         </div>
         
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" onClick={goToPreviousDay} title="이전 날짜">
-            <ChevronLeft className="h-4 w-4" />
+        <div className="flex items-center gap-3">
+          <Button 
+            variant="outline" 
+            size="icon" 
+            onClick={goToPreviousDay} 
+            title="이전 날짜"
+            className="h-10 w-10 rounded-lg border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all duration-200"
+          >
+            <ChevronLeft className="h-4 w-4 text-gray-600" />
           </Button>
           
           <div className="grid gap-2">
@@ -230,13 +236,15 @@ export default function ClinicNavigation() {
                 <Button
                   variant="outline"
                   className={cn(
-                    "justify-start text-left font-normal",
-                    !selectedDate && "text-muted-foreground"
+                    "justify-start text-left font-medium px-4 py-2 h-10 min-w-[220px]",
+                    "bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300",
+                    "rounded-lg transition-all duration-200 shadow-sm hover:shadow-md",
+                    !selectedDate && "text-gray-400"
                   )}
                 >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  <CalendarIcon className="mr-3 h-4 w-4 text-blue-600" />
                   {selectedDate ? (
-                    <span>{format(selectedDate, "PPP (EEEE)", { locale: ko })}</span>
+                    <span className="text-gray-800">{format(selectedDate, "PPP (EEEE)", { locale: ko })}</span>
                   ) : (
                     <span>날짜 선택</span>
                   )}
@@ -255,11 +263,22 @@ export default function ClinicNavigation() {
             </Popover>
           </div>
           
-          <Button variant="outline" size="icon" onClick={goToNextDay} title="다음 날짜">
-            <ChevronRight className="h-4 w-4" />
+          <Button 
+            variant="outline" 
+            size="icon" 
+            onClick={goToNextDay} 
+            title="다음 날짜"
+            className="h-10 w-10 rounded-lg border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all duration-200"
+          >
+            <ChevronRight className="h-4 w-4 text-gray-600" />
           </Button>
           
-          <Button onClick={goToToday}>오늘</Button>
+          <Button 
+            onClick={goToToday}
+            className="h-10 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-200 shadow-sm hover:shadow-md"
+          >
+            오늘
+          </Button>
         </div>
       </div>
 

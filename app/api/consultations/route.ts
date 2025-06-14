@@ -39,34 +39,90 @@ export async function GET(request: NextRequest) {
       searchQuery['patientName'] = patientName;
     }
     
-    // 날짜 필터 추가 (날짜의 시작과 끝 시간 설정 - 한국 시간 기준)
-    if (dateStart) {
-      // 시작 날짜: 해당 날짜의 00:00:00 (한국 시간)
-      const startParts = dateStart.split('-').map(Number);
-      const startDateObj = new Date(startParts[0], startParts[1] - 1, startParts[2], 0, 0, 0, 0);
-      
-      // 한국 시간과 UTC 간의 시차 조정 (9시간)
-      const kstOffset = 9 * 60 * 60 * 1000;
-      const startUtc = new Date(startDateObj.getTime() - kstOffset);
-      
-      searchQuery['date'] = { $gte: startUtc };
-    }
-
-    if (dateEnd) {
-      // 종료 날짜: 해당 날짜의 23:59:59.999 (한국 시간)
-      const endParts = dateEnd.split('-').map(Number);
-      const endDateObj = new Date(endParts[0], endParts[1] - 1, endParts[2], 23, 59, 59, 999);
-      
-      // 한국 시간과 UTC 간의 시차 조정 (9시간)
-      const kstOffset = 9 * 60 * 60 * 1000;
-      const endUtc = new Date(endDateObj.getTime() - kstOffset);
-      
-      searchQuery['date'] = { ...searchQuery['date'], $lte: endUtc };
-    }
-    
     // 동의 여부 필터 추가
     if (agreed) {
       searchQuery['agreed'] = agreed === 'true';
+    }
+    
+    // 날짜 필터 추가 - 동의 여부에 따라 다른 날짜 필드 사용
+    if (dateStart || dateEnd) {
+      // 시작 날짜와 종료 날짜 계산 (한국 시간 기준)
+      let startUtc: Date | undefined;
+      let endUtc: Date | undefined;
+      
+      if (dateStart) {
+        // 시작 날짜: 해당 날짜의 00:00:00 (한국 시간)
+        const startParts = dateStart.split('-').map(Number);
+        const startDateObj = new Date(startParts[0], startParts[1] - 1, startParts[2], 0, 0, 0, 0);
+        
+        // 한국 시간과 UTC 간의 시차 조정 (9시간)
+        const kstOffset = 9 * 60 * 60 * 1000;
+        startUtc = new Date(startDateObj.getTime() - kstOffset);
+      }
+
+      if (dateEnd) {
+        // 종료 날짜: 해당 날짜의 23:59:59.999 (한국 시간)
+        const endParts = dateEnd.split('-').map(Number);
+        const endDateObj = new Date(endParts[0], endParts[1] - 1, endParts[2], 23, 59, 59, 999);
+        
+        // 한국 시간과 UTC 간의 시차 조정 (9시간)
+        const kstOffset = 9 * 60 * 60 * 1000;
+        endUtc = new Date(endDateObj.getTime() - kstOffset);
+      }
+      
+      // 동의 여부에 따라 다른 날짜 필드 사용
+      if (agreed === 'true') {
+        // 동의한 상담: confirmedDate 기준 (null이 아닌 경우만)
+        // confirmedDate도 한국 시간 기준으로 필터링
+        const dateFilter: any = { $ne: null };
+        if (startUtc) dateFilter.$gte = startUtc;
+        if (endUtc) dateFilter.$lte = endUtc;
+        searchQuery['confirmedDate'] = dateFilter;
+      } else if (agreed === 'false') {
+        // 미동의한 상담: date 기준
+        const dateFilter: any = {};
+        if (startUtc) dateFilter.$gte = startUtc;
+        if (endUtc) dateFilter.$lte = endUtc;
+        searchQuery['date'] = dateFilter;
+      } else {
+        // 동의 여부 필터가 없는 경우: 두 조건을 OR로 결합
+        const agreedDateFilter: any = { $ne: null };
+        const nonAgreedDateFilter: any = {};
+        
+        if (startUtc) {
+          agreedDateFilter.$gte = startUtc;
+          nonAgreedDateFilter.$gte = startUtc;
+        }
+        if (endUtc) {
+          agreedDateFilter.$lte = endUtc;
+          nonAgreedDateFilter.$lte = endUtc;
+        }
+        
+        searchQuery['$or'] = [
+          { agreed: true, confirmedDate: agreedDateFilter },
+          { agreed: false, date: nonAgreedDateFilter }
+        ];
+        
+        // 기존 $or 조건이 있다면 $and로 결합
+        if (query) {
+          searchQuery = {
+            $and: [
+              {
+                $or: [
+                  { chartNumber: { $regex: query, $options: 'i' } },
+                  { patientName: { $regex: query, $options: 'i' } }
+                ]
+              },
+              {
+                $or: [
+                  { agreed: true, confirmedDate: agreedDateFilter },
+                  { agreed: false, date: nonAgreedDateFilter }
+                ]
+              }
+            ]
+          };
+        }
+      }
     }
     
     // consultations 컬렉션에서 직접 조회
