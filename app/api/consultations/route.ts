@@ -45,32 +45,32 @@ export async function GET(request: NextRequest) {
       searchQuery['agreed'] = agreed === 'true';
     }
     
-    // 날짜 필터 추가 (상담일 또는 동의일 기준)
+    // 날짜 필터 추가 (consultation.js 방식: 동의한 상담은 confirmedDate, 미동의 상담은 date 기준)
     if (dateStart && dateEnd) {
       // 시작 날짜: 해당 날짜의 00:00:00 (한국 시간)
       const startParts = dateStart.split('-').map(Number);
       const startDateObj = new Date(startParts[0], startParts[1] - 1, startParts[2], 0, 0, 0, 0);
       
-      // 종료 날짜: 다음 날 00:00:00 (한국 시간) - 1ms
+      // 종료 날짜: 해당 날짜의 23:59:59.999 (한국 시간)
       const endParts = dateEnd.split('-').map(Number);
-      const endDateObj = new Date(endParts[0], endParts[1] - 1, endParts[2] + 1, 0, 0, 0, 0);
-      endDateObj.setMilliseconds(-1);
+      const endDateObj = new Date(endParts[0], endParts[1] - 1, endParts[2], 23, 59, 59, 999);
       
       // 한국 시간과 UTC 간의 시차 조정 (9시간)
       const kstOffset = 9 * 60 * 60 * 1000;
       const startUtc = new Date(startDateObj.getTime() - kstOffset);
       const endUtc = new Date(endDateObj.getTime() - kstOffset);
       
-      // 상담일 또는 동의일이 범위에 포함되는 경우
+      // consultation.js 방식: 동의한 상담은 confirmedDate, 미동의 상담은 date 기준
       dateConditions = [
-        // 상담일이 범위에 포함
+        // 미동의 상담: date 기준
         {
+          agreed: false,
           date: {
             $gte: startUtc,
             $lte: endUtc
           }
         },
-        // 동의일이 범위에 포함 (동의한 상담만)
+        // 동의한 상담: confirmedDate 기준
         {
           agreed: true,
           confirmedDate: {
@@ -87,18 +87,17 @@ export async function GET(request: NextRequest) {
       const startUtc = new Date(startDateObj.getTime() - kstOffset);
       
       dateConditions = [
-        { date: { $gte: startUtc } },
+        { agreed: false, date: { $gte: startUtc } },
         { agreed: true, confirmedDate: { $gte: startUtc, $ne: null } }
       ];
     } else if (dateEnd) {
       const endParts = dateEnd.split('-').map(Number);
-      const endDateObj = new Date(endParts[0], endParts[1] - 1, endParts[2] + 1, 0, 0, 0, 0);
-      endDateObj.setMilliseconds(-1);
+      const endDateObj = new Date(endParts[0], endParts[1] - 1, endParts[2], 23, 59, 59, 999);
       const kstOffset = 9 * 60 * 60 * 1000;
       const endUtc = new Date(endDateObj.getTime() - kstOffset);
       
       dateConditions = [
-        { date: { $lte: endUtc } },
+        { agreed: false, date: { $lte: endUtc } },
         { agreed: true, confirmedDate: { $lte: endUtc, $ne: null } }
       ];
     }

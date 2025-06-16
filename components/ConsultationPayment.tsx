@@ -98,10 +98,8 @@ export default function ConsultationPayment() {
         return;
       }
       
-      // 상담 데이터 조회 (날짜 파라미터 포함)
+      // 상담 데이터 조회 (전체 데이터 조회 후 클라이언트에서 필터링)
       const consultParams = new URLSearchParams({
-        dateStart: startDate,
-        dateEnd: endDate,
         limit: '1000' // 충분히 큰 값으로 설정
       });
       
@@ -122,10 +120,8 @@ export default function ConsultationPayment() {
       
       const consultationsData = await consultResponse.json();
 
-      // 수납 데이터 조회 (날짜 파라미터 포함)
+      // 수납 데이터 조회 (전체 데이터 조회 후 클라이언트에서 필터링)
       const transParams = new URLSearchParams({
-        dateStart: startDate,
-        dateEnd: endDate,
         limit: '1000' // 충분히 큰 값으로 설정
       });
       
@@ -171,8 +167,25 @@ export default function ConsultationPayment() {
   };
 
   const filterAndGroupData = (consultationsData: Consultation[], transactionsData: Transaction[]) => {
-    // API에서 이미 날짜 필터링이 되어 오므로 추가 날짜 필터링 불필요
-    let groupedData = groupConsultationsByChart(consultationsData, transactionsData);
+    // consultation.js 방식으로 추가 날짜 필터링 (동의한 상담은 confirmedDate, 미동의 상담은 date 기준)
+    const startDateObj = new Date(startDate);
+    const endDateObj = new Date(endDate);
+    endDateObj.setHours(23, 59, 59, 999); // 종료일의 끝시간으로 설정
+
+    const filteredConsultations = consultationsData.filter(consultation => {
+      const targetDate = consultation.agreed 
+        ? (consultation.confirmedDate ? new Date(consultation.confirmedDate) : new Date(consultation.date))
+        : new Date(consultation.date);
+      return targetDate >= startDateObj && targetDate <= endDateObj;
+    });
+
+    // 수납 데이터도 날짜 범위로 필터링
+    const filteredTransactions = transactionsData.filter(transaction => {
+      const transDate = new Date(transaction.date);
+      return transDate >= startDateObj && transDate <= endDateObj;
+    });
+
+    let groupedData = groupConsultationsByChart(filteredConsultations, filteredTransactions);
 
     // 상태 필터링
     if (currentStatus !== 'all') {
