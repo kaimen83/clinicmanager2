@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 
 export default function AccountingPage() {
-  const [activeTab, setActiveTab] = useState('payment');
+  const [activeTab, setActiveTab] = useState('');
 
   return (
     <div className="container mx-auto px-6 py-8">
@@ -120,6 +120,23 @@ export default function AccountingPage() {
             </span>
           </TabsTrigger>
         </TabsList>
+
+        {/* 기본 화면 */}
+        {!activeTab && (
+          <Card className="border-0 shadow-lg">
+            <CardContent className="p-12 text-center">
+              <div className="max-w-md mx-auto space-y-4">
+                <div className="w-16 h-16 mx-auto bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                  <BarChart3 className="w-8 h-8 text-white" />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-800">경영관리 시스템</h2>
+                <p className="text-gray-600">
+                  원하는 기능을 선택하여 시작하세요
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <TabsContent value="payment">
           <ConsultationPayment />
