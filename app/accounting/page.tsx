@@ -7,6 +7,7 @@ import ConsultationPayment from '@/components/ConsultationPayment';
 import EvidenceStatus from '@/components/EvidenceStatus';
 import DailyReport from '@/components/DailyReport';
 import CardDeposits from '@/components/CardDeposits';
+import PatientAnalysis from '@/components/PatientAnalysis';
 import { 
   Receipt, 
   FileText, 
@@ -156,13 +157,7 @@ export default function AccountingPage() {
         </TabsContent>
 
         <TabsContent value="patient-analysis">
-          <Card className="border-0 shadow-lg">
-            <CardContent className="p-6">
-              <div className="min-h-[400px] flex items-center justify-center">
-                <p className="text-gray-500">환자분석 기능이 여기에 구현됩니다.</p>
-              </div>
-            </CardContent>
-          </Card>
+          <PatientAnalysis />
         </TabsContent>
 
         <TabsContent value="purchase-ledger">
