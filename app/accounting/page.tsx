@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import ConsultationPayment from '@/components/ConsultationPayment';
 import EvidenceStatus from '@/components/EvidenceStatus';
 import DailyReport from '@/components/DailyReport';
+import CardDeposits from '@/components/CardDeposits';
 import { 
   Receipt, 
   FileText, 
@@ -151,13 +152,7 @@ export default function AccountingPage() {
         </TabsContent>
 
         <TabsContent value="card-sales">
-          <Card className="border-0 shadow-lg">
-            <CardContent className="p-6">
-              <div className="min-h-[400px] flex items-center justify-center">
-                <p className="text-gray-500">카드매출/입금 기능이 여기에 구현됩니다.</p>
-              </div>
-            </CardContent>
-          </Card>
+          <CardDeposits />
         </TabsContent>
 
         <TabsContent value="patient-analysis">
