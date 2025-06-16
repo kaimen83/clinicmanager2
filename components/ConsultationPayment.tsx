@@ -69,6 +69,7 @@ export default function ConsultationPayment() {
   const [currentPeriodDays, setCurrentPeriodDays] = useState('30');
   const [currentStatus, setCurrentStatus] = useState('all');
   const [notAgreedFilter, setNotAgreedFilter] = useState('all');
+  const [totalRemaining, setTotalRemaining] = useState(0);
 
   // 초기 날짜 설정
   useEffect(() => {
@@ -151,6 +152,9 @@ export default function ConsultationPayment() {
       
       // 필터링 및 그룹화
       filterAndGroupData(consultationsArray, transactionsArray);
+      
+      // 전체 진료잔액 계산
+      await calculateTotalRemaining();
       
     } catch (error) {
       console.error('데이터 로드 중 에러:', error);
@@ -318,6 +322,54 @@ export default function ConsultationPayment() {
         paid: acc.paid + paidAmount
       };
     }, { total: 0, agreed: 0, notAgreed: 0, paid: 0 });
+  };
+
+  const calculateTotalRemaining = async () => {
+    try {
+      const token = await getToken();
+      if (!token) return;
+
+      // 전체 상담 데이터 조회 (날짜 필터링 없이)
+      const consultResponse = await fetch('/api/consultations?limit=10000', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!consultResponse.ok) return;
+      const allConsultationsData = await consultResponse.json();
+
+      // 전체 수납 데이터 조회 (날짜 필터링 없이)
+      const transResponse = await fetch('/api/transactions?limit=10000', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!transResponse.ok) return;
+      const allTransactionsData = await transResponse.json();
+
+      // API 응답에서 실제 데이터 배열 추출
+      const allConsultationsArray = allConsultationsData.consultations || [];
+      const allTransactionsArray = allTransactionsData.transactions || [];
+
+      // 전체 데이터로 그룹화 (날짜 필터링 없이)
+      const allGroups = groupConsultationsByChart(allConsultationsArray, allTransactionsArray);
+      
+      // 전체 진료잔액 계산
+      const totalRemainingAmount = allGroups.reduce((acc, group) => {
+        const agreedAmount = group.consultations
+          .filter(c => c.agreed)
+          .reduce((sum, c) => sum + (c.amount || 0), 0);
+        const paidAmount = group.payments.consultation
+          .reduce((sum, p) => sum + (p.amount || 0), 0);
+        return acc + (agreedAmount - paidAmount);
+      }, 0);
+
+      setTotalRemaining(totalRemainingAmount);
+    } catch (error) {
+      console.error('전체 진료잔액 계산 중 에러:', error);
+    }
   };
 
   const toggleGroupExpansion = (chartNumber: string) => {
@@ -490,6 +542,14 @@ export default function ConsultationPayment() {
               <div className="text-sm text-gray-600">진료잔액</div>
               <div className="text-lg font-bold text-orange-600">
                 {formatCurrency(Math.abs(totals.agreed - totals.paid))}
+              </div>
+              <div className="text-xs text-gray-500 mt-2 pt-2 border-t border-gray-200">
+                <div className="flex items-center justify-center gap-1">
+                  <span className="text-gray-400">전체:</span>
+                  <span className="font-medium text-gray-600">
+                    {formatCurrency(Math.abs(totalRemaining))}
+                  </span>
+                </div>
               </div>
             </CardContent>
           </Card>
