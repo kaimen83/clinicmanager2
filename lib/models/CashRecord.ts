@@ -7,6 +7,10 @@ export interface ICashRecord extends Document {
   description?: string;
   transactionId?: mongoose.Types.ObjectId;
   expenseId?: mongoose.Types.ObjectId;
+  isCompleted?: boolean;
+  isGrouped?: boolean;
+  isClosed?: boolean;
+  completedAt?: Date;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -35,6 +39,21 @@ const cashRecordSchema = new Schema<ICashRecord>({
   expenseId: {
     type: Schema.Types.ObjectId,
     ref: 'Expense'
+  },
+  isCompleted: {
+    type: Boolean,
+    default: false
+  },
+  isGrouped: {
+    type: Boolean,
+    default: false
+  },
+  isClosed: {
+    type: Boolean,
+    default: false
+  },
+  completedAt: {
+    type: Date
   }
 }, {
   timestamps: true

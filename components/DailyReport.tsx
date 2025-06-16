@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import CashDepositModal from './CashDepositModal';
 
 interface DailyData {
   date: string;
@@ -18,6 +19,7 @@ interface DailyData {
   newPatients: number;
   totalPatients: number;
   isDepositCompleted: boolean;
+  hasIncompleteDeposit?: boolean;
 }
 
 interface DailySummary {
@@ -38,6 +40,12 @@ interface DailyReportData {
   summary: DailySummary;
 }
 
+interface DepositStatus {
+  hasIncomplete: boolean;
+  totalAmount: number;
+  completedAmount: number;
+}
+
 type ViewType = 'daily' | 'monthly';
 
 export default function DailyReport() {
@@ -47,17 +55,35 @@ export default function DailyReport() {
   });
   const [viewType, setViewType] = useState<ViewType>('daily');
   const [data, setData] = useState<DailyReportData>({ dailyData: [], summary: {} as DailySummary });
+  const [depositStatus, setDepositStatus] = useState<Record<string, DepositStatus>>({});
   const [loading, setLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showDepositModal, setShowDepositModal] = useState(false);
+
+  // 입금 상태 로드
+  const loadDepositStatus = async () => {
+    if (viewType !== 'daily') return;
+    
+    try {
+      const [year, month] = currentMonth.split('-');
+      const response = await fetch(`/api/cash-deposit/status?year=${year}&month=${month}`);
+      
+      if (response.ok) {
+        const statusData = await response.json();
+        setDepositStatus(statusData);
+      }
+    } catch (error) {
+      console.error('입금 상태 로드 중 오류:', error);
+    }
+  };
 
   // 데이터 로드
   const loadData = async () => {
     setLoading(true);
     try {
       if (viewType === 'daily') {
-        await loadDailyData();
+        await Promise.all([loadDailyData(), loadDepositStatus()]);
       } else {
         await loadMonthlyData();
       }
@@ -268,14 +294,16 @@ export default function DailyReport() {
 
         const isSunday = date.getDay() === 0;
         const isToday = dateStr === today;
+        const hasIncompleteDeposit = depositStatus[dateStr]?.hasIncomplete || false;
         
-        return { ...dayData, isSunday, isToday };
+        return { ...dayData, isSunday, isToday, hasIncompleteDeposit };
       });
     } else {
       return data.dailyData.map(monthData => ({
         ...monthData,
         isSunday: false,
-        isToday: false
+        isToday: false,
+        hasIncompleteDeposit: false
       }));
     }
   };
@@ -284,62 +312,76 @@ export default function DailyReport() {
     loadData();
   }, [currentMonth, viewType]);
 
+  // 입금완료 이벤트 리스너
+  useEffect(() => {
+    const handleDepositCompleted = () => {
+      loadData(); // 데이터와 입금 상태 새로고침
+    };
+
+    document.addEventListener('depositCompleted', handleDepositCompleted);
+    
+    return () => {
+      document.removeEventListener('depositCompleted', handleDepositCompleted);
+    };
+  }, [currentMonth, viewType]);
+
   const tableData = generateTableData();
 
   return (
-    <Card className="border-0 shadow-lg">
-      <CardHeader>
-        <div className="flex flex-col space-y-4">
-          {/* 뷰 타입 선택 */}
-          <div className="flex space-x-2">
-            <Button
-              variant={viewType === 'daily' ? 'default' : 'outline'}
-              onClick={() => setViewType('daily')}
-              size="sm"
-            >
-              일간
-            </Button>
-            <Button
-              variant={viewType === 'monthly' ? 'default' : 'outline'}
-              onClick={() => setViewType('monthly')}
-              size="sm"
-            >
-              월간
-            </Button>
-          </div>
+    <>
+      <Card className="border-0 shadow-lg">
+        <CardHeader>
+          <div className="flex flex-col space-y-4">
+            {/* 뷰 타입 선택 */}
+            <div className="flex space-x-2">
+              <Button
+                variant={viewType === 'daily' ? 'default' : 'outline'}
+                onClick={() => setViewType('daily')}
+                size="sm"
+              >
+                일간
+              </Button>
+              <Button
+                variant={viewType === 'monthly' ? 'default' : 'outline'}
+                onClick={() => setViewType('monthly')}
+                size="sm"
+              >
+                월간
+              </Button>
+            </div>
 
-          {/* 월별 네비게이션 */}
-          <div className="flex items-center space-x-4">
-            <Button variant="outline" size="sm" onClick={goToPrevious}>
-              <ChevronLeft className="w-4 h-4" />
-              이전
-            </Button>
-            
-            {viewType === 'daily' ? (
-              <input
-                type="month"
-                value={currentMonth}
-                onChange={(e) => setCurrentMonth(e.target.value)}
-                className="px-3 py-2 border rounded-md"
-              />
-            ) : (
-              <input
-                type="number"
-                value={currentMonth.split('-')[0]}
-                onChange={(e) => setCurrentMonth(`${e.target.value}-01`)}
-                min="2000"
-                max="2100"
-                className="px-3 py-2 border rounded-md w-20"
-              />
-            )}
-            
-            <Button variant="outline" size="sm" onClick={goToNext}>
-              다음
-              <ChevronRight className="w-4 h-4" />
-            </Button>
+            {/* 월별 네비게이션 */}
+            <div className="flex items-center space-x-4">
+              <Button variant="outline" size="sm" onClick={goToPrevious}>
+                <ChevronLeft className="w-4 h-4" />
+                이전
+              </Button>
+              
+              {viewType === 'daily' ? (
+                <input
+                  type="month"
+                  value={currentMonth}
+                  onChange={(e) => setCurrentMonth(e.target.value)}
+                  className="px-3 py-2 border rounded-md"
+                />
+              ) : (
+                <input
+                  type="number"
+                  value={currentMonth.split('-')[0]}
+                  onChange={(e) => setCurrentMonth(`${e.target.value}-01`)}
+                  min="2000"
+                  max="2100"
+                  className="px-3 py-2 border rounded-md w-20"
+                />
+              )}
+              
+              <Button variant="outline" size="sm" onClick={goToNext}>
+                다음
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
-        </div>
-      </CardHeader>
+        </CardHeader>
 
       <CardContent>
         {loading ? (
@@ -347,7 +389,23 @@ export default function DailyReport() {
             <div className="text-gray-500">데이터를 불러오는 중...</div>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="space-y-4">
+            {/* 범례 */}
+            {viewType === 'daily' && (
+              <div className="flex flex-wrap gap-4 text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="text-red-600 font-bold">⚠️ 미완료 입금 있음</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-green-600 font-semibold">✅ 모든 입금 완료</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-600">일반 표시 (입금 내역 없음)</span>
+                </div>
+              </div>
+            )}
+            
+            <div className="overflow-x-auto">
             <table className="w-full border-collapse border border-gray-300">
               <thead>
                 <tr className="bg-gray-50">
@@ -400,8 +458,17 @@ export default function DailyReport() {
                     <td className="border border-gray-300 px-4 py-2 text-right">
                       {formatAmount(row.cardDepositsAmount)}
                     </td>
-                    <td className={`border border-gray-300 px-4 py-2 text-right ${row.isDepositCompleted ? 'bg-green-100' : ''}`}>
+                    <td className={`border border-gray-300 px-4 py-2 text-right ${
+                      row.hasIncompleteDeposit 
+                        ? 'text-red-600 font-bold' 
+                        : row.cashDeposit > 0 && !row.hasIncompleteDeposit 
+                        ? 'text-green-600 font-semibold' 
+                        : ''
+                    }`}>
                       {formatAmount(row.cashDeposit)}
+                      {row.hasIncompleteDeposit && (
+                        <span className="ml-1 text-xs">⚠️</span>
+                      )}
                     </td>
                     <td className={`border border-gray-300 px-4 py-2 text-right ${row.totalExpense > 0 ? 'text-red-600' : ''}`}>
                       {formatAmount(row.totalExpense)}
@@ -453,9 +520,18 @@ export default function DailyReport() {
                 </tr>
               </tfoot>
             </table>
+            </div>
           </div>
         )}
       </CardContent>
     </Card>
+
+    {/* 계좌입금 상세 모달 */}
+    <CashDepositModal
+      isOpen={showDepositModal}
+      onClose={() => setShowDepositModal(false)}
+      selectedDate={selectedDate || ''}
+    />
+  </>
   );
 } 
