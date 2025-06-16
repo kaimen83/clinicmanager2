@@ -65,4 +65,27 @@ export function useDateContext() {
     throw new Error('useDateContext must be used within a DateProvider');
   }
   return context;
+}
+
+// DateProvider가 없을 때도 안전하게 사용할 수 있는 hook
+export function useDateContextSafe() {
+  const context = useContext(DateContext);
+  
+  // DateProvider가 없으면 빈 함수들을 반환
+  if (context === undefined) {
+    return {
+      selectedDate: getCurrentKstDate(),
+      setSelectedDate: () => {},
+      refreshTrigger: 0,
+      triggerRefresh: () => {},
+      cashRefreshTrigger: 0,
+      triggerCashRefresh: () => {},
+      statsRefreshTrigger: 0,
+      triggerStatsRefresh: () => {},
+      expenseRefreshTrigger: 0,
+      triggerExpenseRefresh: () => {}
+    };
+  }
+  
+  return context;
 } 

@@ -16,7 +16,7 @@ import { cn, createNewDate, toISODateString } from '@/lib/utils';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Expense } from '@/lib/types';
-import { useDateContext } from '@/lib/context/dateContext';
+import { useDateContextSafe } from '@/lib/context/dateContext';
 
 type Props = {
   isOpen: boolean;
@@ -27,7 +27,7 @@ type Props = {
 };
 
 export default function ExpenseModal({ isOpen, onClose, onSuccess, defaultDate, editItem }: Props) {
-  const { triggerExpenseRefresh, triggerCashRefresh, triggerStatsRefresh } = useDateContext();
+  const { triggerExpenseRefresh, triggerCashRefresh, triggerStatsRefresh } = useDateContextSafe();
   const [isLoading, setIsLoading] = useState(false);
   const [vendors, setVendors] = useState<Array<{_id: string; name: string}>>([]);
   const [accountTypes, setAccountTypes] = useState<Array<{_id: string; value: string}>>([]);

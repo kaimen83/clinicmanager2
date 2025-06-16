@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import ConsultationPayment from '@/components/ConsultationPayment';
+import EvidenceStatus from '@/components/EvidenceStatus';
 import { 
   Receipt, 
   FileText, 
@@ -124,13 +125,7 @@ export default function AccountingPage() {
         </TabsContent>
 
         <TabsContent value="documents">
-          <Card className="border-0 shadow-lg">
-            <CardContent className="p-6">
-              <div className="min-h-[400px] flex items-center justify-center">
-                <p className="text-gray-500">증빙자료 현황 기능이 여기에 구현됩니다.</p>
-              </div>
-            </CardContent>
-          </Card>
+          <EvidenceStatus />
         </TabsContent>
 
         <TabsContent value="daily-report">
