@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -156,7 +156,7 @@ export default function PatientAnalysis() {
     }
   };
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!baseMonth && !baseYear) return;
     
     try {
@@ -191,7 +191,7 @@ export default function PatientAnalysis() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [baseMonth, baseYear, periodType, selectedPeriods, useGroups, toast]);
 
   const loadGroups = async () => {
     try {
@@ -375,8 +375,8 @@ export default function PatientAnalysis() {
     setFormData({ ...formData, visitPaths: newPaths });
   };
 
-  // 합계 계산
-  const calculateTotals = (data: AnalysisData[]) => {
+  // 합계 계산 - 메모이제이션으로 최적화
+  const calculateTotals = useCallback((data: AnalysisData[]) => {
     return data.reduce((totals, item) => {
       totals.totalPatientCount += item.totalPatientCount;
       totals.newPatientCount += item.newPatientCount;
@@ -391,13 +391,17 @@ export default function PatientAnalysis() {
       paymentAmount: 0,
       totalConsultationAmount: 0
     });
-  };
+  }, []);
 
-  const currentTotals = calculateTotals(currentData);
-  const comparisonTotals: { [key: string]: any } = {};
-  Object.keys(comparisonData).forEach(period => {
-    comparisonTotals[period] = calculateTotals(comparisonData[period]);
-  });
+  // 메모이제이션된 계산 결과들
+  const currentTotals = useMemo(() => calculateTotals(currentData), [currentData, calculateTotals]);
+  const comparisonTotals = useMemo(() => {
+    const totals: { [key: string]: any } = {};
+    Object.keys(comparisonData).forEach(period => {
+      totals[period] = calculateTotals(comparisonData[period]);
+    });
+    return totals;
+  }, [comparisonData, calculateTotals]);
 
   return (
     <Card className="border-0 shadow-lg">

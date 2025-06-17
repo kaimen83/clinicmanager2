@@ -3,6 +3,39 @@ import { connectToDatabase } from '@/lib/mongodb';
 import { currentUser } from '@clerk/nextjs/server';
 import { ObjectId } from 'mongodb';
 
+// 성능 최적화를 위한 필수 인덱스 생성
+async function ensureIndexes(db: any) {
+  try {
+    // consultations 컬렉션 인덱스
+    await db.collection('consultations').createIndex(
+      { date: 1, chartNumber: 1, agreed: 1 },
+      { background: true, name: 'date_chartNumber_agreed_idx' }
+    );
+    
+    // patients 컬렉션 인덱스
+    await db.collection('patients').createIndex(
+      { visitPath: 1, chartNumber: 1, createdAt: 1 },
+      { background: true, name: 'visitPath_chartNumber_createdAt_idx' }
+    );
+    
+    // 단일 필드 인덱스들
+    await db.collection('consultations').createIndex(
+      { date: 1 },
+      { background: true, name: 'date_idx' }
+    );
+    
+    await db.collection('patients').createIndex(
+      { chartNumber: 1 },
+      { background: true, name: 'chartNumber_idx' }
+    );
+    
+    console.log('인덱스 생성 완료');
+  } catch (error) {
+    // 인덱스가 이미 존재하는 경우 무시
+    console.log('인덱스 생성 중 오류 (이미 존재할 수 있음):', error);
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const user = await currentUser();
@@ -13,6 +46,10 @@ export async function POST(request: NextRequest) {
     }
 
     const { db } = await connectToDatabase();
+    
+    // 성능 최적화를 위한 인덱스 확인 및 생성
+    await ensureIndexes(db);
+    
     const body = await request.json();
     const { periodType, year, month, quarter, comparePeriods, useGroups } = body;
 
@@ -118,61 +155,67 @@ async function getPatientAnalysisData(db: any, dateRange: { startDate: Date; end
   const endUtc = new Date(endDate.getTime() - kstOffset);
 
   if (useGroups) {
-    // 그룹 보기
+    // 그룹 보기 - 병렬 처리 최적화
     const groups = await db.collection('visitpathgroups').find({ isActive: true }).toArray();
-    const result = [];
+    
+    // 그룹별 데이터를 병렬로 처리
+    const groupPromises = groups.map(async (group: any) => {
+      // 그룹 데이터와 상세 데이터를 병렬로 처리
+      const [groupData, detailsResults] = await Promise.all([
+        getVisitPathGroupData(db, group.visitPaths, startUtc, endUtc),
+        Promise.all(group.visitPaths.map(async (visitPath: string) => {
+          const pathData = await getVisitPathData(db, visitPath, startUtc, endUtc);
+          return {
+            visitPath,
+            ...pathData
+          };
+        }))
+      ]);
 
-    for (const group of groups) {
-      const groupData = await getVisitPathGroupData(db, group.visitPaths, startUtc, endUtc);
-      
-      // 각 내원경로별 상세 데이터
-      const details = [];
-      for (const visitPath of group.visitPaths) {
-        const pathData = await getVisitPathData(db, visitPath, startUtc, endUtc);
-        details.push({
-          visitPath,
-          ...pathData
-        });
-      }
-
-      result.push({
+      return {
         isGroup: true,
         groupId: group._id.toString(),
         visitPath: group.name,
-        details,
+        details: detailsResults,
         ...groupData
-      });
-    }
+      };
+    });
 
-    // 그룹에 포함되지 않은 내원경로들
+    // 그룹에 포함되지 않은 내원경로들도 병렬 처리
     const groupedPaths = groups.flatMap((g: any) => g.visitPaths);
     const allVisitPaths = await db.collection('settings').find({ type: 'visitPath', isActive: true }).toArray();
     const ungroupedPaths = allVisitPaths.filter((path: any) => !groupedPaths.includes(path.value));
 
-    for (const path of ungroupedPaths) {
+    const ungroupedPromises = ungroupedPaths.map(async (path: any) => {
       const pathData = await getVisitPathData(db, path.value, startUtc, endUtc);
-      result.push({
+      return {
         isGroup: false,
         visitPath: path.value,
         ...pathData
-      });
-    }
+      };
+    });
 
-    return result;
+    // 모든 작업을 병렬로 실행
+    const [groupResults, ungroupedResults] = await Promise.all([
+      Promise.all(groupPromises),
+      Promise.all(ungroupedPromises)
+    ]);
+
+    return [...groupResults, ...ungroupedResults];
   } else {
-    // 개별 보기
+    // 개별 보기 - 병렬 처리 최적화
     const visitPaths = await db.collection('settings').find({ type: 'visitPath', isActive: true }).toArray();
-    const result = [];
-
-    for (const path of visitPaths) {
+    
+    // 모든 내원경로 데이터를 병렬로 처리
+    const pathPromises = visitPaths.map(async (path: any) => {
       const pathData = await getVisitPathData(db, path.value, startUtc, endUtc);
-      result.push({
+      return {
         visitPath: path.value,
         ...pathData
-      });
-    }
+      };
+    });
 
-    return result;
+    return await Promise.all(pathPromises);
   }
 }
 
@@ -202,50 +245,105 @@ async function getVisitPathGroupData(db: any, visitPaths: string[], startUtc: Da
   };
 }
 
-// 내원경로별 데이터 조회
+// 내원경로별 데이터 조회 - 최적화된 버전
 async function getVisitPathData(db: any, visitPath: string, startUtc: Date, endUtc: Date) {
-  // 해당 기간의 상담 데이터
-  const consultations = await db.collection('consultations').find({
-    date: { $gte: startUtc, $lte: endUtc }
-  }).toArray();
+  // MongoDB aggregation pipeline을 사용한 최적화된 쿼리
+  const pipeline = [
+    // 1. 기간별 상담 데이터 필터링
+    {
+      $match: {
+        date: { $gte: startUtc, $lte: endUtc }
+      }
+    },
+    // 2. 환자 정보와 조인
+    {
+      $lookup: {
+        from: 'patients',
+        localField: 'chartNumber',
+        foreignField: 'chartNumber',
+        as: 'patient'
+      }
+    },
+    // 3. 환자 정보 언와인드
+    {
+      $unwind: '$patient'
+    },
+    // 4. 해당 내원경로로 필터링
+    {
+      $match: {
+        'patient.visitPath': visitPath
+      }
+    },
+    // 5. 집계 계산
+    {
+      $group: {
+        _id: null,
+        // 총환자수 (중복 제거)
+        uniquePatients: { $addToSet: '$chartNumber' },
+        // 신환 구분을 위한 환자 생성일 수집
+        patientCreationDates: {
+          $addToSet: {
+            chartNumber: '$chartNumber',
+            createdAt: '$patient.createdAt'
+          }
+        },
+        // 결제금액 (agreed: true)
+        paymentAmount: {
+          $sum: {
+            $cond: [
+              { $eq: ['$agreed', true] },
+              { $ifNull: ['$amount', 0] },
+              0
+            ]
+          }
+        },
+        // 총 상담금액
+        totalConsultationAmount: {
+          $sum: { $ifNull: ['$amount', 0] }
+        }
+      }
+    },
+    // 6. 최종 결과 계산
+    {
+      $project: {
+        totalPatientCount: { $size: '$uniquePatients' },
+        newPatientCount: {
+          $size: {
+            $filter: {
+              input: '$patientCreationDates',
+              as: 'patient',
+              cond: {
+                $and: [
+                  { $gte: ['$$patient.createdAt', startUtc] },
+                  { $lte: ['$$patient.createdAt', endUtc] }
+                ]
+              }
+            }
+          }
+        },
+        paymentAmount: 1,
+        totalConsultationAmount: 1
+      }
+    },
+    // 7. 재진 수 계산
+    {
+      $addFields: {
+        revisitCount: { $subtract: ['$totalPatientCount', '$newPatientCount'] }
+      }
+    }
+  ];
 
-  // 해당 내원경로 환자들의 차트번호 조회
-  const patients = await db.collection('patients').find({ visitPath }).toArray();
-  const chartNumbers = patients.map((p: any) => p.chartNumber);
+  const result = await db.collection('consultations').aggregate(pipeline).toArray();
+  
+  if (result.length === 0) {
+    return {
+      totalPatientCount: 0,
+      newPatientCount: 0,
+      revisitCount: 0,
+      paymentAmount: 0,
+      totalConsultationAmount: 0
+    };
+  }
 
-  // 해당 내원경로 환자들의 상담 필터링
-  const pathConsultations = consultations.filter((c: any) => chartNumbers.includes(c.chartNumber));
-
-  // 총환자수 (중복 제거)
-  const uniquePatients = [...new Set(pathConsultations.map((c: any) => c.chartNumber))];
-  const totalPatientCount = uniquePatients.length;
-
-  // 신환 수 (해당 기간에 생성된 환자)
-  const newPatients = await db.collection('patients').find({
-    visitPath,
-    createdAt: { $gte: startUtc, $lte: endUtc }
-  }).toArray();
-  const newPatientChartNumbers = newPatients.map((p: any) => p.chartNumber);
-  const newPatientConsultations = pathConsultations.filter((c: any) => newPatientChartNumbers.includes(c.chartNumber));
-  const newPatientCount = [...new Set(newPatientConsultations.map((c: any) => c.chartNumber))].length;
-
-  // 재진 수
-  const revisitCount = totalPatientCount - newPatientCount;
-
-  // 결제금액 (agreed: true)
-  const paymentAmount = pathConsultations
-    .filter((c: any) => c.agreed === true)
-    .reduce((sum: any, c: any) => sum + (c.amount || 0), 0);
-
-  // 총 상담금액 (모든 상담)
-  const totalConsultationAmount = pathConsultations
-    .reduce((sum: any, c: any) => sum + (c.amount || 0), 0);
-
-  return {
-    totalPatientCount,
-    newPatientCount,
-    revisitCount,
-    paymentAmount,
-    totalConsultationAmount
-  };
+  return result[0];
 } 
