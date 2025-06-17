@@ -8,6 +8,7 @@ import EvidenceStatus from '@/components/EvidenceStatus';
 import DailyReport from '@/components/DailyReport';
 import CardDeposits from '@/components/CardDeposits';
 import PatientAnalysis from '@/components/PatientAnalysis';
+import ImplantStats from '@/components/ImplantStats';
 import { 
   Receipt, 
   FileText, 
@@ -16,7 +17,8 @@ import {
   Users, 
   ShoppingCart, 
   Calendar, 
-  Plus
+  Plus,
+  Wrench
 } from 'lucide-react';
 
 export default function AccountingPage() {
@@ -25,7 +27,7 @@ export default function AccountingPage() {
   return (
     <div className="container mx-auto px-6 py-8">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8 h-auto p-1 bg-gray-100 rounded-xl">
+        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-9 h-auto p-1 bg-gray-100 rounded-xl">
           <TabsTrigger
             value="payment"
             className="flex flex-col items-center gap-2 p-4 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg transition-all duration-200 hover:bg-white/50"
@@ -83,6 +85,18 @@ export default function AccountingPage() {
             </div>
             <span className="text-xs font-medium text-center leading-tight">
               환자분석
+            </span>
+          </TabsTrigger>
+
+          <TabsTrigger
+            value="implant-stats"
+            className="flex flex-col items-center gap-2 p-4 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg transition-all duration-200 hover:bg-white/50"
+          >
+            <div className="p-2 rounded-lg bg-gradient-to-r from-teal-500 to-teal-600">
+              <Wrench className="w-4 h-4 text-white" />
+            </div>
+            <span className="text-xs font-medium text-center leading-tight">
+              임플란트 통계
             </span>
           </TabsTrigger>
 
@@ -158,6 +172,10 @@ export default function AccountingPage() {
 
         <TabsContent value="patient-analysis">
           <PatientAnalysis />
+        </TabsContent>
+
+        <TabsContent value="implant-stats">
+          <ImplantStats />
         </TabsContent>
 
         <TabsContent value="purchase-ledger">
