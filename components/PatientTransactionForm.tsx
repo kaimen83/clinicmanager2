@@ -26,6 +26,7 @@ import NewPatientModal from './NewPatientModal';
 import ConsultationSection from './ConsultationSection';
 import PaymentSection from './PaymentSection';
 import FirstOpModal from './FirstOpModal';
+import DentalProductSaleModal from './DentalProductSaleModal';
 
 export default function PatientTransactionForm({ isOpen, onClose, onTransactionAdded }: PatientTransactionFormProps) {
   const { selectedDate, triggerCashRefresh, triggerStatsRefresh } = useDateContext();
@@ -64,6 +65,9 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
   
   // 1st OP 모달 상태
   const [isFirstOpModalOpen, setIsFirstOpModalOpen] = useState(false);
+  
+  // 구강용품 판매 모달 상태
+  const [isDentalProductSaleModalOpen, setIsDentalProductSaleModalOpen] = useState(false);
   
   // 시스템 설정 데이터
   const [doctors, setDoctors] = useState<{value: string}[]>([]);
@@ -268,6 +272,11 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
   // 1st OP 모달 관련 핸들러들
   const handleFirstOpModalClose = () => {
     setIsFirstOpModalOpen(false);
+  };
+
+  // 구강용품 판매 모달 관련 핸들러들
+  const handleDentalProductSaleModalClose = () => {
+    setIsDentalProductSaleModalOpen(false);
   };
 
   // 차트번호 입력 후 실행되는 함수
@@ -508,6 +517,19 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
         toast({
           title: "정보 부족",
           description: "차트번호, 환자명, 진료의가 모두 입력되어야 1st OP 모달을 열 수 있습니다.",
+          variant: "destructive",
+        });
+      }
+    }
+    
+    // 진료내용이 구강용품인 경우 모달 열기
+    if (name === 'treatmentType' && value === '구강용품') {
+      if (formData.chartNumber && formData.patientName && currentTreatmentGroup.doctor) {
+        setIsDentalProductSaleModalOpen(true);
+      } else {
+        toast({
+          title: "정보 부족",
+          description: "차트번호, 환자명, 진료의가 모두 입력되어야 구강용품 판매 모달을 열 수 있습니다.",
           variant: "destructive",
         });
       }
@@ -879,6 +901,18 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
       <FirstOpModal
         isOpen={isFirstOpModalOpen}
         onClose={handleFirstOpModalClose}
+        transactionData={{
+          chartNumber: formData.chartNumber,
+          patientName: formData.patientName,
+          date: formData.date,
+          doctor: currentTreatmentGroup.doctor
+        }}
+      />
+
+      {/* 구강용품 판매 모달 */}
+      <DentalProductSaleModal
+        isOpen={isDentalProductSaleModalOpen}
+        onClose={handleDentalProductSaleModalClose}
         transactionData={{
           chartNumber: formData.chartNumber,
           patientName: formData.patientName,
