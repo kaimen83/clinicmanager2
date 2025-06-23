@@ -1,0 +1,407 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Create Design Token System",
+        "description": "Implement a design token system with CSS variables for colors, typography, spacing, shadows, and border radius as specified in the PRD.",
+        "details": "Create a structured set of design tokens in TypeScript files:\n1. Create `tokens/colors.ts` with primary, success, warning, error, and neutral color palettes\n2. Create `tokens/typography.ts` with text sizes and font weights\n3. Create `tokens/spacing.ts` with spacing values\n4. Create `tokens/shadows.ts` with shadow definitions\n5. Create `tokens/borders.ts` with border radius values\n6. Generate CSS variables from these tokens\n7. Set up a global CSS file to define these variables\n\nExample implementation:\n```typescript\n// tokens/colors.ts\nexport const colors = {\n  primary: {\n    50: '#eff6ff',\n    100: '#dbeafe',\n    500: '#3b82f6',\n    600: '#2563eb',\n    700: '#1d4ed8',\n  },\n  // other colors\n};\n\n// tokens/index.ts\nimport { colors } from './colors';\nimport { spacing } from './spacing';\n// other imports\n\nexport const tokens = {\n  colors,\n  spacing,\n  // other token categories\n};\n```",
+        "testStrategy": "1. Verify all color values match the PRD specifications\n2. Ensure CSS variables are correctly generated and accessible\n3. Test the variables in different browser environments\n4. Validate that the token system is importable in TypeScript files\n5. Create visual regression tests to ensure consistency",
+        "priority": "high",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 2,
+        "title": "Implement Typography System",
+        "description": "Create a standardized typography system with consistent text styles for headings, body text, and UI elements.",
+        "details": "1. Create typography utility classes based on the PRD specifications\n2. Implement heading styles (h1-h4) with appropriate sizes and weights\n3. Create body text styles with base, small, and extra small variants\n4. Define font-weight utilities for normal, medium, semibold, and bold\n5. Ensure line heights and letter spacing are consistent\n6. Create a typography component for consistent text rendering\n\nExample implementation:\n```css\n:root {\n  --text-h1: 1.875rem;\n  --text-h2: 1.5rem;\n  --text-h3: 1.25rem;\n  --text-h4: 1.125rem;\n  --text-base: 1rem;\n  --text-sm: 0.875rem;\n  --text-xs: 0.75rem;\n  --font-normal: 400;\n  --font-medium: 500;\n  --font-semibold: 600;\n  --font-bold: 700;\n}\n\n.text-h1 {\n  font-size: var(--text-h1);\n  font-weight: var(--font-bold);\n  line-height: 1.2;\n}\n\n/* Additional typography classes */\n```",
+        "testStrategy": "1. Create visual tests to verify typography rendering\n2. Test across different browsers and screen sizes\n3. Verify accessibility standards for text (contrast, scaling)\n4. Ensure consistent rendering of all text elements\n5. Validate that existing content looks correct with new typography",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 3,
+        "title": "Develop Spacing and Layout System",
+        "description": "Implement a consistent spacing system for margins, paddings, and layout grids based on the PRD specifications.",
+        "details": "1. Create spacing utility classes based on the token system\n2. Implement a flexible grid system for layout components\n3. Define standard card and container padding values\n4. Create consistent margin utilities for component spacing\n5. Implement responsive spacing variants\n\nExample implementation:\n```css\n:root {\n  --space-1: 0.25rem;\n  --space-2: 0.5rem;\n  --space-3: 0.75rem;\n  --space-4: 1rem;\n  --space-6: 1.5rem;\n  --space-8: 2rem;\n  --space-12: 3rem;\n  --padding-card: var(--space-6);\n  --padding-modal: var(--space-8);\n}\n\n.p-1 { padding: var(--space-1); }\n.p-2 { padding: var(--space-2); }\n/* Additional spacing classes */\n\n.m-1 { margin: var(--space-1); }\n.m-2 { margin: var(--space-2); }\n/* Additional margin classes */\n```",
+        "testStrategy": "1. Create visual tests to verify spacing consistency\n2. Test responsive behavior at different breakpoints\n3. Verify that existing layouts maintain proper spacing\n4. Test edge cases with nested components\n5. Validate that spacing system works with all UI components",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 4,
+        "title": "Create Enhanced Card Component",
+        "description": "Develop an enhanced card component with consistent styling, shadows, and variants to be used throughout the dashboard.",
+        "details": "1. Create a reusable Card component with standardized styling\n2. Implement variants: default, elevated, and outlined\n3. Add interactive state for clickable cards\n4. Support header, body, and footer sections\n5. Ensure proper spacing and padding based on the design system\n6. Add support for custom background colors\n\nExample implementation:\n```typescript\n// components/ui/enhanced-card.tsx\ninterface EnhancedCardProps {\n  variant?: 'default' | 'elevated' | 'outlined';\n  interactive?: boolean;\n  className?: string;\n  children: React.ReactNode;\n  onClick?: () => void;\n}\n\nexport function EnhancedCard({\n  variant = 'default',\n  interactive = false,\n  className,\n  children,\n  onClick,\n}: EnhancedCardProps) {\n  return (\n    <div\n      className={cn(\n        'rounded-md overflow-hidden',\n        'p-6',\n        variant === 'default' && 'bg-white shadow-md',\n        variant === 'elevated' && 'bg-white shadow-lg',\n        variant === 'outlined' && 'border border-gray-200',\n        interactive && 'cursor-pointer transition-all hover:shadow-lg',\n        className\n      )}\n      onClick={interactive ? onClick : undefined}\n    >\n      {children}\n    </div>\n  );\n}\n```",
+        "testStrategy": "1. Test all card variants visually\n2. Verify interactive states (hover, focus, active)\n3. Test with different content types and lengths\n4. Ensure proper rendering across browsers\n5. Validate accessibility for interactive cards\n6. Test card behavior in different layout contexts",
+        "priority": "high",
+        "dependencies": [
+          1,
+          2,
+          3
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 5,
+        "title": "Develop Button Component System",
+        "description": "Create a comprehensive button component system with consistent styling, variants, sizes, and states.",
+        "details": "1. Implement primary, secondary, outline, and text button variants\n2. Create size variants: small, medium, large\n3. Support icon-only and icon+text buttons\n4. Implement states: default, hover, focus, active, disabled\n5. Ensure consistent padding and spacing\n6. Add loading state with spinner\n\nExample implementation:\n```typescript\n// components/ui/button.tsx\ninterface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {\n  variant?: 'primary' | 'secondary' | 'outline' | 'text';\n  size?: 'sm' | 'md' | 'lg';\n  isLoading?: boolean;\n  leftIcon?: React.ReactNode;\n  rightIcon?: React.ReactNode;\n}\n\nexport function Button({\n  variant = 'primary',\n  size = 'md',\n  isLoading = false,\n  leftIcon,\n  rightIcon,\n  children,\n  className,\n  disabled,\n  ...props\n}: ButtonProps) {\n  // Implementation with appropriate classes based on props\n}\n```",
+        "testStrategy": "1. Test all button variants and sizes\n2. Verify interactive states (hover, focus, active, disabled)\n3. Test loading state behavior\n4. Ensure proper rendering with icons\n5. Validate accessibility (focus states, ARIA attributes)\n6. Test keyboard navigation\n7. Verify consistent behavior across browsers",
+        "priority": "high",
+        "dependencies": [
+          1,
+          2,
+          3
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 6,
+        "title": "Implement Data Table Component",
+        "description": "Create a modern data table component with consistent styling, sorting, and interactive features.",
+        "details": "1. Develop a reusable DataTable component with standardized styling\n2. Implement variants: default, striped, bordered\n3. Add support for sortable columns\n4. Create row hover effects and selection states\n5. Support for pagination controls\n6. Add empty state handling\n7. Ensure responsive behavior for different screen sizes\n\nExample implementation:\n```typescript\n// components/ui/data-table.tsx\ninterface DataTableProps<T> {\n  data: T[];\n  columns: {\n    key: string;\n    header: string;\n    render?: (item: T) => React.ReactNode;\n    sortable?: boolean;\n  }[];\n  variant?: 'default' | 'striped' | 'bordered';\n  interactive?: boolean;\n  onRowClick?: (item: T) => void;\n  emptyState?: React.ReactNode;\n}\n\nexport function DataTable<T>({ data, columns, variant = 'default', interactive = false, onRowClick, emptyState }: DataTableProps<T>) {\n  // Implementation with appropriate styling and behavior\n}\n```",
+        "testStrategy": "1. Test with various data sets (empty, few rows, many rows)\n2. Verify sorting functionality\n3. Test interactive features (row selection, clicking)\n4. Validate responsive behavior at different screen sizes\n5. Test accessibility for keyboard navigation and screen readers\n6. Verify empty state rendering\n7. Test with different column configurations",
+        "priority": "high",
+        "dependencies": [
+          1,
+          2,
+          3
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 7,
+        "title": "Create Modal Component System",
+        "description": "Develop a standardized modal component system with consistent header, body, and footer styling as specified in the PRD.",
+        "details": "1. Create a base Modal component with standardized structure\n2. Implement consistent header with title and close button\n3. Create standardized body section with proper padding\n4. Develop footer with consistent button placement\n5. Add animations for opening/closing\n6. Implement backdrop and focus management\n7. Support different sizes (small, medium, large)\n\nExample implementation:\n```typescript\n// components/ui/modal.tsx\ninterface ModalProps {\n  isOpen: boolean;\n  onClose: () => void;\n  title: string;\n  size?: 'sm' | 'md' | 'lg';\n  children: React.ReactNode;\n  footer?: React.ReactNode;\n}\n\nexport function Modal({ isOpen, onClose, title, size = 'md', children, footer }: ModalProps) {\n  if (!isOpen) return null;\n  \n  return (\n    <div className=\"fixed inset-0 z-50 flex items-center justify-center\">\n      <div className=\"fixed inset-0 bg-black/50 transition-opacity\" onClick={onClose} />\n      <div className={cn(\n        'bg-white rounded-lg shadow-xl relative z-10 max-h-[90vh] overflow-auto',\n        'transition-all duration-300',\n        size === 'sm' && 'w-full max-w-md',\n        size === 'md' && 'w-full max-w-2xl',\n        size === 'lg' && 'w-full max-w-4xl',\n      )}>\n        <div className=\"flex items-center justify-between p-6 border-b\">\n          <h2 className=\"text-h3 font-semibold\">{title}</h2>\n          <button onClick={onClose} className=\"text-gray-500 hover:text-gray-700\">\n            <span className=\"sr-only\">Close</span>\n            {/* Close icon */}\n          </button>\n        </div>\n        <div className=\"p-6\">{children}</div>\n        {footer && (\n          <div className=\"p-6 border-t flex justify-end space-x-2\">\n            {footer}\n          </div>\n        )}\n      </div>\n    </div>\n  );\n}\n```",
+        "testStrategy": "1. Test opening and closing behavior\n2. Verify animations and transitions\n3. Test focus management and keyboard navigation\n4. Validate backdrop behavior\n5. Test with different content types and lengths\n6. Verify responsive behavior at different screen sizes\n7. Test accessibility compliance\n8. Verify that existing modal functionality is preserved",
+        "priority": "high",
+        "dependencies": [
+          1,
+          2,
+          3,
+          5
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 8,
+        "title": "Implement Form Components",
+        "description": "Create a set of standardized form components with consistent styling, validation states, and accessibility features.",
+        "details": "1. Develop Input, Select, Checkbox, Radio, and Textarea components\n2. Implement consistent label and helper text styling\n3. Create validation states (default, error, success)\n4. Add support for icons within inputs\n5. Ensure proper spacing between form elements\n6. Implement focus and hover states\n\nExample implementation:\n```typescript\n// components/ui/input.tsx\ninterface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {\n  label?: string;\n  helperText?: string;\n  error?: string;\n  leftIcon?: React.ReactNode;\n  rightIcon?: React.ReactNode;\n}\n\nexport function Input({ label, helperText, error, leftIcon, rightIcon, className, id, ...props }: InputProps) {\n  const inputId = id || useId();\n  \n  return (\n    <div className=\"space-y-2\">\n      {label && (\n        <label htmlFor={inputId} className=\"block text-sm font-medium text-gray-700\">\n          {label}\n        </label>\n      )}\n      <div className=\"relative\">\n        {leftIcon && (\n          <div className=\"absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none\">\n            {leftIcon}\n          </div>\n        )}\n        <input\n          id={inputId}\n          className={cn(\n            'block w-full rounded-md border-gray-300 shadow-sm',\n            'focus:border-primary-500 focus:ring-primary-500',\n            error && 'border-error-500 focus:border-error-500 focus:ring-error-500',\n            leftIcon && 'pl-10',\n            rightIcon && 'pr-10',\n            className\n          )}\n          {...props}\n        />\n        {rightIcon && (\n          <div className=\"absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none\">\n            {rightIcon}\n          </div>\n        )}\n      </div>\n      {error ? (\n        <p className=\"text-xs text-error-500\">{error}</p>\n      ) : helperText ? (\n        <p className=\"text-xs text-gray-500\">{helperText}</p>\n      ) : null}\n    </div>\n  );\n}\n```",
+        "testStrategy": "1. Test all form components with various inputs\n2. Verify validation states and error messages\n3. Test with different label and helper text configurations\n4. Validate focus management and keyboard navigation\n5. Test accessibility compliance\n6. Verify consistent styling across all form components\n7. Test form components in different contexts (modals, cards, etc.)",
+        "priority": "high",
+        "dependencies": [
+          1,
+          2,
+          3
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 9,
+        "title": "Create Data Visualization Components",
+        "description": "Develop reusable data visualization components for statistics and charts to be used in the dashboard.",
+        "details": "1. Create StatCard component for displaying key metrics\n2. Implement ProgressBar component with customizable colors\n3. Develop simple chart components (bar, line, pie)\n4. Add tooltips for data points\n5. Ensure responsive behavior for all visualizations\n6. Support loading states and empty states\n\nExample implementation:\n```typescript\n// components/ui/stat-card.tsx\ninterface StatCardProps {\n  title: string;\n  value: string | number;\n  change?: {\n    value: number;\n    isPositive: boolean;\n  };\n  icon?: React.ReactNode;\n  onClick?: () => void;\n}\n\nexport function StatCard({ title, value, change, icon, onClick }: StatCardProps) {\n  return (\n    <div\n      className={cn(\n        'bg-white rounded-md p-6 shadow-md',\n        onClick && 'cursor-pointer hover:shadow-lg transition-shadow'\n      )}\n      onClick={onClick}\n    >\n      <div className=\"flex justify-between items-start\">\n        <div>\n          <p className=\"text-sm text-gray-500\">{title}</p>\n          <p className=\"text-2xl font-semibold mt-1\">{value}</p>\n          {change && (\n            <div className=\"flex items-center mt-2\">\n              <span\n                className={cn(\n                  'text-xs font-medium',\n                  change.isPositive ? 'text-success-500' : 'text-error-500'\n                )}\n              >\n                {change.isPositive ? '+' : ''}{change.value}%\n              </span>\n            </div>\n          )}\n        </div>\n        {icon && (\n          <div className=\"p-2 bg-primary-50 rounded-md text-primary-500\">\n            {icon}\n          </div>\n        )}\n      </div>\n    </div>\n  );\n}\n```",
+        "testStrategy": "1. Test all visualization components with various data inputs\n2. Verify responsive behavior at different screen sizes\n3. Test interactive features (tooltips, clicking)\n4. Validate loading and empty states\n5. Test with edge case data (very large/small values, null values)\n6. Verify accessibility for screen readers\n7. Test color contrast for all visualization elements",
+        "priority": "medium",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 10,
+        "title": "Implement Responsive Layout System",
+        "description": "Create a responsive layout system with breakpoints and grid components to ensure proper rendering across all device sizes.",
+        "details": "1. Define standard breakpoints (sm, md, lg, xl) as per PRD\n2. Create responsive container components\n3. Implement a flexible grid system with rows and columns\n4. Add responsive utility classes for hiding/showing elements\n5. Create responsive spacing variants\n\nExample implementation:\n```css\n/* Breakpoints */\n@media (min-width: 640px) { /* sm */ }\n@media (min-width: 768px) { /* md */ }\n@media (min-width: 1024px) { /* lg */ }\n@media (min-width: 1280px) { /* xl */ }\n\n/* Container */\n.container {\n  width: 100%;\n  margin-left: auto;\n  margin-right: auto;\n  padding-left: 1rem;\n  padding-right: 1rem;\n}\n\n@media (min-width: 640px) {\n  .container {\n    max-width: 640px;\n  }\n}\n\n/* Additional responsive classes */\n```",
+        "testStrategy": "1. Test layout at all defined breakpoints\n2. Verify proper rendering on mobile, tablet, and desktop devices\n3. Test with different content types and lengths\n4. Validate that existing layouts adapt correctly\n5. Test edge cases (very narrow viewports, very wide viewports)\n6. Verify that no horizontal scrollbars appear unexpectedly",
+        "priority": "high",
+        "dependencies": [
+          1,
+          3
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 11,
+        "title": "Modernize Header Component",
+        "description": "Redesign the Header component with improved styling, gradient background, and enhanced user interaction as specified in the PRD.",
+        "details": "1. Implement gradient background with subtle shadow\n2. Enhance the real-time clock display\n3. Improve user button area styling\n4. Ensure responsive behavior for different screen sizes\n5. Add subtle animations for interactive elements\n6. Maintain all existing functionality\n\nImplementation approach:\n```typescript\n// components/header.tsx\nexport function Header() {\n  // Preserve all existing logic and state\n  \n  return (\n    <header className=\"bg-gradient-to-r from-primary-600 to-primary-700 text-white shadow-md\">\n      <div className=\"container mx-auto px-4 py-3 flex items-center justify-between\">\n        <div className=\"flex items-center space-x-4\">\n          {/* Logo */}\n          <h1 className=\"text-xl font-bold\">치과 클리닉 관리 시스템</h1>\n          \n          {/* Real-time clock with enhanced styling */}\n          <div className=\"bg-white/10 rounded-md px-3 py-1.5 text-sm font-medium\">\n            {formattedTime}\n          </div>\n        </div>\n        \n        <div className=\"flex items-center space-x-3\">\n          {/* User menu with improved styling */}\n          <div className=\"relative\">\n            <button\n              className=\"flex items-center space-x-2 bg-white/10 rounded-md px-3 py-1.5 hover:bg-white/20 transition-colors\"\n              onClick={toggleUserMenu}\n            >\n              <span>{userName}</span>\n              {/* Icon */}\n            </button>\n            {/* User dropdown menu */}\n          </div>\n        </div>\n      </div>\n    </header>\n  );\n}\n```",
+        "testStrategy": "1. Verify that all existing functionality is preserved\n2. Test responsive behavior at different screen sizes\n3. Validate that the clock updates correctly\n4. Test user menu interactions\n5. Verify accessibility for keyboard navigation and screen readers\n6. Test with different user names and states",
+        "priority": "high",
+        "dependencies": [
+          1,
+          2,
+          3,
+          5,
+          10
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 12,
+        "title": "Enhance ClinicNavigation Component",
+        "description": "Redesign the ClinicNavigation component with improved button grouping, consistent styling, and enhanced date selector as specified in the PRD.",
+        "details": "1. Group buttons by functionality (registration, management, reports)\n2. Apply consistent button styling using the Button component\n3. Enhance date selector UI\n4. Improve icon and text alignment\n5. Add hover effects and visual feedback\n6. Maintain all existing functionality\n\nImplementation approach:\n```typescript\n// components/clinic-navigation.tsx\nexport function ClinicNavigation() {\n  // Preserve all existing logic and state\n  \n  return (\n    <nav className=\"bg-white shadow-sm border-b py-3 px-4\">\n      <div className=\"container mx-auto flex flex-wrap items-center justify-between gap-3\">\n        {/* Date selector with improved styling */}\n        <div className=\"flex items-center space-x-2\">\n          <Button\n            variant=\"outline\"\n            size=\"sm\"\n            leftIcon={<CalendarIcon />}\n            onClick={openDatePicker}\n          >\n            {formattedDate}\n          </Button>\n          {/* Date picker implementation */}\n        </div>\n        \n        {/* Registration button group */}\n        <div className=\"flex items-center space-x-2\">\n          <Button\n            variant=\"primary\"\n            leftIcon={<UserPlusIcon />}\n            onClick={openPatientRegistration}\n          >\n            환자 등록\n          </Button>\n          {/* Other registration buttons */}\n        </div>\n        \n        {/* Management button group */}\n        <div className=\"flex items-center space-x-2\">\n          {/* Management buttons */}\n        </div>\n        \n        {/* Reports button group */}\n        <div className=\"flex items-center space-x-2\">\n          {/* Report buttons */}\n        </div>\n      </div>\n    </nav>\n  );\n}\n```",
+        "testStrategy": "1. Verify that all existing functionality is preserved\n2. Test date selector and picker functionality\n3. Validate that all buttons trigger the correct actions\n4. Test responsive behavior at different screen sizes\n5. Verify button grouping and alignment\n6. Test keyboard navigation and focus management\n7. Verify hover and active states for all buttons",
+        "priority": "high",
+        "dependencies": [
+          1,
+          2,
+          3,
+          5,
+          10
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 13,
+        "title": "Modernize DoctorPatientList Component",
+        "description": "Enhance the DoctorPatientList component with improved table design, visual section separation, and better action buttons as specified in the PRD.",
+        "details": "1. Implement modern table design with stripes and hover effects\n2. Enhance visual separation between doctor sections\n3. Improve patient status indicators\n4. Enhance sorting functionality visual feedback\n5. Highlight statistics information\n6. Maintain all existing functionality\n\nImplementation approach:\n```typescript\n// components/doctor-patient-list.tsx\nexport function DoctorPatientList() {\n  // Preserve all existing logic and state\n  \n  return (\n    <div className=\"bg-white rounded-lg shadow-md overflow-hidden\">\n      {doctors.map((doctor) => (\n        <div key={doctor.id} className=\"border-b last:border-b-0\">\n          {/* Doctor header with improved styling */}\n          <div className=\"bg-gray-50 px-6 py-4 flex items-center justify-between\">\n            <div className=\"flex items-center space-x-3\">\n              <h3 className=\"text-h3 font-semibold\">{doctor.name}</h3>\n              <span className=\"bg-primary-100 text-primary-700 text-xs font-medium px-2.5 py-0.5 rounded-full\">\n                {doctor.specialty}\n              </span>\n            </div>\n            <div className=\"text-sm text-gray-500\">\n              <span className=\"font-medium\">{doctor.patientCount}</span> 환자\n            </div>\n          </div>\n          \n          {/* Patient table with modern styling */}\n          <DataTable\n            data={doctor.patients}\n            columns={[\n              {\n                key: 'name',\n                header: '환자명',\n                render: (patient) => (\n                  <div className=\"font-medium\">{patient.name}</div>\n                ),\n              },\n              // Other columns\n            ]}\n            variant=\"striped\"\n            interactive\n            onRowClick={handlePatientClick}\n          />\n        </div>\n      ))}\n    </div>\n  );\n}\n```",
+        "testStrategy": "1. Verify that all existing functionality is preserved\n2. Test sorting and filtering functionality\n3. Validate that patient data displays correctly\n4. Test interactive features (row clicking, action buttons)\n5. Verify responsive behavior at different screen sizes\n6. Test with different data scenarios (empty list, many patients)\n7. Verify that doctor sections are visually distinct",
+        "priority": "high",
+        "dependencies": [
+          1,
+          2,
+          3,
+          6,
+          10
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 14,
+        "title": "Enhance ClinicStats Component",
+        "description": "Improve the ClinicStats component with better card design, visual hierarchy, and data visualization as specified in the PRD.",
+        "details": "1. Enhance statistics cards with improved visual hierarchy\n2. Add hover effects for interactive elements\n3. Implement harmonious layout for icons and numbers\n4. Add progress bars or charts for visual data representation\n5. Use color coding for data differentiation\n6. Maintain all existing functionality\n\nImplementation approach:\n```typescript\n// components/clinic-stats.tsx\nexport function ClinicStats() {\n  // Preserve all existing logic and state\n  \n  return (\n    <div className=\"space-y-4\">\n      <h2 className=\"text-h2 font-semibold\">클리닉 통계</h2>\n      \n      <div className=\"grid grid-cols-1 gap-4\">\n        {/* Payment stats card */}\n        <StatCard\n          title=\"오늘 결제 금액\"\n          value={formatCurrency(todayPayments.total)}\n          change={{\n            value: todayPayments.percentChange,\n            isPositive: todayPayments.percentChange > 0,\n          }}\n          icon={<CreditCardIcon />}\n          onClick={openPaymentListModal}\n        />\n        \n        {/* Card company stats */}\n        <StatCard\n          title=\"카드사별 통계\"\n          value={`${cardStats.count}건`}\n          icon={<ChartPieIcon />}\n          onClick={openCardCompanyStatsModal}\n        />\n        \n        {/* Additional stat cards */}\n      </div>\n    </div>\n  );\n}\n```",
+        "testStrategy": "1. Verify that all existing functionality is preserved\n2. Test that clicking on cards opens the correct modals\n3. Validate that statistics data displays correctly\n4. Test responsive behavior at different screen sizes\n5. Verify hover effects and interactive elements\n6. Test with different data scenarios (zero values, large values)\n7. Verify that charts and visualizations render correctly",
+        "priority": "medium",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          9
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 15,
+        "title": "Improve ExtraIncomeList Component",
+        "description": "Enhance the ExtraIncomeList component with better table design, visual separation, and improved action buttons as specified in the PRD.",
+        "details": "1. Improve table row visual separation\n2. Enhance action button styling\n3. Highlight total row\n4. Add empty state illustration\n5. Maintain all existing functionality\n\nImplementation approach:\n```typescript\n// components/extra-income-list.tsx\nexport function ExtraIncomeList() {\n  // Preserve all existing logic and state\n  \n  return (\n    <div className=\"bg-white rounded-lg shadow-md overflow-hidden\">\n      <div className=\"px-6 py-4 border-b flex items-center justify-between\">\n        <h2 className=\"text-h3 font-semibold\">추가 수입</h2>\n        <Button\n          variant=\"outline\"\n          size=\"sm\"\n          leftIcon={<PlusIcon />}\n          onClick={openExtraIncomeModal}\n        >\n          추가\n        </Button>\n      </div>\n      \n      {extraIncomes.length > 0 ? (\n        <DataTable\n          data={extraIncomes}\n          columns={[\n            {\n              key: 'description',\n              header: '내역',\n              render: (item) => (\n                <div className=\"font-medium\">{item.description}</div>\n              ),\n            },\n            // Other columns\n            {\n              key: 'actions',\n              header: '',\n              render: (item) => (\n                <div className=\"flex items-center space-x-2\">\n                  <Button\n                    variant=\"text\"\n                    size=\"sm\"\n                    leftIcon={<PencilIcon />}\n                    onClick={() => handleEdit(item)}\n                  >\n                    수정\n                  </Button>\n                  <Button\n                    variant=\"text\"\n                    size=\"sm\"\n                    leftIcon={<TrashIcon />}\n                    onClick={() => handleDelete(item)}\n                  >\n                    삭제\n                  </Button>\n                </div>\n              ),\n            },\n          ]}\n          variant=\"striped\"\n        />\n      ) : (\n        <div className=\"p-8 text-center\">\n          <div className=\"mx-auto w-24 h-24 text-gray-300\">\n            {/* Empty state illustration */}\n          </div>\n          <p className=\"mt-2 text-gray-500\">추가 수입이 없습니다</p>\n        </div>\n      )}\n      \n      {/* Total row with enhanced styling */}\n      {extraIncomes.length > 0 && (\n        <div className=\"px-6 py-4 bg-gray-50 border-t flex items-center justify-between font-medium\">\n          <span>합계</span>\n          <span className=\"text-primary-700\">{formatCurrency(totalAmount)}</span>\n        </div>\n      )}\n    </div>\n  );\n}\n```",
+        "testStrategy": "1. Verify that all existing functionality is preserved\n2. Test action buttons (add, edit, delete)\n3. Validate that data displays correctly\n4. Test empty state rendering\n5. Verify total calculation and display\n6. Test responsive behavior at different screen sizes\n7. Verify that modals open correctly",
+        "priority": "medium",
+        "dependencies": [
+          1,
+          2,
+          3,
+          5,
+          6
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 16,
+        "title": "Enhance ExpenseList Component",
+        "description": "Improve the ExpenseList component with fixed header, color coding, and better receipt status indicators as specified in the PRD.",
+        "details": "1. Implement fixed header for better scrolling\n2. Add color coding for expense categories\n3. Enhance receipt status indicators\n4. Improve total information display\n5. Maintain all existing functionality\n\nImplementation approach:\n```typescript\n// components/expense-list.tsx\nexport function ExpenseList() {\n  // Preserve all existing logic and state\n  \n  return (\n    <div className=\"bg-white rounded-lg shadow-md overflow-hidden flex flex-col\">\n      <div className=\"px-6 py-4 border-b flex items-center justify-between sticky top-0 bg-white z-10\">\n        <h2 className=\"text-h3 font-semibold\">지출 내역</h2>\n        <Button\n          variant=\"outline\"\n          size=\"sm\"\n          leftIcon={<PlusIcon />}\n          onClick={openExpenseModal}\n        >\n          추가\n        </Button>\n      </div>\n      \n      <div className=\"overflow-auto flex-grow\">\n        {expenses.length > 0 ? (\n          <DataTable\n            data={expenses}\n            columns={[\n              {\n                key: 'category',\n                header: '분류',\n                render: (item) => (\n                  <span className={getCategoryColorClass(item.category)}>\n                    {item.category}\n                  </span>\n                ),\n              },\n              // Other columns\n              {\n                key: 'receipt',\n                header: '영수증',\n                render: (item) => (\n                  <span className={getReceiptStatusClass(item.receiptStatus)}>\n                    {item.receiptStatus}\n                  </span>\n                ),\n              },\n            ]}\n            variant=\"striped\"\n          />\n        ) : (\n          <div className=\"p-8 text-center\">\n            <p className=\"text-gray-500\">지출 내역이 없습니다</p>\n          </div>\n        )}\n      </div>\n      \n      {/* Total information with enhanced styling */}\n      {expenses.length > 0 && (\n        <div className=\"px-6 py-4 bg-gray-50 border-t\">\n          <div className=\"flex justify-between font-medium\">\n            <span>총 지출</span>\n            <span className=\"text-error-600\">{formatCurrency(totalExpense)}</span>\n          </div>\n        </div>\n      )}\n    </div>\n  );\n}\n\n// Helper functions\nfunction getCategoryColorClass(category: string) {\n  const categories: Record<string, string> = {\n    '인건비': 'text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full text-xs font-medium',\n    '재료비': 'text-green-600 bg-green-50 px-2 py-0.5 rounded-full text-xs font-medium',\n    // Other categories\n  };\n  \n  return categories[category] || 'text-gray-600 bg-gray-50 px-2 py-0.5 rounded-full text-xs font-medium';\n}\n\nfunction getReceiptStatusClass(status: string) {\n  const statuses: Record<string, string> = {\n    '완료': 'text-success-600 bg-success-50 px-2 py-0.5 rounded-full text-xs font-medium',\n    '대기': 'text-warning-600 bg-warning-50 px-2 py-0.5 rounded-full text-xs font-medium',\n    '없음': 'text-gray-600 bg-gray-50 px-2 py-0.5 rounded-full text-xs font-medium',\n  };\n  \n  return statuses[status] || 'text-gray-600 bg-gray-50 px-2 py-0.5 rounded-full text-xs font-medium';\n}\n```",
+        "testStrategy": "1. Verify that all existing functionality is preserved\n2. Test scrolling behavior with fixed header\n3. Validate that category colors display correctly\n4. Test receipt status indicators\n5. Verify total calculation and display\n6. Test responsive behavior at different screen sizes\n7. Verify that the expense modal opens correctly",
+        "priority": "medium",
+        "dependencies": [
+          1,
+          2,
+          3,
+          5,
+          6
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 17,
+        "title": "Standardize Edit/Delete Dialogs",
+        "description": "Improve the inline Edit and Delete dialogs in the DoctorPatientList component with consistent styling and better form layout.",
+        "details": "1. Standardize dialog header styling\n2. Improve form layout and field alignment\n3. Enhance required field indicators\n4. Strengthen delete confirmation dialog warning design\n5. Maintain all existing functionality\n\nImplementation approach:\n```typescript\n// components/edit-patient-dialog.tsx\nexport function EditPatientDialog({ isOpen, onClose, patient, onSave }) {\n  // Preserve all existing logic and state\n  \n  return (\n    <Modal\n      isOpen={isOpen}\n      onClose={onClose}\n      title=\"환자 정보 수정\"\n      footer={\n        <>\n          <Button variant=\"outline\" onClick={onClose}>취소</Button>\n          <Button variant=\"primary\" onClick={handleSave} isLoading={isSaving}>저장</Button>\n        </>\n      }\n    >\n      <form className=\"space-y-4\">\n        <Input\n          label=\"환자명\"\n          value={name}\n          onChange={(e) => setName(e.target.value)}\n          required\n          error={errors.name}\n        />\n        \n        {/* Other form fields */}\n      </form>\n    </Modal>\n  );\n}\n\n// components/delete-patient-dialog.tsx\nexport function DeletePatientDialog({ isOpen, onClose, patient, onDelete }) {\n  // Preserve all existing logic and state\n  \n  return (\n    <Modal\n      isOpen={isOpen}\n      onClose={onClose}\n      title=\"환자 삭제\"\n      footer={\n        <>\n          <Button variant=\"outline\" onClick={onClose}>취소</Button>\n          <Button variant=\"error\" onClick={handleDelete} isLoading={isDeleting}>삭제</Button>\n        </>\n      }\n    >\n      <div className=\"bg-error-50 border border-error-100 rounded-md p-4 mb-4\">\n        <div className=\"flex items-start\">\n          <AlertTriangleIcon className=\"text-error-500 mr-3 mt-0.5\" />\n          <div>\n            <h4 className=\"text-error-700 font-medium\">주의: 이 작업은 되돌릴 수 없습니다</h4>\n            <p className=\"text-error-600 mt-1 text-sm\">\n              {patient?.name} 환자의 모든 정보가 영구적으로 삭제됩니다.\n            </p>\n          </div>\n        </div>\n      </div>\n      \n      <p className=\"text-gray-600\">정말로 이 환자를 삭제하시겠습니까?</p>\n    </Modal>\n  );\n}\n```",
+        "testStrategy": "1. Verify that all existing functionality is preserved\n2. Test form validation in the edit dialog\n3. Validate that required fields are properly indicated\n4. Test save and cancel functionality\n5. Verify delete confirmation and cancellation\n6. Test with different patient data\n7. Verify that error messages display correctly",
+        "priority": "medium",
+        "dependencies": [
+          1,
+          2,
+          3,
+          7,
+          8
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 18,
+        "title": "Standardize PaymentListModal",
+        "description": "Enhance the PaymentListModal with payment method icons, improved table readability, and better filtering UI.",
+        "details": "1. Add payment method icons\n2. Improve table readability\n3. Enhance filtering UI\n4. Maintain all existing functionality\n\nImplementation approach:\n```typescript\n// components/payment-list-modal.tsx\nexport function PaymentListModal({ isOpen, onClose }) {\n  // Preserve all existing logic and state\n  \n  return (\n    <Modal\n      isOpen={isOpen}\n      onClose={onClose}\n      title=\"결제 내역\"\n      size=\"lg\"\n    >\n      {/* Filter controls with improved styling */}\n      <div className=\"mb-6 flex flex-wrap gap-3\">\n        <Select\n          label=\"결제 방법\"\n          value={paymentMethodFilter}\n          onChange={(e) => setPaymentMethodFilter(e.target.value)}\n          options={[\n            { value: '', label: '전체' },\n            { value: 'card', label: '카드' },\n            { value: 'cash', label: '현금' },\n            // Other options\n          ]}\n        />\n        \n        <DateRangePicker\n          startDate={startDate}\n          endDate={endDate}\n          onStartDateChange={setStartDate}\n          onEndDateChange={setEndDate}\n        />\n        \n        <Button\n          variant=\"outline\"\n          leftIcon={<FilterIcon />}\n          onClick={applyFilters}\n        >\n          필터 적용\n        </Button>\n      </div>\n      \n      {/* Payment table with improved styling */}\n      <DataTable\n        data={filteredPayments}\n        columns={[\n          {\n            key: 'method',\n            header: '결제 방법',\n            render: (payment) => (\n              <div className=\"flex items-center\">\n                {getPaymentMethodIcon(payment.method)}\n                <span className=\"ml-2\">{payment.method}</span>\n              </div>\n            ),\n          },\n          // Other columns\n        ]}\n        variant=\"striped\"\n      />\n      \n      {/* Summary information */}\n      <div className=\"mt-6 bg-gray-50 p-4 rounded-md\">\n        <div className=\"grid grid-cols-1 md:grid-cols-3 gap-4\">\n          <div>\n            <p className=\"text-sm text-gray-500\">총 건수</p>\n            <p className=\"text-lg font-medium\">{filteredPayments.length}건</p>\n          </div>\n          <div>\n            <p className=\"text-sm text-gray-500\">총 금액</p>\n            <p className=\"text-lg font-medium text-primary-700\">\n              {formatCurrency(totalAmount)}\n            </p>\n          </div>\n          <div>\n            <p className=\"text-sm text-gray-500\">평균 금액</p>\n            <p className=\"text-lg font-medium\">\n              {formatCurrency(averageAmount)}\n            </p>\n          </div>\n        </div>\n      </div>\n    </Modal>\n  );\n}\n\n// Helper function for payment method icons\nfunction getPaymentMethodIcon(method: string) {\n  const icons: Record<string, React.ReactNode> = {\n    '카드': <CreditCardIcon className=\"text-primary-500\" />,\n    '현금': <CashIcon className=\"text-success-500\" />,\n    '계좌이체': <BankIcon className=\"text-warning-500\" />,\n    // Other methods\n  };\n  \n  return icons[method] || <CircleIcon className=\"text-gray-400\" />;\n}\n```",
+        "testStrategy": "1. Verify that all existing functionality is preserved\n2. Test filtering by payment method and date range\n3. Validate that payment data displays correctly\n4. Test with different data scenarios (empty list, many payments)\n5. Verify summary calculations\n6. Test responsive behavior at different screen sizes\n7. Verify that icons display correctly for different payment methods",
+        "priority": "medium",
+        "dependencies": [
+          1,
+          2,
+          3,
+          6,
+          7,
+          8
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 19,
+        "title": "Enhance Stats-Related Modals",
+        "description": "Improve the stats-related modals (CardCompanyStatsModal, ConsultationStatsModal) with data visualization and interactive elements.",
+        "details": "1. Add charts and graphs for data visualization\n2. Improve data presentation\n3. Add interactive elements\n4. Maintain all existing functionality\n\nImplementation approach:\n```typescript\n// components/card-company-stats-modal.tsx\nexport function CardCompanyStatsModal({ isOpen, onClose }) {\n  // Preserve all existing logic and state\n  \n  return (\n    <Modal\n      isOpen={isOpen}\n      onClose={onClose}\n      title=\"카드사별 통계\"\n      size=\"lg\"\n    >\n      {/* Period selector with improved styling */}\n      <div className=\"mb-6\">\n        <div className=\"inline-flex rounded-md shadow-sm\">\n          {periods.map((period) => (\n            <button\n              key={period.value}\n              type=\"button\"\n              className={cn(\n                'px-4 py-2 text-sm font-medium',\n                'border first:rounded-l-md last:rounded-r-md',\n                'focus:z-10 focus:outline-none focus:ring-2 focus:ring-primary-500',\n                selectedPeriod === period.value\n                  ? 'bg-primary-50 text-primary-700 border-primary-300'\n                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'\n              )}\n              onClick={() => setSelectedPeriod(period.value)}\n            >\n              {period.label}\n            </button>\n          ))}\n        </div>\n      </div>\n      \n      {/* Chart visualization */}\n      <div className=\"mb-6 h-64 bg-gray-50 rounded-lg p-4\">\n        {/* Implement chart using a library like Chart.js or Recharts */}\n        {/* This is a placeholder for the actual chart implementation */}\n        <div className=\"h-full flex items-center justify-center text-gray-500\">\n          카드사별 결제 금액 차트\n        </div>\n      </div>\n      \n      {/* Data table with improved styling */}\n      <DataTable\n        data={cardStats}\n        columns={[\n          {\n            key: 'company',\n            header: '카드사',\n            render: (stat) => (\n              <div className=\"flex items-center\">\n                <div\n                  className=\"w-3 h-3 rounded-full mr-2\"\n                  style={{ backgroundColor: getColorForCompany(stat.company) }}\n                />\n                <span>{stat.company}</span>\n              </div>\n            ),\n          },\n          // Other columns\n        ]}\n        variant=\"striped\"\n      />\n    </Modal>\n  );\n}\n\n// Helper function for company colors\nfunction getColorForCompany(company: string) {\n  const colors: Record<string, string> = {\n    '신한카드': '#1e40af',\n    '삼성카드': '#0369a1',\n    '현대카드': '#0e7490',\n    '국민카드': '#0f766e',\n    '롯데카드': '#047857',\n    // Other companies\n  };\n  \n  return colors[company] || '#6b7280';\n}\n```",
+        "testStrategy": "1. Verify that all existing functionality is preserved\n2. Test period selection and data filtering\n3. Validate that charts render correctly with different data\n4. Test interactive elements (tooltips, clicking on chart elements)\n5. Verify data table display and calculations\n6. Test responsive behavior at different screen sizes\n7. Verify color consistency between chart and table",
+        "priority": "medium",
+        "dependencies": [
+          1,
+          2,
+          3,
+          6,
+          7,
+          9
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 20,
+        "title": "Standardize Form Modals",
+        "description": "Improve the form modals (ExtraIncomeModal, ExpenseModal) with step-by-step input guidance, real-time validation, and auto-complete features.",
+        "details": "1. Implement step-by-step form input guidance\n2. Add real-time validation feedback\n3. Enhance auto-complete and suggestion features\n4. Maintain all existing functionality\n\nImplementation approach:\n```typescript\n// components/expense-modal.tsx\nexport function ExpenseModal({ isOpen, onClose, expense, onSave }) {\n  // Preserve all existing logic and state\n  \n  return (\n    <Modal\n      isOpen={isOpen}\n      onClose={onClose}\n      title={expense ? '지출 수정' : '지출 추가'}\n      footer={\n        <>\n          <Button variant=\"outline\" onClick={onClose}>취소</Button>\n          <Button\n            variant=\"primary\"\n            onClick={handleSave}\n            isLoading={isSaving}\n            disabled={!isFormValid}\n          >\n            {expense ? '수정' : '추가'}\n          </Button>\n        </>\n      }\n    >\n      <form className=\"space-y-6\">\n        {/* Category selection with improved styling */}\n        <div>\n          <label className=\"block text-sm font-medium text-gray-700 mb-1\">\n            분류\n          </label>\n          <div className=\"grid grid-cols-2 gap-2\">\n            {categories.map((category) => (\n              <button\n                key={category.value}\n                type=\"button\"\n                className={cn(\n                  'p-3 rounded-md border text-left',\n                  'focus:outline-none focus:ring-2 focus:ring-primary-500',\n                  selectedCategory === category.value\n                    ? 'bg-primary-50 border-primary-300 text-primary-700'\n                    : 'bg-white border-gray-300 hover:bg-gray-50'\n                )}\n                onClick={() => setSelectedCategory(category.value)}\n              >\n                <div className=\"flex items-center\">\n                  {category.icon}\n                  <span className=\"ml-2 font-medium\">{category.label}</span>\n                </div>\n              </button>\n            ))}\n          </div>\n        </div>\n        \n        {/* Amount input with real-time formatting */}\n        <Input\n          label=\"금액\"\n          type=\"text\"\n          value={formattedAmount}\n          onChange={handleAmountChange}\n          required\n          error={errors.amount}\n          leftIcon={<CurrencyWonIcon />}\n        />\n        \n        {/* Description with auto-complete */}\n        <div>\n          <label className=\"block text-sm font-medium text-gray-700 mb-1\">\n            내역\n          </label>\n          <div className=\"relative\">\n            <input\n              type=\"text\"\n              value={description}\n              onChange={(e) => {\n                setDescription(e.target.value);\n                // Show suggestions based on input\n                if (e.target.value) {\n                  setSuggestions(findSuggestions(e.target.value));\n                } else {\n                  setSuggestions([]);\n                }\n              }}\n              className=\"block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500\"\n              required\n            />\n            {suggestions.length > 0 && (\n              <div className=\"absolute z-10 w-full mt-1 bg-white shadow-lg rounded-md border border-gray-200 max-h-60 overflow-auto\">\n                {suggestions.map((suggestion) => (\n                  <button\n                    key={suggestion}\n                    type=\"button\"\n                    className=\"block w-full text-left px-4 py-2 hover:bg-gray-50\"\n                    onClick={() => {\n                      setDescription(suggestion);\n                      setSuggestions([]);\n                    }}\n                  >\n                    {suggestion}\n                  </button>\n                ))}\n              </div>\n            )}\n          </div>\n          {errors.description && (\n            <p className=\"mt-1 text-sm text-error-500\">{errors.description}</p>\n          )}\n        </div>\n        \n        {/* Other form fields */}\n      </form>\n    </Modal>\n  );\n}\n\n// Helper function for suggestions\nfunction findSuggestions(input: string): string[] {\n  // This would typically come from previous entries or a predefined list\n  const commonDescriptions = [\n    '사무용품 구매',\n    '직원 식대',\n    '장비 유지보수',\n    '소모품 구매',\n    // Other common descriptions\n  ];\n  \n  return commonDescriptions.filter((desc) =>\n    desc.toLowerCase().includes(input.toLowerCase())\n  );\n}\n```",
+        "testStrategy": "1. Verify that all existing functionality is preserved\n2. Test form validation for all fields\n3. Validate real-time feedback for user inputs\n4. Test auto-complete and suggestion functionality\n5. Verify form submission with valid and invalid data\n6. Test cancel and close functionality\n7. Verify that the form works with both new and existing data (add/edit modes)",
+        "priority": "medium",
+        "dependencies": [
+          1,
+          2,
+          3,
+          7,
+          8
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 21,
+        "title": "Implement Accessibility Improvements",
+        "description": "Enhance accessibility across all components with keyboard navigation, screen reader support, and ARIA attributes.",
+        "details": "1. Add proper ARIA attributes to all interactive elements\n2. Improve keyboard navigation and focus management\n3. Enhance screen reader support with descriptive text\n4. Implement focus trapping for modals\n5. Add skip links for keyboard users\n6. Ensure sufficient color contrast\n\nImplementation approach:\n```typescript\n// Example of accessibility improvements for a button component\nexport function AccessibleButton({\n  children,\n  onClick,\n  disabled,\n  ariaLabel,\n  ...props\n}: ButtonProps) {\n  return (\n    <button\n      onClick={onClick}\n      disabled={disabled}\n      aria-label={ariaLabel || undefined}\n      aria-disabled={disabled || undefined}\n      className={/* styles */}\n      {...props}\n    >\n      {children}\n    </button>\n  );\n}\n\n// Example of focus trapping for modals\nexport function AccessibleModal({ isOpen, onClose, title, children }: ModalProps) {\n  const modalRef = useRef<HTMLDivElement>(null);\n  \n  // Focus trap implementation\n  useEffect(() => {\n    if (!isOpen) return;\n    \n    const focusableElements = modalRef.current?.querySelectorAll(\n      'button, [href], input, select, textarea, [tabindex]:not([tabindex=\"-1\"])'\n    );\n    \n    const firstElement = focusableElements?.[0] as HTMLElement;\n    const lastElement = focusableElements?.[focusableElements.length - 1] as HTMLElement;\n    \n    function handleTabKey(e: KeyboardEvent) {\n      if (e.key === 'Tab') {\n        if (e.shiftKey && document.activeElement === firstElement) {\n          e.preventDefault();\n          lastElement?.focus();\n        } else if (!e.shiftKey && document.activeElement === lastElement) {\n          e.preventDefault();\n          firstElement?.focus();\n        }\n      }\n    }\n    \n    // Focus the first element when modal opens\n    firstElement?.focus();\n    \n    // Add event listener for keyboard navigation\n    document.addEventListener('keydown', handleTabKey);\n    \n    return () => {\n      document.removeEventListener('keydown', handleTabKey);\n    };\n  }, [isOpen]);\n  \n  if (!isOpen) return null;\n  \n  return (\n    <div\n      role=\"dialog\"\n      aria-modal=\"true\"\n      aria-labelledby=\"modal-title\"\n      className=\"fixed inset-0 z-50 flex items-center justify-center\"\n    >\n      <div\n        className=\"fixed inset-0 bg-black/50\"\n        onClick={onClose}\n        aria-hidden=\"true\"\n      />\n      <div\n        ref={modalRef}\n        className=\"bg-white rounded-lg shadow-xl relative z-10 max-w-md w-full\"\n      >\n        <div className=\"flex items-center justify-between p-6 border-b\">\n          <h2 id=\"modal-title\" className=\"text-h3 font-semibold\">{title}</h2>\n          <button\n            onClick={onClose}\n            aria-label=\"Close modal\"\n            className=\"text-gray-500 hover:text-gray-700\"\n          >\n            {/* Close icon */}\n          </button>\n        </div>\n        <div className=\"p-6\">{children}</div>\n      </div>\n    </div>\n  );\n}\n```",
+        "testStrategy": "1. Test keyboard navigation through all interactive elements\n2. Verify focus management in modals and complex components\n3. Test with screen readers (NVDA, VoiceOver, JAWS)\n4. Validate ARIA attributes with accessibility testing tools\n5. Verify color contrast meets WCAG AA standards\n6. Test tab order for logical navigation\n7. Verify that all interactive elements have accessible names",
+        "priority": "high",
+        "dependencies": [
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 22,
+        "title": "Implement Animation and Transition System",
+        "description": "Create a consistent animation and transition system for interactive elements, modals, and state changes.",
+        "details": "1. Define standard transition durations and easing functions\n2. Implement smooth transitions for hover and focus states\n3. Create modal enter/exit animations\n4. Add subtle animations for data updates\n5. Ensure animations can be disabled for users who prefer reduced motion\n\nImplementation approach:\n```css\n/* Base transition classes */\n.transition-smooth {\n  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);\n}\n\n.transition-modal {\n  transition: all 0.3s cubic-bezier(0.32, 0.72, 0, 1);\n}\n\n/* Modal animations */\n.modal-enter {\n  opacity: 0;\n  transform: scale(0.95);\n}\n\n.modal-enter-active {\n  opacity: 1;\n  transform: scale(1);\n  transition: opacity 0.3s, transform 0.3s;\n}\n\n.modal-exit {\n  opacity: 1;\n  transform: scale(1);\n}\n\n.modal-exit-active {\n  opacity: 0;\n  transform: scale(0.95);\n  transition: opacity 0.2s, transform 0.2s;\n}\n\n/* Respect user preferences */\n@media (prefers-reduced-motion: reduce) {\n  *, ::before, ::after {\n    animation-duration: 0.01ms !important;\n    animation-iteration-count: 1 !important;\n    transition-duration: 0.01ms !important;\n    scroll-behavior: auto !important;\n  }\n}\n```\n\nExample implementation for animated components:\n```typescript\n// components/animated-modal.tsx\nimport { CSSTransition } from 'react-transition-group';\n\nexport function AnimatedModal({ isOpen, onClose, title, children }) {\n  return (\n    <CSSTransition\n      in={isOpen}\n      timeout={300}\n      classNames=\"modal\"\n      unmountOnExit\n    >\n      <div className=\"fixed inset-0 z-50 flex items-center justify-center\">\n        <div\n          className=\"fixed inset-0 bg-black/50 transition-opacity\"\n          onClick={onClose}\n        />\n        <div className=\"bg-white rounded-lg shadow-xl relative z-10 max-w-md w-full\">\n          {/* Modal content */}\n        </div>\n      </div>\n    </CSSTransition>\n  );\n}\n\n// components/animated-list.tsx\nimport { TransitionGroup, CSSTransition } from 'react-transition-group';\n\nexport function AnimatedList({ items }) {\n  return (\n    <ul>\n      <TransitionGroup component={null}>\n        {items.map((item) => (\n          <CSSTransition\n            key={item.id}\n            timeout={200}\n            classNames=\"item\"\n          >\n            <li className=\"transition-smooth\">{item.content}</li>\n          </CSSTransition>\n        ))}\n      </TransitionGroup>\n    </ul>\n  );\n}\n```",
+        "testStrategy": "1. Test animations on different browsers and devices\n2. Verify that animations respect the 'prefers-reduced-motion' setting\n3. Test performance impact of animations\n4. Validate that animations don't interfere with functionality\n5. Test modal animations with different content sizes\n6. Verify that list animations work with dynamic data\n7. Test animation timing and smoothness",
+        "priority": "medium",
+        "dependencies": [
+          1,
+          2,
+          3
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 23,
+        "title": "Implement Dashboard Layout Integration",
+        "description": "Integrate all modernized components into the main dashboard layout while preserving the existing structure and functionality.",
+        "details": "1. Update the main dashboard page with the new component styles\n2. Maintain the existing layout structure (2/3 and 1/3 columns)\n3. Ensure proper spacing between components\n4. Implement responsive behavior for the dashboard layout\n5. Preserve all existing functionality\n\nImplementation approach:\n```typescript\n// app/dashboard/page.tsx\nexport default function DashboardPage() {\n  // Preserve all existing logic and state\n  \n  return (\n    <div className=\"min-h-screen bg-gray-50\">\n      {/* Header with modernized styling */}\n      <Header />\n      \n      {/* Navigation with modernized styling */}\n      <ClinicNavigation />\n      \n      {/* Main content with preserved layout structure */}\n      <main className=\"container mx-auto px-4 py-6\">\n        <div className=\"grid grid-cols-1 lg:grid-cols-3 gap-6\">\n          {/* 2/3 column for main content */}\n          <div className=\"lg:col-span-2 space-y-6\">\n            {/* Doctor patient list with modernized styling */}\n            <DoctorPatientList />\n            \n            {/* Expense list with modernized styling */}\n            <ExpenseList />\n          </div>\n          \n          {/* 1/3 column for sidebar */}\n          <div className=\"space-y-6\">\n            {/* Clinic stats with modernized styling */}\n            <ClinicStats />\n            \n            {/* Extra income list with modernized styling */}\n            <ExtraIncomeList />\n          </div>\n        </div>\n      </main>\n    </div>\n  );\n}\n```",
+        "testStrategy": "1. Verify that all existing functionality is preserved\n2. Test responsive behavior at different screen sizes\n3. Validate that the layout structure is maintained\n4. Test component interactions within the dashboard\n5. Verify that all modals open and function correctly\n6. Test navigation between different sections\n7. Verify that data flows correctly between components",
+        "priority": "high",
+        "dependencies": [
+          11,
+          12,
+          13,
+          14,
+          15,
+          16
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 24,
+        "title": "Implement Modal Integration",
+        "description": "Integrate all modernized modal components with the dashboard while preserving their functionality and data flow.",
+        "details": "1. Connect all modals to their respective triggers\n2. Ensure data passing between components and modals\n3. Maintain all existing modal functionality\n4. Implement consistent modal opening/closing behavior\n5. Preserve form submission and validation logic\n\nImplementation approach:\n```typescript\n// Example of modal integration in a component\nexport function ClinicStats() {\n  // Preserve all existing logic and state\n  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);\n  const [isCardStatsModalOpen, setIsCardStatsModalOpen] = useState(false);\n  // Other modal states\n  \n  return (\n    <>\n      <div className=\"space-y-4\">\n        {/* Stat cards that trigger modals */}\n        <StatCard\n          title=\"오늘 결제 금액\"\n          value={formatCurrency(todayPayments.total)}\n          onClick={() => setIsPaymentModalOpen(true)}\n        />\n        \n        <StatCard\n          title=\"카드사별 통계\"\n          value={`${cardStats.count}건`}\n          onClick={() => setIsCardStatsModalOpen(true)}\n        />\n        \n        {/* Other stat cards */}\n      </div>\n      \n      {/* Modernized modals */}\n      <PaymentListModal\n        isOpen={isPaymentModalOpen}\n        onClose={() => setIsPaymentModalOpen(false)}\n        payments={payments}\n        // Pass all required props to preserve functionality\n      />\n      \n      <CardCompanyStatsModal\n        isOpen={isCardStatsModalOpen}\n        onClose={() => setIsCardStatsModalOpen(false)}\n        cardStats={cardStats}\n        // Pass all required props to preserve functionality\n      />\n      \n      {/* Other modals */}\n    </>\n  );\n}\n```",
+        "testStrategy": "1. Verify that all modals open and close correctly\n2. Test data passing between components and modals\n3. Validate form submission and validation in modals\n4. Test modal interactions (buttons, forms, etc.)\n5. Verify that modals display the correct data\n6. Test modal behavior with different screen sizes\n7. Verify that multiple modals don't conflict with each other",
+        "priority": "high",
+        "dependencies": [
+          7,
+          17,
+          18,
+          19,
+          20
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 25,
+        "title": "Perform Comprehensive Testing and Validation",
+        "description": "Conduct thorough testing of the entire modernized UI to ensure all functionality is preserved and the design is consistent.",
+        "details": "1. Create a comprehensive test plan covering all components and interactions\n2. Test all user flows and scenarios\n3. Verify that all existing functionality works exactly as before\n4. Validate responsive behavior across different devices\n5. Test accessibility compliance\n6. Perform visual regression testing\n7. Conduct user acceptance testing\n\nTest plan outline:\n1. **Component Testing**\n   - Test each component in isolation\n   - Verify all props and configurations\n   - Test edge cases (empty states, error states, etc.)\n\n2. **Integration Testing**\n   - Test component interactions\n   - Verify data flow between components\n   - Test modal opening/closing and data passing\n\n3. **Functional Testing**\n   - Test all user flows (adding/editing/deleting data)\n   - Verify form submissions and validations\n   - Test filtering and sorting functionality\n\n4. **Responsive Testing**\n   - Test on mobile devices (various sizes)\n   - Test on tablets\n   - Test on desktop (various sizes)\n   - Verify layout adjustments at breakpoints\n\n5. **Accessibility Testing**\n   - Test keyboard navigation\n   - Test with screen readers\n   - Verify ARIA attributes\n   - Check color contrast\n\n6. **Visual Testing**\n   - Compare before/after screenshots\n   - Verify design consistency\n   - Check for visual regressions\n\n7. **Performance Testing**\n   - Measure load times\n   - Test animation smoothness\n   - Verify bundle size optimization",
+        "testStrategy": "1. Create a test matrix covering all components and features\n2. Use automated testing tools where possible\n3. Perform manual testing for visual and UX aspects\n4. Test across multiple browsers (Chrome, Firefox, Safari, Edge)\n5. Test on real devices for mobile and tablet views\n6. Document and track all issues found\n7. Verify that all critical functionality works as expected\n8. Conduct regression testing after fixing any issues",
+        "priority": "high",
+        "dependencies": [
+          23,
+          24
+        ],
+        "status": "pending",
+        "subtasks": []
+      }
+    ],
+    "metadata": {
+      "created": "2025-06-23T07:16:14.290Z",
+      "updated": "2025-06-23T07:16:14.290Z",
+      "description": "Tasks for master context"
+    }
+  }
+}
