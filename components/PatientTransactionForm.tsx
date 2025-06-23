@@ -25,6 +25,7 @@ import TreatmentInfoStep from './patient-transaction/TreatmentInfoStep';
 import NewPatientModal from './NewPatientModal';
 import ConsultationSection from './ConsultationSection';
 import PaymentSection from './PaymentSection';
+import FirstOpModal from './FirstOpModal';
 
 export default function PatientTransactionForm({ isOpen, onClose, onTransactionAdded }: PatientTransactionFormProps) {
   const { selectedDate, triggerCashRefresh, triggerStatsRefresh } = useDateContext();
@@ -60,6 +61,9 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
   // 신규 환자 등록 모달 상태
   const [isNewPatientModalOpen, setIsNewPatientModalOpen] = useState(false);
   const [pendingChartNumber, setPendingChartNumber] = useState('');
+  
+  // 1st OP 모달 상태
+  const [isFirstOpModalOpen, setIsFirstOpModalOpen] = useState(false);
   
   // 시스템 설정 데이터
   const [doctors, setDoctors] = useState<{value: string}[]>([]);
@@ -259,6 +263,11 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
       visitPath: '',
       isNew: false
     }));
+  };
+
+  // 1st OP 모달 관련 핸들러들
+  const handleFirstOpModalClose = () => {
+    setIsFirstOpModalOpen(false);
   };
 
   // 차트번호 입력 후 실행되는 함수
@@ -490,6 +499,19 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
       ...prev,
       [name]: value
     }));
+    
+    // 진료내용이 1st OP인 경우 모달 열기
+    if (name === 'treatmentType' && value === '1st OP') {
+      if (formData.chartNumber && formData.patientName && currentTreatmentGroup.doctor) {
+        setIsFirstOpModalOpen(true);
+      } else {
+        toast({
+          title: "정보 부족",
+          description: "차트번호, 환자명, 진료의가 모두 입력되어야 1st OP 모달을 열 수 있습니다.",
+          variant: "destructive",
+        });
+      }
+    }
     
     // 수납방법 변경 시 추가 처리
     if (name === 'paymentMethod') {
@@ -851,6 +873,18 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
         chartNumber={pendingChartNumber}
         onClose={handleNewPatientModalClose}
         onSuccess={handleNewPatientSuccess}
+      />
+
+      {/* 1st OP 모달 */}
+      <FirstOpModal
+        isOpen={isFirstOpModalOpen}
+        onClose={handleFirstOpModalClose}
+        transactionData={{
+          chartNumber: formData.chartNumber,
+          patientName: formData.patientName,
+          date: formData.date,
+          doctor: currentTreatmentGroup.doctor
+        }}
       />
     </>
   );
