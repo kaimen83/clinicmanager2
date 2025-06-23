@@ -974,4 +974,9 @@
     .xl\:sticky { position: sticky; }
     .xl\:static { position: static; }
   }
+
+  /* Enhanced Card Styles */
+  .rounded-card { border-radius: var(--radius-md); }
+  .shadow-card { box-shadow: var(--shadow-md); }
+  .shadow-card-hover { box-shadow: var(--shadow-lg); }
 }
