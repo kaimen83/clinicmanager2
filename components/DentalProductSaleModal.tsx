@@ -221,6 +221,9 @@ export default function DentalProductSaleModal({
       loadSalesHistory();
       setSelectedProducts(new Map());
       
+      // 모달 닫기
+      onClose();
+      
     } catch (error) {
       console.error('판매 저장 오류:', error);
       toast({
