@@ -85,6 +85,31 @@ export default function CashManagementModal({ isOpen, onClose, date: initialDate
     }
   };
 
+  // 새 기록 추가 폼의 금액 입력 처리 (천단위 구분자 포함)
+  const handleAddAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/[^0-9]/g, ''); // 숫자만 추출
+    const formattedValue = value ? Number(value).toLocaleString('ko-KR') : '';
+    setFormData(prev => ({ ...prev, amount: value })); // 실제 값은 숫자로 저장
+    e.target.value = formattedValue; // 화면에는 천단위 구분자 표시
+  };
+
+  // 편집 폼의 금액 입력 처리 (천단위 구분자 포함)
+  const handleEditAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/[^0-9]/g, ''); // 숫자만 추출
+    const formattedValue = value ? Number(value).toLocaleString('ko-KR') : '';
+    setEditFormData(prev => ({ ...prev, amount: value })); // 실제 값은 숫자로 저장
+    e.target.value = formattedValue; // 화면에는 천단위 구분자 표시
+  };
+
+  // 금액 표시용 포맷팅
+  const getFormattedAddAmount = () => {
+    return formData.amount ? Number(formData.amount).toLocaleString('ko-KR') : '';
+  };
+
+  const getFormattedEditAmount = () => {
+    return editFormData.amount ? Number(editFormData.amount).toLocaleString('ko-KR') : '';
+  };
+
   const goToPreviousDay = () => {
     setSelectedDate(subDays(selectedDate, 1));
   };
@@ -493,11 +518,11 @@ export default function CashManagementModal({ isOpen, onClose, date: initialDate
                         </Label>
                         <Input
                           id="amount"
-                          type="number"
-                          value={formData.amount}
-                          onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                          type="text"
+                          value={getFormattedAddAmount()}
+                          onChange={handleAddAmountChange}
                           placeholder="0"
-                          className="mt-1"
+                          className="mt-1 text-right"
                           required
                         />
                       </div>
@@ -597,9 +622,9 @@ export default function CashManagementModal({ isOpen, onClose, date: initialDate
                             <TableCell className="text-right">
                               {editingRecord === record._id ? (
                                 <Input
-                                  type="number"
-                                  value={editFormData.amount}
-                                  onChange={(e) => setEditFormData({ ...editFormData, amount: e.target.value })}
+                                  type="text"
+                                  value={getFormattedEditAmount()}
+                                  onChange={handleEditAmountChange}
                                   className="w-full text-right"
                                 />
                               ) : (

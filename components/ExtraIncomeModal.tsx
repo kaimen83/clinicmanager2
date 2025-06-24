@@ -90,6 +90,19 @@ export default function ExtraIncomeModal({ isOpen, onClose, onSuccess, defaultDa
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  // 금액 입력 처리 (천단위 구분자 포함)
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/[^0-9]/g, ''); // 숫자만 추출
+    const formattedValue = value ? Number(value).toLocaleString('ko-KR') : '';
+    setFormData(prev => ({ ...prev, amount: value })); // 실제 값은 숫자로 저장
+    e.target.value = formattedValue; // 화면에는 천단위 구분자 표시
+  };
+
+  // 금액 표시용 포맷팅
+  const getFormattedAmount = () => {
+    return formData.amount ? Number(formData.amount).toLocaleString('ko-KR') : '';
+  };
+
   // 날짜 변경 처리
   const handleDateChange = (date: Date | undefined) => {
     if (date) {
@@ -244,9 +257,9 @@ export default function ExtraIncomeModal({ isOpen, onClose, onSuccess, defaultDa
             <Input
               id="amount"
               name="amount"
-              type="number"
-              value={formData.amount}
-              onChange={handleChange}
+              type="text"
+              value={getFormattedAmount()}
+              onChange={handleAmountChange}
               required
               placeholder="금액을 입력하세요"
               className="text-right border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
