@@ -3,11 +3,11 @@ import { connectToDatabase } from '@/lib/mongodb';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { manufacturer: string } }
+  { params }: { params: Promise<{ manufacturer: string }> }
 ) {
   try {
     const { db } = await connectToDatabase();
-    const { manufacturer } = params;
+    const { manufacturer } = await params;
     
     if (!manufacturer) {
       return NextResponse.json(

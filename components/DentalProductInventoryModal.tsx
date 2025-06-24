@@ -737,9 +737,9 @@ export default function DentalProductInventoryModal({ isOpen, onClose }: Props) 
             <DialogTitle className="flex items-center gap-3">
               <div className={`p-2 rounded-lg ${stockModalType === 'IN' ? 'bg-blue-50' : 'bg-red-50'}`}>
                 {stockModalType === 'IN' ? (
-                  <Plus className={`w-5 h-5 ${stockModalType === 'IN' ? 'text-blue-600' : 'text-red-600'}`} />
+                  <Plus className="w-5 h-5 text-blue-600" />
                 ) : (
-                  <Minus className={`w-5 h-5 ${stockModalType === 'IN' ? 'text-blue-600' : 'text-red-600'}`} />
+                  <Minus className="w-5 h-5 text-red-600" />
                 )}
               </div>
               {stockModalType === 'IN' ? '입고 등록' : '출고 등록'}

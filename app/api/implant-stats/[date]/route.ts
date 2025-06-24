@@ -5,7 +5,7 @@ import { ObjectId } from 'mongodb';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { date: string } }
+  { params }: { params: Promise<{ date: string }> }
 ) {
   try {
     const user = await currentUser();
@@ -16,7 +16,7 @@ export async function GET(
     const { db } = await connectToDatabase();
     const { searchParams } = new URL(request.url);
     const doctor = searchParams.get('doctor');
-    const date = params.date;
+    const { date } = await params;
 
     if (!date) {
       return NextResponse.json({ error: '날짜가 필요합니다.' }, { status: 400 });

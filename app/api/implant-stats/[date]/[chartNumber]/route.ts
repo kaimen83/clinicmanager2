@@ -4,7 +4,7 @@ import { connectToDatabase } from '@/lib/mongodb';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { date: string; chartNumber: string } }
+  { params }: { params: Promise<{ date: string; chartNumber: string }> }
 ) {
   try {
     const user = await currentUser();
@@ -13,7 +13,7 @@ export async function GET(
     }
 
     const { db } = await connectToDatabase();
-    const { date, chartNumber } = params;
+    const { date, chartNumber } = await params;
 
     // 날짜 필터 생성 (한국 시간 기준)
     const dateParts = date.split('-').map(Number);
@@ -96,7 +96,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { date: string; chartNumber: string } }
+  { params }: { params: Promise<{ date: string; chartNumber: string }> }
 ) {
   try {
     const user = await currentUser();
@@ -105,7 +105,7 @@ export async function PUT(
     }
 
     const { db } = await connectToDatabase();
-    const { date, chartNumber } = params;
+    const { date, chartNumber } = await params;
     const body = await request.json();
     const { patientName, doctor, implants, fixtures } = body;
 
@@ -207,7 +207,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { date: string; chartNumber: string } }
+  { params }: { params: Promise<{ date: string; chartNumber: string }> }
 ) {
   try {
     const user = await currentUser();
@@ -216,7 +216,7 @@ export async function DELETE(
     }
 
     const { db } = await connectToDatabase();
-    const { date, chartNumber } = params;
+    const { date, chartNumber } = await params;
 
     // 날짜 필터 생성 (한국 시간 기준)
     const dateParts = date.split('-').map(Number);

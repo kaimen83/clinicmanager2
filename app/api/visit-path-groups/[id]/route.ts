@@ -4,7 +4,7 @@ import { currentUser } from '@clerk/nextjs/server';
 import { ObjectId } from 'mongodb';
 
 // 그룹 수정
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await currentUser();
     const userId = user?.id;
@@ -16,7 +16,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const { db } = await connectToDatabase();
     const body = await request.json();
     const { name, description, visitPaths } = body;
-    const groupId = params.id;
+    const { id: groupId } = await params;
 
     if (!name || !visitPaths || visitPaths.length === 0) {
       return NextResponse.json({ error: '그룹명과 내원경로는 필수입니다.' }, { status: 400 });
@@ -89,7 +89,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 }
 
 // 그룹 삭제
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await currentUser();
     const userId = user?.id;
@@ -99,7 +99,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     }
 
     const { db } = await connectToDatabase();
-    const groupId = params.id;
+    const { id: groupId } = await params;
 
     // 그룹 존재 확인
     const existingGroup = await db.collection('visitpathgroups').findOne({ 
