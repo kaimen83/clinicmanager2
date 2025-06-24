@@ -94,54 +94,84 @@ export default function CardCompanyStatsModal({ isOpen, onClose, title, date, ty
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]">
-        <DialogHeader>
-          <DialogTitle>
-            {title}
-            {type === 'monthly' && displayMonth && (
-              <span className="ml-2 text-sm font-normal text-muted-foreground">
-                ({displayMonth})
-              </span>
-            )}
-          </DialogTitle>
+      <DialogContent className="sm:max-w-[600px] bg-white rounded-2xl shadow-xl border border-gray-100">
+        <DialogHeader className="pb-4 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-50 rounded-lg">
+              <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+              </svg>
+            </div>
+            <DialogTitle className="text-lg font-semibold text-gray-800">
+              {title}
+              {type === 'monthly' && displayMonth && (
+                <span className="ml-2 text-sm font-normal text-blue-600 bg-blue-50 px-2 py-1 rounded-md">
+                  {displayMonth}
+                </span>
+              )}
+            </DialogTitle>
+          </div>
         </DialogHeader>
         
-        <div>
+        <div className="pt-2">
           {isLoading ? (
-            <div className="text-center py-8">로딩 중...</div>
+            <div className="text-center py-12">
+              <div className="inline-flex items-center gap-2 text-blue-600">
+                <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                <span className="text-sm font-medium">데이터를 불러오는 중...</span>
+              </div>
+            </div>
           ) : cardStats.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              해당 기간에 카드 결제 내역이 없습니다.
+            <div className="text-center py-12">
+              <div className="mb-3 text-3xl opacity-50">💳</div>
+              <div className="text-gray-500 font-medium">해당 기간에 카드 결제 내역이 없습니다.</div>
             </div>
           ) : (
-            <div className="border rounded-md overflow-hidden">
+            <div className="bg-gray-50 rounded-xl overflow-hidden border border-gray-100">
               <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>카드사</TableHead>
-                    <TableHead className="text-right">건수</TableHead>
-                    <TableHead className="text-right">금액</TableHead>
-                    <TableHead className="text-right">비율</TableHead>
+                <TableHeader className="bg-gradient-to-r from-blue-50 to-blue-100">
+                  <TableRow className="border-b border-blue-200 hover:bg-blue-50">
+                    <TableHead className="font-bold text-blue-800 py-3">카드사</TableHead>
+                    <TableHead className="text-right font-bold text-blue-800 py-3">건수</TableHead>
+                    <TableHead className="text-right font-bold text-blue-800 py-3">금액</TableHead>
+                    <TableHead className="text-right font-bold text-blue-800 py-3">비율</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {cardStats.map((stat) => (
-                    <TableRow key={stat.cardCompany}>
-                      <TableCell>{stat.cardCompany}</TableCell>
-                      <TableCell className="text-right">{stat.count}건</TableCell>
-                      <TableCell className="text-right">₩{formatAmount(stat.amount)}</TableCell>
-                      <TableCell className="text-right">{formatPercentage(stat.percentage)}</TableCell>
+                  {cardStats.map((stat, index) => (
+                    <TableRow 
+                      key={stat.cardCompany} 
+                      className={`hover:bg-blue-50/30 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}
+                    >
+                      <TableCell className="py-3 font-medium text-gray-700">{stat.cardCompany}</TableCell>
+                      <TableCell className="text-right py-3 text-gray-600">
+                        <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded-md text-sm font-medium">
+                          {stat.count}건
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right py-3 font-semibold text-blue-700">
+                        ₩{formatAmount(stat.amount)}
+                      </TableCell>
+                      <TableCell className="text-right py-3">
+                        <span className="bg-green-50 text-green-700 px-2 py-1 rounded-md text-sm font-medium">
+                          {formatPercentage(stat.percentage)}
+                        </span>
+                      </TableCell>
                     </TableRow>
                   ))}
-                  <TableRow className="bg-muted/50">
-                    <TableCell className="font-bold">합계</TableCell>
-                    <TableCell className="text-right font-bold">
-                      {cardStats.reduce((sum, stat) => sum + stat.count, 0)}건
+                  <TableRow className="bg-gradient-to-r from-blue-600 to-blue-700 border-t-2 border-blue-300">
+                    <TableCell className="font-bold text-white py-4">합계</TableCell>
+                    <TableCell className="text-right font-bold text-white py-4">
+                      <span className="bg-white/20 px-2 py-1 rounded-md">
+                        {cardStats.reduce((sum, stat) => sum + stat.count, 0)}건
+                      </span>
                     </TableCell>
-                    <TableCell className="text-right font-bold">
+                    <TableCell className="text-right font-bold text-white py-4">
                       ₩{formatAmount(totalAmount)}
                     </TableCell>
-                    <TableCell className="text-right font-bold">100%</TableCell>
+                    <TableCell className="text-right font-bold text-white py-4">
+                      <span className="bg-white/20 px-2 py-1 rounded-md">100%</span>
+                    </TableCell>
                   </TableRow>
                 </TableBody>
               </Table>
