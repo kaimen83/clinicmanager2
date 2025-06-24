@@ -695,10 +695,17 @@ export default function DoctorPatientList({ date }: Props) {
     <>
       <div className="w-full">
         <div className="mb-4">
-          <h3 className="text-lg font-bold text-blue-800 mb-2">👥 진료 환자 목록</h3>
+          <div className="flex items-center gap-2 mb-3">
+            <div className="p-1.5 bg-blue-600 rounded-md">
+              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-800">진료 환자 목록</h3>
+          </div>
         </div>
         
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
           {doctorNames.length > 0 ? (
             <div 
               className="grid gap-2" 
@@ -710,27 +717,41 @@ export default function DoctorPatientList({ date }: Props) {
             >
               {doctorNames.map(doctor => (
                 <div key={doctor} className="min-h-0 flex flex-col overflow-hidden">
-                  <div className="bg-blue-50 p-3 sticky top-0 z-20 flex justify-between items-center border-b border-blue-200">
-                    <div className="font-bold text-blue-800">{doctor} 원장</div>
-                    <div className="text-sm text-blue-700 bg-white/70 px-3 py-1 rounded-lg border border-blue-200">
+                  <div className="bg-gradient-to-r from-blue-50 to-blue-100 px-4 py-2.5 sticky top-0 z-20 flex justify-between items-center border-b border-blue-200">
+                    <div className="flex items-center gap-2">
+                      <div className="w-1 h-5 bg-blue-500 rounded-full"></div>
+                      <div className="text-blue-800 font-semibold text-base">{doctor} 원장</div>
+                    </div>
+                    <div className="flex items-center gap-3">
                       {(() => {
                         const stats = calculateDoctorStats(groupedTransactions[doctor]);
-                        return `환자 ${stats.patientCount}명 | 신환 ${stats.newPatientCount}명 | 수납 ${stats.totalAmount.toLocaleString()}원`;
+                        return (
+                          <>
+                            <div className="bg-white/60 px-3 py-1 rounded-md border border-blue-200/50 text-blue-700 text-xs font-medium">
+                              환자/신환 : <span className="font-bold">{stats.patientCount}명/{stats.newPatientCount}명</span>
+                            </div>
+                            <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-1.5 rounded-md shadow-sm">
+                              <div className="text-white text-sm font-bold">
+                                ₩{stats.totalAmount.toLocaleString()}
+                              </div>
+                            </div>
+                          </>
+                        );
                       })()}
                     </div>
                   </div>
                   
                   <div className="flex-1 overflow-hidden">
                     <Table className="w-full border-collapse">
-                      <TableHeader className="sticky top-0 bg-blue-50 z-10" style={{ display: 'table', width: '100%', tableLayout: 'fixed' }}>
-                        <TableRow className="border-b border-blue-200">
-                          <TableHead className="w-12 font-semibold text-blue-800">No.</TableHead>
-                          <TableHead className="w-28 font-semibold text-blue-800">{renderSortableHeader('차트번호', 'chartNumber')}</TableHead>
-                          <TableHead className="w-32 font-semibold text-blue-800">{renderSortableHeader('환자성명', 'patientName')}</TableHead>
-                          <TableHead className="font-semibold text-blue-800">{renderSortableHeader('진료내용', 'treatmentType')}</TableHead>
-                          <TableHead className="w-28 text-right font-semibold text-blue-800">{renderSortableHeader('수납금액', 'paymentAmount')}</TableHead>
-                          <TableHead className="w-44 font-semibold text-blue-800">{renderSortableHeader('수납방법', 'paymentMethod')}</TableHead>
-                          <TableHead className="w-24 text-right font-semibold text-blue-800">관리</TableHead>
+                      <TableHeader className="sticky top-0 bg-gray-50 z-10 border-b-2 border-gray-200" style={{ display: 'table', width: '100%', tableLayout: 'fixed' }}>
+                        <TableRow className="hover:bg-gray-50">
+                          <TableHead className="w-12 font-bold text-gray-700 text-center py-3">No.</TableHead>
+                          <TableHead className="w-28 font-bold text-gray-700 py-3">{renderSortableHeader('차트번호', 'chartNumber')}</TableHead>
+                          <TableHead className="w-32 font-bold text-gray-700 py-3">{renderSortableHeader('환자성명', 'patientName')}</TableHead>
+                          <TableHead className="font-bold text-gray-700 py-3">{renderSortableHeader('진료내용', 'treatmentType')}</TableHead>
+                          <TableHead className="w-28 text-right font-bold text-gray-700 py-3">{renderSortableHeader('수납금액', 'paymentAmount')}</TableHead>
+                          <TableHead className="w-44 font-bold text-gray-700 py-3">{renderSortableHeader('수납방법', 'paymentMethod')}</TableHead>
+                          <TableHead className="w-24 text-center font-bold text-gray-700 py-3">관리</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody style={{
