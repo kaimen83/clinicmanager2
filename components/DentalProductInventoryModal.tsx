@@ -460,7 +460,7 @@ export default function DentalProductInventoryModal({ isOpen, onClose }: Props) 
                                       size="sm"
                                       variant="outline"
                                       onClick={() => handleStockModalOpen(product, 'IN')}
-                                      className="border-gray-200 hover:bg-blue-50 hover:border-blue-300 text-gray-700 hover:text-blue-700"
+                                      className="border-blue-300 text-blue-600 hover:bg-blue-50 hover:border-blue-400 hover:text-blue-700"
                                     >
                                       <Plus className="w-3 h-3 mr-1" />
                                       입고
@@ -469,7 +469,7 @@ export default function DentalProductInventoryModal({ isOpen, onClose }: Props) 
                                       size="sm"
                                       variant="outline"
                                       onClick={() => handleStockModalOpen(product, 'OUT')}
-                                      className="border-gray-200 hover:bg-red-50 hover:border-red-300 text-gray-700 hover:text-red-700"
+                                      className="border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400 hover:text-red-700"
                                     >
                                       <Minus className="w-3 h-3 mr-1" />
                                       출고

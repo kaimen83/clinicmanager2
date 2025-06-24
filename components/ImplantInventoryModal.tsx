@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Trash2, Package, Minus } from 'lucide-react';
+import { Trash2, Package, Minus, Plus } from 'lucide-react';
 import { safeRestorePointerEvents, createSafeOnOpenChange } from '@/lib/pointer-events-fix';
 
 interface ImplantProduct {
@@ -194,7 +194,10 @@ export default function ImplantInventoryModal({ isOpen, onClose }: ImplantInvent
       const response = await fetch(`/api/implantProducts/${selectedProduct}/stock-in`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(stockInForm)
+        body: JSON.stringify({
+          ...stockInForm,
+          quantity: Number(stockInForm.quantity)
+        })
       });
 
       if (!response.ok) throw new Error('입고 처리에 실패했습니다.');
@@ -239,7 +242,10 @@ export default function ImplantInventoryModal({ isOpen, onClose }: ImplantInvent
       const response = await fetch(`/api/implantProducts/${selectedProduct}/stock-out`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(stockOutForm)
+        body: JSON.stringify({
+          ...stockOutForm,
+          quantity: Number(stockOutForm.quantity)
+        })
       });
 
       if (!response.ok) throw new Error('출고 처리에 실패했습니다.');
@@ -394,41 +400,43 @@ export default function ImplantInventoryModal({ isOpen, onClose }: ImplantInvent
                     <table className="w-full">
                       <thead className="bg-gray-50">
                         <tr>
-                          <th className="px-4 py-2 text-left">카테고리</th>
-                          <th className="px-4 py-2 text-left">품목명</th>
-                          <th className="px-4 py-2 text-left">규격</th>
-                          <th className="px-4 py-2 text-left">사용처</th>
-                          <th className="px-4 py-2 text-left">현재재고</th>
-                          <th className="px-4 py-2 text-left">가격</th>
-                          <th className="px-4 py-2 text-left">재고가액</th>
-                          <th className="px-4 py-2 text-left">관리</th>
+                          <th className="px-3 py-1.5 text-left text-sm font-medium text-gray-700">카테고리</th>
+                          <th className="px-3 py-1.5 text-left text-sm font-medium text-gray-700">품목명</th>
+                          <th className="px-3 py-1.5 text-left text-sm font-medium text-gray-700">규격</th>
+                          <th className="px-3 py-1.5 text-left text-sm font-medium text-gray-700">사용처</th>
+                          <th className="px-3 py-1.5 text-left text-sm font-medium text-gray-700">현재재고</th>
+                          <th className="px-3 py-1.5 text-left text-sm font-medium text-gray-700">가격</th>
+                          <th className="px-3 py-1.5 text-left text-sm font-medium text-gray-700">재고가액</th>
+                          <th className="px-3 py-1.5 text-left text-sm font-medium text-gray-700">관리</th>
                         </tr>
                       </thead>
                       <tbody>
                         {filteredProducts.map(product => (
                           <tr key={product._id} className={product.stock <= 4 ? 'bg-red-50' : ''}>
-                            <td className="px-4 py-2">{product.category}</td>
-                            <td className="px-4 py-2">{product.name}</td>
-                            <td className="px-4 py-2">{product.specification}</td>
-                            <td className="px-4 py-2">{product.usage}</td>
-                            <td className="px-4 py-2">
+                            <td className="px-3 py-1.5 text-sm">{product.category}</td>
+                            <td className="px-3 py-1.5 text-sm">{product.name}</td>
+                            <td className="px-3 py-1.5 text-sm">{product.specification}</td>
+                            <td className="px-3 py-1.5 text-sm">{product.usage}</td>
+                            <td className="px-3 py-1.5 text-sm">
                               {product.stock}
                               {product.stock <= 4 && (
-                                <Badge variant="destructive" className="ml-2">부족</Badge>
+                                <Badge variant="destructive" className="ml-1 text-xs px-1 py-0">부족</Badge>
                               )}
                             </td>
-                            <td className="px-4 py-2">{product.price.toLocaleString()}원</td>
-                            <td className="px-4 py-2">{(product.stock * product.price).toLocaleString()}원</td>
-                            <td className="px-4 py-2">
-                              <div className="space-x-2">
+                            <td className="px-3 py-1.5 text-sm">{product.price.toLocaleString()}원</td>
+                            <td className="px-3 py-1.5 text-sm">{(product.stock * product.price).toLocaleString()}원</td>
+                            <td className="px-3 py-1.5">
+                              <div className="space-x-1">
                                 <Button
                                   size="sm"
+                                  variant="outline"
                                   onClick={() => {
                                     setSelectedProduct(product._id);
                                     setStockInModal(true);
                                   }}
-                                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                                  className="border-blue-300 text-blue-600 hover:bg-blue-50 hover:border-blue-400 hover:text-blue-700"
                                 >
+                                  <Plus className="w-3 h-3 mr-1" />
                                   입고
                                 </Button>
                                 <Button
@@ -438,8 +446,9 @@ export default function ImplantInventoryModal({ isOpen, onClose }: ImplantInvent
                                     setSelectedProduct(product._id);
                                     setStockOutModal(true);
                                   }}
-                                  className="border-gray-200 hover:bg-gray-50"
+                                  className="border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400 hover:text-red-700"
                                 >
+                                  <Minus className="w-3 h-3 mr-1" />
                                   출고
                                 </Button>
                               </div>
@@ -559,41 +568,42 @@ export default function ImplantInventoryModal({ isOpen, onClose }: ImplantInvent
                         <table className="w-full">
                           <thead className="bg-gray-50">
                             <tr>
-                              <th className="px-4 py-2 text-left">날짜</th>
-                              <th className="px-4 py-2 text-left">유형</th>
-                              <th className="px-4 py-2 text-left">카테고리</th>
-                              <th className="px-4 py-2 text-left">품목명</th>
-                              <th className="px-4 py-2 text-left">규격</th>
-                              <th className="px-4 py-2 text-left">수량</th>
-                              <th className="px-4 py-2 text-left">환자명</th>
-                              <th className="px-4 py-2 text-left">담당의</th>
-                              <th className="px-4 py-2 text-left">사유</th>
-                              <th className="px-4 py-2 text-left">관리</th>
+                              <th className="px-3 py-1.5 text-left text-sm font-medium text-gray-700">날짜</th>
+                              <th className="px-3 py-1.5 text-left text-sm font-medium text-gray-700">유형</th>
+                              <th className="px-3 py-1.5 text-left text-sm font-medium text-gray-700">카테고리</th>
+                              <th className="px-3 py-1.5 text-left text-sm font-medium text-gray-700">품목명</th>
+                              <th className="px-3 py-1.5 text-left text-sm font-medium text-gray-700">규격</th>
+                              <th className="px-3 py-1.5 text-left text-sm font-medium text-gray-700">수량</th>
+                              <th className="px-3 py-1.5 text-left text-sm font-medium text-gray-700">환자명</th>
+                              <th className="px-3 py-1.5 text-left text-sm font-medium text-gray-700">담당의</th>
+                              <th className="px-3 py-1.5 text-left text-sm font-medium text-gray-700">사유</th>
+                              <th className="px-3 py-1.5 text-left text-sm font-medium text-gray-700">관리</th>
                             </tr>
                           </thead>
                           <tbody>
                             {statistics.activities.map(activity => (
                               <tr key={activity._id}>
-                                <td className="px-4 py-2">{new Date(activity.date).toLocaleDateString()}</td>
-                                <td className="px-4 py-2">
-                                  <Badge variant={activity.type === 'IN' ? 'default' : 'secondary'}>
+                                <td className="px-3 py-1.5 text-sm">{new Date(activity.date).toLocaleDateString()}</td>
+                                <td className="px-3 py-1.5">
+                                  <Badge variant={activity.type === 'IN' ? 'default' : 'secondary'} className="text-xs px-1 py-0">
                                     {activity.type === 'IN' ? '입고' : '출고'}
                                   </Badge>
                                 </td>
-                                <td className="px-4 py-2">{activity.category}</td>
-                                <td className="px-4 py-2">{activity.productName}</td>
-                                <td className="px-4 py-2">{activity.specification || '-'}</td>
-                                <td className="px-4 py-2">{activity.quantity}개</td>
-                                <td className="px-4 py-2">{activity.patientName || '-'}</td>
-                                <td className="px-4 py-2">{activity.doctor || '-'}</td>
-                                <td className="px-4 py-2">{activity.outReason || '-'}</td>
-                                <td className="px-4 py-2">
+                                <td className="px-3 py-1.5 text-sm">{activity.category}</td>
+                                <td className="px-3 py-1.5 text-sm">{activity.productName}</td>
+                                <td className="px-3 py-1.5 text-sm">{activity.specification || '-'}</td>
+                                <td className="px-3 py-1.5 text-sm">{activity.quantity}개</td>
+                                <td className="px-3 py-1.5 text-sm">{activity.patientName || '-'}</td>
+                                <td className="px-3 py-1.5 text-sm">{activity.doctor || '-'}</td>
+                                <td className="px-3 py-1.5 text-sm">{activity.outReason || '-'}</td>
+                                <td className="px-3 py-1.5">
                                   <Button
                                     size="sm"
                                     variant="ghost"
                                     onClick={() => handleActivityDelete(activity._id)}
+                                    className="h-6 w-6 p-0"
                                   >
-                                    <Trash2 className="h-4 w-4" />
+                                    <Trash2 className="h-3 w-3" />
                                   </Button>
                                 </td>
                               </tr>
@@ -604,23 +614,23 @@ export default function ImplantInventoryModal({ isOpen, onClose }: ImplantInvent
                         <table className="w-full">
                           <thead className="bg-gray-50">
                             <tr>
-                              <th className="px-4 py-2 text-left">카테고리</th>
-                              <th className="px-4 py-2 text-left">품목명</th>
-                              <th className="px-4 py-2 text-left">규격</th>
-                              <th className="px-4 py-2 text-left">사용처</th>
-                              <th className="px-4 py-2 text-left">총 사용량</th>
-                              <th className="px-4 py-2 text-left">총 금액</th>
+                              <th className="px-3 py-1.5 text-left text-sm font-medium text-gray-700">카테고리</th>
+                              <th className="px-3 py-1.5 text-left text-sm font-medium text-gray-700">품목명</th>
+                              <th className="px-3 py-1.5 text-left text-sm font-medium text-gray-700">규격</th>
+                              <th className="px-3 py-1.5 text-left text-sm font-medium text-gray-700">사용처</th>
+                              <th className="px-3 py-1.5 text-left text-sm font-medium text-gray-700">총 사용량</th>
+                              <th className="px-3 py-1.5 text-left text-sm font-medium text-gray-700">총 금액</th>
                             </tr>
                           </thead>
                           <tbody>
                             {statistics.productStats.map(stat => (
                               <tr key={stat._id}>
-                                <td className="px-4 py-2">{stat.category}</td>
-                                <td className="px-4 py-2">{stat.name}</td>
-                                <td className="px-4 py-2">{stat.specification}</td>
-                                <td className="px-4 py-2">{stat.usage}</td>
-                                <td className="px-4 py-2">{stat.totalUsage}개</td>
-                                <td className="px-4 py-2">{stat.totalAmount.toLocaleString()}원</td>
+                                <td className="px-3 py-1.5 text-sm">{stat.category}</td>
+                                <td className="px-3 py-1.5 text-sm">{stat.name}</td>
+                                <td className="px-3 py-1.5 text-sm">{stat.specification}</td>
+                                <td className="px-3 py-1.5 text-sm">{stat.usage}</td>
+                                <td className="px-3 py-1.5 text-sm">{stat.totalUsage}개</td>
+                                <td className="px-3 py-1.5 text-sm">{stat.totalAmount.toLocaleString()}원</td>
                               </tr>
                             ))}
                           </tbody>
