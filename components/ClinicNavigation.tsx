@@ -145,60 +145,64 @@ export default function ClinicNavigation() {
   };
 
   return (
-    <Card className="p-4 mt-4">
-      <div className="flex flex-col md:flex-row justify-between gap-4">
-        <div className="flex flex-wrap gap-2">
+    <Card className="p-6 mt-4 bg-white/80 backdrop-blur-lg border-0 shadow-2xl relative overflow-hidden">
+      {/* 배경 장식 요소 */}
+      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-50 to-transparent rounded-full -translate-y-16 translate-x-16 opacity-50"></div>
+      <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-indigo-50 to-transparent rounded-full translate-y-12 -translate-x-12 opacity-30"></div>
+      
+      <div className="flex flex-col md:flex-row justify-between gap-6 relative z-10">
+        <div className="flex flex-wrap gap-3">
           <Button 
             variant="outline" 
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 bg-gradient-to-r from-slate-50 to-white border-slate-200 hover:from-blue-50 hover:to-blue-100 hover:border-blue-300 hover:shadow-lg text-slate-700 hover:text-blue-700 transition-all duration-300 font-medium group"
             onClick={handlePatientFormOpen}
           >
-            <UserPlus className="w-4 h-4" />
+            <UserPlus className="w-4 h-4 group-hover:scale-110 transition-transform" />
             <span>내원정보등록</span>
           </Button>
           
           <Button 
             variant="outline" 
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 bg-gradient-to-r from-slate-50 to-white border-slate-200 hover:from-emerald-50 hover:to-emerald-100 hover:border-emerald-300 hover:shadow-lg text-slate-700 hover:text-emerald-700 transition-all duration-300 font-medium group"
             onClick={handleExtraIncomeModalOpen}
           >
-            <CreditCard className="w-4 h-4" />
+            <CreditCard className="w-4 h-4 group-hover:scale-110 transition-transform" />
             <span>진료 외 수입</span>
           </Button>
           
           <Button 
             variant="outline" 
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 bg-gradient-to-r from-slate-50 to-white border-slate-200 hover:from-amber-50 hover:to-amber-100 hover:border-amber-300 hover:shadow-lg text-slate-700 hover:text-amber-700 transition-all duration-300 font-medium group"
             onClick={handleExpenseModalOpen}
           >
-            <DollarSign className="w-4 h-4" />
+            <DollarSign className="w-4 h-4 group-hover:scale-110 transition-transform" />
             <span>지출등록</span>
           </Button>
           
           <Button 
             variant="outline" 
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 bg-gradient-to-r from-slate-50 to-white border-slate-200 hover:from-purple-50 hover:to-purple-100 hover:border-purple-300 hover:shadow-lg text-slate-700 hover:text-purple-700 transition-all duration-300 font-medium group"
             onClick={handleCashManagementModalOpen}
           >
-            <Calculator className="w-4 h-4" />
+            <Calculator className="w-4 h-4 group-hover:scale-110 transition-transform" />
             <span>시재관리</span>
           </Button>
           
           <Button 
             variant="outline" 
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 bg-gradient-to-r from-slate-50 to-white border-slate-200 hover:from-cyan-50 hover:to-cyan-100 hover:border-cyan-300 hover:shadow-lg text-slate-700 hover:text-cyan-700 transition-all duration-300 font-medium group"
             onClick={handleSupplyModalOpen}
           >
-            <ShoppingCart className="w-4 h-4" />
+            <ShoppingCart className="w-4 h-4 group-hover:scale-110 transition-transform" />
             <span>매입원장</span>
           </Button>
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="flex items-center gap-2">
-                <ClipboardList className="w-4 h-4" />
+              <Button variant="outline" className="flex items-center gap-2 bg-gradient-to-r from-slate-50 to-white border-slate-200 hover:from-indigo-50 hover:to-indigo-100 hover:border-indigo-300 hover:shadow-lg text-slate-700 hover:text-indigo-700 transition-all duration-300 font-medium group">
+                <ClipboardList className="w-4 h-4 group-hover:scale-110 transition-transform" />
                 <span>수불부</span>
-                <ChevronDown className="w-4 h-4" />
+                <ChevronDown className="w-4 h-4 group-hover:scale-110 transition-transform" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>

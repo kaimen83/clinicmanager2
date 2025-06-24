@@ -142,13 +142,50 @@ export default function ClinicStats({ date }: Props) {
     paymentMethod?: string,
     count?: number
   ) => {
+    // 라벨에 따른 색상 및 스타일 정의
+    const getStyleByLabel = (label: string) => {
+      switch (label) {
+        case '전체 수납금액':
+          return {
+            borderColor: 'border-l-indigo-400',
+            bgColor: 'bg-gradient-to-r from-indigo-50 to-white',
+            textColor: 'text-indigo-700',
+            hoverColor: 'hover:from-indigo-100'
+          };
+        case '총수입':
+          return {
+            borderColor: 'border-l-green-400',
+            bgColor: 'bg-gradient-to-r from-green-50 to-white',
+            textColor: 'text-green-700',
+            hoverColor: 'hover:from-green-100'
+          };
+        case '총지출':
+          return {
+            borderColor: 'border-l-red-400',
+            bgColor: 'bg-gradient-to-r from-red-50 to-white',
+            textColor: 'text-red-700',
+            hoverColor: 'hover:from-red-100'
+          };
+        default:
+          // 나머지 모든 항목은 동일한 기본 스타일
+          return {
+            borderColor: 'border-l-slate-300',
+            bgColor: 'bg-gradient-to-r from-slate-50 to-white',
+            textColor: 'text-slate-700',
+            hoverColor: 'hover:from-slate-100'
+          };
+      }
+    };
+
+    const style = getStyleByLabel(label);
+    
     const content = (
       <>
-        <p className="text-xs text-gray-500">{label}</p>
-        <p className="text-lg font-semibold">
+        <p className="text-xs text-slate-600 font-medium">{label}</p>
+        <p className={`text-lg font-bold ${style.textColor}`}>
           {count !== undefined ? (
             <span>
-              <span className="text-sm text-gray-600">{count}건 / </span>
+              <span className="text-sm text-slate-500 font-normal">{count}건 / </span>
               {isAmount ? `₩${formatAmount(value as number)}` : value}
             </span>
           ) : (
@@ -161,7 +198,7 @@ export default function ClinicStats({ date }: Props) {
     if (isClickable) {
       return (
         <div 
-          className="p-2 border rounded-lg bg-white cursor-pointer hover:bg-gray-50 transition-colors"
+          className={`p-3 rounded-xl border-l-4 ${style.borderColor} ${style.bgColor} ${style.hoverColor} cursor-pointer transition-all duration-300 hover:shadow-md hover:scale-105 transform`}
           onClick={() => handleOpenPaymentModal(label, paymentMethod)}
         >
           {content}
@@ -170,7 +207,7 @@ export default function ClinicStats({ date }: Props) {
     }
     
     return (
-      <div className="p-2 border rounded-lg bg-white">
+      <div className={`p-3 rounded-xl border-l-4 ${style.borderColor} ${style.bgColor} transition-all duration-300`}>
         {content}
       </div>
     );
@@ -258,15 +295,13 @@ export default function ClinicStats({ date }: Props) {
   
   return (
     <>
-      <Card className="w-full shadow-sm">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">진료 통계</CardTitle>
-        </CardHeader>
-        <CardContent className="p-3">
+      <div className="w-full">
+        <div className="mb-4">
+          <h3 className="text-lg font-bold text-indigo-800 mb-2">📊 진료 통계</h3>
           <Tabs defaultValue="daily" onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-2 mb-2 h-8">
-              <TabsTrigger value="daily" className="text-xs py-1">일간 통계</TabsTrigger>
-              <TabsTrigger value="monthly" className="text-xs py-1">월간 통계</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 mb-4 h-10 bg-white/70 backdrop-blur-sm border border-indigo-200">
+              <TabsTrigger value="daily" className="text-sm font-medium data-[state=active]:bg-indigo-500 data-[state=active]:text-white">일간 통계</TabsTrigger>
+              <TabsTrigger value="monthly" className="text-sm font-medium data-[state=active]:bg-indigo-500 data-[state=active]:text-white">월간 통계</TabsTrigger>
             </TabsList>
             
             <TabsContent value="daily" className="pt-2">
@@ -277,8 +312,8 @@ export default function ClinicStats({ date }: Props) {
               {renderCompactMonthlyStats()}
             </TabsContent>
           </Tabs>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
       
       {/* 결제 내역 모달 */}
       <PaymentListModal

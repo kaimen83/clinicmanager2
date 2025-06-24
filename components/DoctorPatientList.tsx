@@ -691,49 +691,14 @@ export default function DoctorPatientList({ date }: Props) {
     );
   }
   
-  // 환자가 없는 경우에도 테이블 표시
-  const EmptyDoctorSection = () => (
-    <div className="min-h-0 flex flex-col overflow-hidden">
-      <div className="bg-gray-100 p-3 font-medium sticky top-0 z-20">
-        의사 목록 없음
-      </div>
-      <div className="flex-1 overflow-hidden">
-        <Table className="w-full border-collapse">
-          <TableHeader className="sticky top-0 bg-white z-10" style={{ display: 'table', width: '100%', tableLayout: 'fixed' }}>
-            <TableRow>
-              <TableHead className="w-12">No.</TableHead>
-              <TableHead className="w-24">차트번호</TableHead>
-              <TableHead className="w-32">환자성명</TableHead>
-              <TableHead>진료내용</TableHead>
-              <TableHead className="w-40 text-right">수납금액</TableHead>
-              <TableHead className="w-44">수납방법</TableHead>
-              <TableHead className="w-24 text-right">관리</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody style={{
-            display: 'block',
-            height: '336px', // 7명의 환자가 보이도록 고정 높이 설정 (48px * 7 = 336px)
-            overflowY: 'auto',
-            width: '100%'
-          }}>
-            <TableRow style={{ display: 'table', width: '100%', tableLayout: 'fixed' }}>
-              <TableCell colSpan={7} className="h-[336px] text-center">
-                해당 날짜에 등록된 환자가 없습니다.
-              </TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
-      </div>
-    </div>
-  );
-  
   return (
     <>
-      <Card className="w-full shadow-sm">
-        <CardHeader className="sticky top-0 bg-white z-30">
-          <CardTitle>진료 환자 목록</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
+      <div className="w-full">
+        <div className="mb-4">
+          <h3 className="text-lg font-bold text-blue-800 mb-2">👥 진료 환자 목록</h3>
+        </div>
+        
+        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
           {doctorNames.length > 0 ? (
             <div 
               className="grid gap-2" 
@@ -745,9 +710,9 @@ export default function DoctorPatientList({ date }: Props) {
             >
               {doctorNames.map(doctor => (
                 <div key={doctor} className="min-h-0 flex flex-col overflow-hidden">
-                  <div className="bg-gray-100 p-3 sticky top-0 z-20 flex justify-between items-center">
-                    <div className="font-medium">{doctor} 의사</div>
-                    <div className="text-sm text-gray-600">
+                  <div className="bg-blue-50 p-3 sticky top-0 z-20 flex justify-between items-center border-b border-blue-200">
+                    <div className="font-bold text-blue-800">{doctor} 의사</div>
+                    <div className="text-sm text-blue-700 bg-white/70 px-3 py-1 rounded-lg border border-blue-200">
                       {(() => {
                         const stats = calculateDoctorStats(groupedTransactions[doctor]);
                         return `환자 ${stats.patientCount}명 | 신환 ${stats.newPatientCount}명 | 수납 ${stats.totalAmount.toLocaleString()}원`;
@@ -757,15 +722,15 @@ export default function DoctorPatientList({ date }: Props) {
                   
                   <div className="flex-1 overflow-hidden">
                     <Table className="w-full border-collapse">
-                      <TableHeader className="sticky top-0 bg-white z-10" style={{ display: 'table', width: '100%', tableLayout: 'fixed' }}>
-                        <TableRow>
-                          <TableHead className="w-12">No.</TableHead>
-                          <TableHead className="w-28">{renderSortableHeader('차트번호', 'chartNumber')}</TableHead>
-                          <TableHead className="w-32">{renderSortableHeader('환자성명', 'patientName')}</TableHead>
-                          <TableHead>{renderSortableHeader('진료내용', 'treatmentType')}</TableHead>
-                          <TableHead className="w-28 text-right">{renderSortableHeader('수납금액', 'paymentAmount')}</TableHead>
-                          <TableHead className="w-44">{renderSortableHeader('수납방법', 'paymentMethod')}</TableHead>
-                          <TableHead className="w-24 text-right">  </TableHead>
+                      <TableHeader className="sticky top-0 bg-blue-50 z-10" style={{ display: 'table', width: '100%', tableLayout: 'fixed' }}>
+                        <TableRow className="border-b border-blue-200">
+                          <TableHead className="w-12 font-semibold text-blue-800">No.</TableHead>
+                          <TableHead className="w-28 font-semibold text-blue-800">{renderSortableHeader('차트번호', 'chartNumber')}</TableHead>
+                          <TableHead className="w-32 font-semibold text-blue-800">{renderSortableHeader('환자성명', 'patientName')}</TableHead>
+                          <TableHead className="font-semibold text-blue-800">{renderSortableHeader('진료내용', 'treatmentType')}</TableHead>
+                          <TableHead className="w-28 text-right font-semibold text-blue-800">{renderSortableHeader('수납금액', 'paymentAmount')}</TableHead>
+                          <TableHead className="w-44 font-semibold text-blue-800">{renderSortableHeader('수납방법', 'paymentMethod')}</TableHead>
+                          <TableHead className="w-24 text-right font-semibold text-blue-800">관리</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody style={{
@@ -775,7 +740,7 @@ export default function DoctorPatientList({ date }: Props) {
                         width: '100%'
                       }}>
                         {groupedTransactions[doctor].map((transaction, index) => (
-                          <TableRow key={transaction._id} style={{ display: 'table', width: '100%', tableLayout: 'fixed' }}>
+                          <TableRow key={transaction._id} style={{ display: 'table', width: '100%', tableLayout: 'fixed' }} className="hover:bg-blue-50/30 transition-colors">
                             <TableCell className="py-2 w-12">{index + 1}</TableCell>
                             <TableCell className="py-2 w-24">{transaction.chartNumber}</TableCell>
                             <TableCell className="py-2 w-32">
@@ -792,7 +757,7 @@ export default function DoctorPatientList({ date }: Props) {
                                 : transaction.treatmentType
                               }
                             </TableCell>
-                            <TableCell className="py-2 text-right w-28">
+                            <TableCell className="py-2 text-right w-28 font-semibold text-blue-700">
                               {transaction.treatments && transaction.treatments.length > 0 
                                 ? `${formatAmount(transaction.treatments[0].paymentAmount)}원`
                                 : `${formatAmount(transaction.paymentAmount)}원`
@@ -801,11 +766,21 @@ export default function DoctorPatientList({ date }: Props) {
                             <TableCell className="py-2 w-44">{formatPaymentMethod(transaction)}</TableCell>
                             <TableCell className="py-2 text-right w-24">
                               <div className="flex justify-end gap-1">
-                                <Button variant="ghost" size="icon" onClick={() => openEditDialog(transaction)}>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="hover:bg-blue-100 hover:text-blue-700 transition-colors"
+                                  onClick={() => openEditDialog(transaction)}
+                                >
                                   <Edit className="h-4 w-4" />
                                 </Button>
-                                <Button variant="ghost" size="icon" onClick={() => openDeleteDialog(transaction)}>
-                                  <Trash2 className="h-4 w-4 text-red-500" />
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="hover:bg-red-100 hover:text-red-700 transition-colors"
+                                  onClick={() => openDeleteDialog(transaction)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
                                 </Button>
                               </div>
                             </TableCell>
@@ -818,10 +793,13 @@ export default function DoctorPatientList({ date }: Props) {
               ))}
             </div>
           ) : (
-            <EmptyDoctorSection />
+            <div className="text-center py-12 text-slate-500 bg-gradient-to-r from-slate-50 to-white rounded-xl">
+              <div className="mb-2 text-4xl opacity-50">👨‍⚕️</div>
+              <div>해당 날짜에 등록된 환자가 없습니다.</div>
+            </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
       
       {/* 수정 다이얼로그 */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>

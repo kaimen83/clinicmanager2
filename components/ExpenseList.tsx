@@ -113,60 +113,80 @@ export default function ExpenseList({ date }: ExpenseListProps) {
   };
 
   return (
-    <Card className="shadow-sm">
-      <CardHeader className="flex flex-row items-center justify-between py-4 px-6 sticky top-0 bg-white z-10">
-        <CardTitle className="text-lg font-semibold">지출 내역</CardTitle>
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium">
-            총 {expenses.length}건, {totalAmount.toLocaleString()}원
-          </span>
+    <div className="w-full">
+      <div className="mb-4">
+        <h3 className="text-lg font-bold text-emerald-800 mb-2">💰 지출 내역</h3>
+        <div className="flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50/50 px-3 py-2 rounded-lg border border-emerald-200">
+          <span className="font-medium">총 {expenses.length}건</span>
+          <span className="text-emerald-500">•</span>
+          <span className="font-semibold">{totalAmount.toLocaleString()}원</span>
         </div>
-      </CardHeader>
-      <CardContent className="px-6 pb-6">
-        {loading ? (
-          <div className="text-center py-4">데이터를 불러오는 중...</div>
-        ) : expenses.length === 0 ? (
-          <div className="text-center py-4 text-muted-foreground min-h-[100px] flex items-center justify-center">
-            등록된 지출 내역이 없습니다.
-          </div>
-        ) : (
+      </div>
+      
+      {loading ? (
+        <div className="text-center py-8 text-slate-600">데이터를 불러오는 중...</div>
+      ) : expenses.length === 0 ? (
+        <div className="text-center py-12 text-slate-500 bg-gradient-to-r from-slate-50 to-white rounded-xl">
+          <div className="mb-2 text-4xl opacity-50">📝</div>
+          <div>등록된 지출 내역이 없습니다.</div>
+        </div>
+      ) : (
+        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
           <div className="max-h-[400px] overflow-y-auto">
             <Table>
-              <TableHeader className="sticky top-0 bg-white z-10">
-                <TableRow>
-                  <TableHead>지출 내역</TableHead>
-                  <TableHead>금액</TableHead>
-                  <TableHead>지불 방법</TableHead>
-                  <TableHead>영수증</TableHead>
-                  <TableHead>비고</TableHead>
-                  <TableHead className="text-right">관리</TableHead>
+              <TableHeader className="sticky top-0 bg-emerald-50 z-10">
+                <TableRow className="border-b border-emerald-200">
+                  <TableHead className="font-semibold text-emerald-800">지출 내역</TableHead>
+                  <TableHead className="font-semibold text-emerald-800">금액</TableHead>
+                  <TableHead className="font-semibold text-emerald-800">지불 방법</TableHead>
+                  <TableHead className="font-semibold text-emerald-800">영수증</TableHead>
+                  <TableHead className="font-semibold text-emerald-800">비고</TableHead>
+                  <TableHead className="text-right font-semibold text-emerald-800">관리</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {expenses.map((expense) => (
-                  <TableRow key={expense._id}>
+                  <TableRow key={expense._id} className="hover:bg-emerald-50/30 transition-colors">
                     <TableCell className="font-medium">{expense.details}</TableCell>
-                    <TableCell>{expense.amount.toLocaleString()}원</TableCell>
+                    <TableCell className="font-semibold text-emerald-700">{expense.amount.toLocaleString()}원</TableCell>
                     <TableCell>{expense.method}</TableCell>
-                    <TableCell>{expense.hasReceipt ? '있음' : '없음'}</TableCell>
+                    <TableCell>
+                      {expense.hasReceipt ? (
+                        <span className="text-green-600 font-medium">있음</span>
+                      ) : (
+                        <span className="text-red-500 font-medium">없음</span>
+                      )}
+                    </TableCell>
                     <TableCell className="max-w-[120px] truncate">
                       {expense.notes || '-'}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" onClick={() => handleEditExpense(expense)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleDeleteExpense(expense._id || '')}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <div className="flex gap-1 justify-end">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="hover:bg-blue-100 hover:text-blue-700 transition-colors"
+                          onClick={() => handleEditExpense(expense)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="hover:bg-red-100 hover:text-red-700 transition-colors"
+                          onClick={() => handleDeleteExpense(expense._id || '')}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           </div>
-        )}
-      </CardContent>
+        </div>
+      )}
 
       {/* 지출 등록/수정 모달 */}
       <ExpenseModal
@@ -176,6 +196,6 @@ export default function ExpenseList({ date }: ExpenseListProps) {
         defaultDate={date}
         editItem={editItem}
       />
-    </Card>
+    </div>
   );
 } 

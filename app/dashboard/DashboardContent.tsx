@@ -19,26 +19,25 @@ export default function DashboardContent({ children }: Props) {
 
   return (
     <>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-16">
-        <div className="lg:col-span-2 space-y-8">
-          <div className="min-h-[400px]">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 -mx-6 -my-6 px-6 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-16">
+          <div className="lg:col-span-2 space-y-6">
             <DoctorPatientList date={selectedDate} />
-          </div>
-          <div className="min-h-[300px]">
             <ExpenseList date={selectedDate} />
           </div>
-        </div>
-        <div className="lg:col-span-1 space-y-4">
-          <Card className="shadow-sm p-4 bg-slate-50">
-            <div className="space-y-4">
-              <ClinicStats date={selectedDate} />
-              <ExtraIncomeList date={selectedDate} />
-            </div>
-          </Card>
+          
+          <div className="lg:col-span-1">
+            <Card className="shadow-lg border-0 bg-gradient-to-br from-indigo-50 to-blue-50 backdrop-blur-sm hover:shadow-xl transition-all duration-300">
+              <div className="p-6 space-y-6">
+                <ClinicStats date={selectedDate} />
+                <div className="pt-4 border-t border-indigo-200">
+                  <ExtraIncomeList date={selectedDate} />
+                </div>
+              </div>
+            </Card>
+          </div>
         </div>
       </div>
-
-
     </>
   );
 } 

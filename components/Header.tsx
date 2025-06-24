@@ -38,43 +38,47 @@ export default function Header() {
   const isAccountingPage = pathname === '/accounting';
   
   return (
-    <header className="w-full bg-white border-b border-gray-200 shadow-sm">
-      <div className="container mx-auto flex justify-between items-center py-4">
-        <div className="flex items-center gap-4">
-          <h1 className="text-2xl font-bold text-primary">인천센터치과 경영프로그램</h1>
+    <header className="w-full bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 shadow-xl">
+      <div className="container mx-auto flex justify-between items-center py-6">
+        <div className="flex items-center gap-6">
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">
+            🦷 인천센터치과 경영프로그램
+          </h1>
           
           <Link href={isAccountingPage ? "/dashboard" : "/accounting"}>
             <Button 
               variant="outline" 
               size="sm"
-              className="flex items-center gap-2 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 hover:from-blue-100 hover:to-indigo-100 hover:border-blue-300 text-blue-700 hover:text-blue-800 transition-all duration-200 shadow-sm hover:shadow-md"
+              className="flex items-center gap-2 bg-white/10 backdrop-blur-md border-white/20 hover:bg-white/20 hover:border-white/30 text-white hover:text-white transition-all duration-300 shadow-lg hover:shadow-xl font-medium"
             >
               {isAccountingPage ? (
                 <>
                   <Home className="w-4 h-4" />
-                  <span className="font-medium">메인화면</span>
+                  <span>메인화면</span>
                 </>
               ) : (
                 <>
                   <Calculator className="w-4 h-4" />
-                  <span className="font-medium">회계관리</span>
+                  <span>회계관리</span>
                 </>
               )}
             </Button>
           </Link>
         </div>
         
-        <div className="flex items-center gap-4">
-          <div className="flex items-center text-sm text-gray-600">
-            <Clock className="w-4 h-4 mr-1" />
-            <span>{currentDateTime}</span>
+        <div className="flex items-center gap-6">
+          <div className="flex items-center text-sm text-blue-100 bg-white/10 backdrop-blur-md px-4 py-2 rounded-lg border border-white/20">
+            <Clock className="w-4 h-4 mr-2 text-blue-200" />
+            <span className="font-medium">{currentDateTime}</span>
           </div>
           
-          <div className="flex items-center gap-2">
-            <UserButton afterSignOutUrl="/" />
+          <div className="flex items-center gap-3">
+            <div className="bg-white/10 backdrop-blur-md rounded-lg p-1 border border-white/20">
+              <UserButton afterSignOutUrl="/" />
+            </div>
             
             <Link href="/sign-out">
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 hover:text-white transition-all duration-300">
                 <LogOut className="h-5 w-5" />
               </Button>
             </Link>
