@@ -16,13 +16,9 @@ export default function DashboardLayout({
         <Header />
         
         <div className="container mx-auto px-4 py-6 pb-20 flex-1 overflow-hidden">
-          <ClinicNavigation />
-          
-          <div className="mt-6">
-            <DashboardContent>
-              {children}
-            </DashboardContent>
-          </div>
+          <DashboardContent>
+            {children}
+          </DashboardContent>
         </div>
         
         <footer className="border-t py-6 bg-white mt-auto">

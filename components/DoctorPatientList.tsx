@@ -711,7 +711,7 @@ export default function DoctorPatientList({ date }: Props) {
               {doctorNames.map(doctor => (
                 <div key={doctor} className="min-h-0 flex flex-col overflow-hidden">
                   <div className="bg-blue-50 p-3 sticky top-0 z-20 flex justify-between items-center border-b border-blue-200">
-                    <div className="font-bold text-blue-800">{doctor} 의사</div>
+                    <div className="font-bold text-blue-800">{doctor} 원장</div>
                     <div className="text-sm text-blue-700 bg-white/70 px-3 py-1 rounded-lg border border-blue-200">
                       {(() => {
                         const stats = calculateDoctorStats(groupedTransactions[doctor]);
