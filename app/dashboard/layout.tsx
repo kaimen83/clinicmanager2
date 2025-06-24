@@ -15,7 +15,7 @@ export default function DashboardLayout({
       <div className="flex flex-col min-h-screen">
         <Header />
         
-        <div className="container mx-auto px-4 py-6 pb-20 flex-1 overflow-hidden">
+        <div className="flex-1 overflow-hidden">
           <DashboardContent>
             {children}
           </DashboardContent>

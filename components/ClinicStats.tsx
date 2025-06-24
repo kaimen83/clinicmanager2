@@ -218,7 +218,6 @@ export default function ClinicStats({ date }: Props) {
     return (
       <Card className="w-full shadow-sm">
         <CardHeader className="pb-2">
-          <CardTitle>진료 통계</CardTitle>
           <CardDescription>데이터를 불러오는 중...</CardDescription>
         </CardHeader>
         <CardContent className="text-center py-4">
@@ -233,7 +232,6 @@ export default function ClinicStats({ date }: Props) {
     return (
       <Card className="w-full shadow-sm">
         <CardHeader className="pb-2">
-          <CardTitle>진료 통계</CardTitle>
           <CardDescription className="text-red-500">오류 발생</CardDescription>
         </CardHeader>
         <CardContent className="text-center py-4 text-red-500">
@@ -296,13 +294,11 @@ export default function ClinicStats({ date }: Props) {
   return (
     <>
       <div className="w-full">
-        <div className="mb-4">
-          <h3 className="text-lg font-bold text-indigo-800 mb-2">📊 진료 통계</h3>
-          <Tabs defaultValue="daily" onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-2 mb-4 h-10 bg-white/70 backdrop-blur-sm border border-indigo-200">
-              <TabsTrigger value="daily" className="text-sm font-medium data-[state=active]:bg-indigo-500 data-[state=active]:text-white">일간 통계</TabsTrigger>
-              <TabsTrigger value="monthly" className="text-sm font-medium data-[state=active]:bg-indigo-500 data-[state=active]:text-white">월간 통계</TabsTrigger>
-            </TabsList>
+        <Tabs defaultValue="daily" onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-2 mb-4 h-10 bg-white/70 backdrop-blur-sm border border-indigo-200">
+            <TabsTrigger value="daily" className="text-sm font-medium data-[state=active]:bg-indigo-500 data-[state=active]:text-white">일간 통계</TabsTrigger>
+            <TabsTrigger value="monthly" className="text-sm font-medium data-[state=active]:bg-indigo-500 data-[state=active]:text-white">월간 통계</TabsTrigger>
+          </TabsList>
             
             <TabsContent value="daily" className="pt-2">
               {renderCompactDailyStats()}
@@ -311,8 +307,7 @@ export default function ClinicStats({ date }: Props) {
             <TabsContent value="monthly" className="pt-2">
               {renderCompactMonthlyStats()}
             </TabsContent>
-          </Tabs>
-        </div>
+        </Tabs>
       </div>
       
       {/* 결제 내역 모달 */}

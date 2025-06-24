@@ -20,27 +20,39 @@ export default function DashboardContent({ children }: Props) {
 
   return (
     <>
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 -mx-6 -my-6 px-6 py-6">
-        <ClinicNavigation />
-        
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-16 mt-6">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/20 px-6 py-6">
+        <div className="container mx-auto">
+          <ClinicNavigation />
+          
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-16 mt-6">
           <div className="lg:col-span-2 space-y-6">
             <DoctorPatientList date={selectedDate} />
             <ExpenseList date={selectedDate} />
           </div>
           
           <div className="lg:col-span-1 space-y-6">
-            <Card className="shadow-lg border-0 bg-gradient-to-br from-indigo-50 to-blue-50 backdrop-blur-sm hover:shadow-xl transition-all duration-300">
-              <div className="p-6">
-                <ClinicStats date={selectedDate} />
+            <div>
+              <div className="mb-4">
+                <h3 className="text-lg font-bold text-indigo-800">📊 진료 통계</h3>
               </div>
-            </Card>
+              <Card className="shadow-lg border-0 bg-gradient-to-br from-indigo-50 to-blue-50 backdrop-blur-sm hover:shadow-xl transition-all duration-300">
+                <div className="p-6">
+                  <ClinicStats date={selectedDate} />
+                </div>
+              </Card>
+            </div>
             
-            <Card className="shadow-lg border-0 bg-gradient-to-br from-emerald-50 to-teal-50 backdrop-blur-sm hover:shadow-xl transition-all duration-300">
-              <div className="p-6">
-                <ExtraIncomeList date={selectedDate} />
+            <div>
+              <div className="mb-4">
+                <h3 className="text-lg font-bold text-emerald-800">💰 진료외수입</h3>
               </div>
-            </Card>
+              <Card className="shadow-lg border-0 bg-gradient-to-br from-emerald-50 to-teal-50 backdrop-blur-sm hover:shadow-xl transition-all duration-300">
+                <div className="p-6">
+                  <ExtraIncomeList date={selectedDate} />
+                </div>
+              </Card>
+            </div>
+          </div>
           </div>
         </div>
       </div>

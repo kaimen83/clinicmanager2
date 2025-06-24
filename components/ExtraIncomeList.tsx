@@ -146,13 +146,10 @@ export default function ExtraIncomeList({ date }: Props) {
   return (
     <>
       <div className="w-full">
-        <div className="mb-4">
-          <h3 className="text-lg font-bold text-violet-800 mb-2">💰 진료외수입</h3>
-          <div className="flex items-center gap-2 text-sm text-violet-700 bg-violet-50/50 px-3 py-2 rounded-lg border border-violet-200">
-            <span className="font-medium">총 {extraincomes.length}건</span>
-            <span className="text-violet-500">•</span>
-            <span className="font-semibold">{formatAmount(calculateTotal())}원</span>
-          </div>
+        <div className="flex items-center gap-2 text-sm text-violet-700 bg-violet-50/50 px-3 py-2 rounded-lg border border-violet-200 mb-4">
+          <span className="font-medium">총 {extraincomes.length}건</span>
+          <span className="text-violet-500">•</span>
+          <span className="font-semibold">{formatAmount(calculateTotal())}원</span>
         </div>
 
         {isLoading ? (
