@@ -145,7 +145,7 @@ export default function ClinicNavigation() {
   };
 
   return (
-    <Card className="p-6 mt-4 bg-white/80 backdrop-blur-lg border-0 shadow-2xl relative overflow-hidden">
+    <Card className="p-6 bg-white/90 backdrop-blur-lg border-0 shadow-lg relative overflow-hidden">
       {/* 배경 장식 요소 */}
       <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-50 to-transparent rounded-full -translate-y-16 translate-x-16 opacity-50"></div>
       <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-indigo-50 to-transparent rounded-full translate-y-12 -translate-x-12 opacity-30"></div>

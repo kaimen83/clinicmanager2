@@ -38,8 +38,8 @@ export default function Header() {
   const isAccountingPage = pathname === '/accounting';
   
   return (
-    <header className="w-full bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 shadow-xl">
-      <div className="container mx-auto flex justify-between items-center py-6">
+    <header className="w-full bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 shadow-lg">
+      <div className="container mx-auto flex justify-between items-center py-5">
         <div className="flex items-center gap-6">
           <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">
             🦷 인천센터치과 경영프로그램
