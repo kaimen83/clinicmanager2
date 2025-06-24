@@ -2,10 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --radius: 0.5rem;
-}
-
 @theme {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -13,56 +9,55 @@
   --font-mono: var(--font-geist-mono);
 }
 
-
-
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 20 14.3% 4.1%;
+    --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
-    --card-foreground: 20 14.3% 4.1%;
+    --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
-    --popover-foreground: 20 14.3% 4.1%;
-    --primary: 24 9.8% 10%;
-    --primary-foreground: 60 9.1% 97.8%;
-    --secondary: 60 4.8% 95.9%;
-    --secondary-foreground: 24 9.8% 10%;
-    --muted: 60 4.8% 95.9%;
-    --muted-foreground: 25 5.3% 44.7%;
-    --accent: 60 4.8% 95.9%;
-    --accent-foreground: 24 9.8% 10%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 84% 4.9%;
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 60 9.1% 97.8%;
-    --border: 20 5.9% 90%;
-    --input: 20 5.9% 90%;
-    --ring: 20 14.3% 4.1%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+    --radius: 0.5rem;
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
-    --radius: 0.5rem;
   }
+
   .dark {
-    --background: 20 14.3% 4.1%;
-    --foreground: 60 9.1% 97.8%;
-    --card: 20 14.3% 4.1%;
-    --card-foreground: 60 9.1% 97.8%;
-    --popover: 20 14.3% 4.1%;
-    --popover-foreground: 60 9.1% 97.8%;
-    --primary: 60 9.1% 97.8%;
-    --primary-foreground: 24 9.8% 10%;
-    --secondary: 12 6.5% 15.1%;
-    --secondary-foreground: 60 9.1% 97.8%;
-    --muted: 12 6.5% 15.1%;
-    --muted-foreground: 24 5.4% 63.9%;
-    --accent: 12 6.5% 15.1%;
-    --accent-foreground: 60 9.1% 97.8%;
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 60 9.1% 97.8%;
-    --border: 12 6.5% 15.1%;
-    --input: 12 6.5% 15.1%;
-    --ring: 24 5.7% 82.9%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
@@ -71,13 +66,158 @@
   }
 }
 
-
-
 @layer base {
   * {
     @apply border-border;
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* 커스텀 디자인 시스템 클래스 */
+@layer components {
+  /* 섹션 제목 일관성 */
+  .section-title {
+    @apply text-lg font-bold mb-2 flex items-center gap-2;
+  }
+  
+  .section-title.patients {
+    @apply text-blue-800;
+  }
+  
+  .section-title.expenses {
+    @apply text-emerald-800;
+  }
+  
+  .section-title.income {
+    @apply text-violet-800;
+  }
+  
+  .section-title.stats {
+    @apply text-indigo-800;
+  }
+
+  /* 통계 요약 박스 일관성 */
+  .stats-summary {
+    @apply flex items-center gap-2 text-sm px-3 py-2 rounded-lg border;
+  }
+  
+  .stats-summary.patients {
+    @apply text-blue-700 bg-blue-50/50 border-blue-200;
+  }
+  
+  .stats-summary.expenses {
+    @apply text-emerald-700 bg-emerald-50/50 border-emerald-200;
+  }
+  
+  .stats-summary.income {
+    @apply text-violet-700 bg-violet-50/50 border-violet-200;
+  }
+
+  /* 데이터 테이블 일관성 */
+  .data-table {
+    @apply bg-white rounded-xl shadow-lg overflow-hidden;
+  }
+  
+  .data-table-header {
+    @apply sticky top-0 z-10;
+  }
+  
+  .data-table-header.patients {
+    @apply bg-blue-50 border-b border-blue-200;
+  }
+  
+  .data-table-header.expenses {
+    @apply bg-emerald-50 border-b border-emerald-200;
+  }
+  
+  .data-table-header.income {
+    @apply bg-violet-50 border-b border-violet-200;
+  }
+  
+  .data-table-header th {
+    @apply font-semibold;
+  }
+  
+  .data-table-header.patients th {
+    @apply text-blue-800;
+  }
+  
+  .data-table-header.expenses th {
+    @apply text-emerald-800;
+  }
+  
+  .data-table-header.income th {
+    @apply text-violet-800;
+  }
+
+  /* 데이터 행 hover 효과 일관성 */
+  .data-table-row {
+    @apply transition-colors;
+  }
+  
+  .data-table-row.patients {
+    @apply hover:bg-blue-50/30;
+  }
+  
+  .data-table-row.expenses {
+    @apply hover:bg-emerald-50/30;
+  }
+  
+  .data-table-row.income {
+    @apply hover:bg-violet-50/30;
+  }
+
+  /* 액션 버튼 일관성 */
+  .action-button-edit {
+    @apply hover:bg-blue-100 hover:text-blue-700 transition-colors;
+  }
+  
+  .action-button-delete {
+    @apply hover:bg-red-100 hover:text-red-700 transition-colors;
+  }
+
+  /* 빈 상태 표시 일관성 */
+  .empty-state {
+    @apply text-center py-12 text-slate-500 bg-gradient-to-r from-slate-50 to-white rounded-xl;
+  }
+  
+  .empty-state-icon {
+    @apply mb-2 text-4xl opacity-50;
+  }
+
+  /* 글래스모피즘 효과 */
+  .glass-effect {
+    @apply bg-white/80 backdrop-blur-lg border-0 shadow-2xl;
+  }
+  
+  /* 네비게이션 버튼 일관성 */
+  .nav-button {
+    @apply flex items-center gap-2 bg-gradient-to-r from-slate-50 to-white border-slate-200 hover:shadow-lg text-slate-700 transition-all duration-300 font-medium group;
+  }
+  
+  .nav-button.primary {
+    @apply hover:from-blue-50 hover:to-blue-100 hover:border-blue-300 hover:text-blue-700;
+  }
+  
+  .nav-button.success {
+    @apply hover:from-emerald-50 hover:to-emerald-100 hover:border-emerald-300 hover:text-emerald-700;
+  }
+  
+  .nav-button.warning {
+    @apply hover:from-amber-50 hover:to-amber-100 hover:border-amber-300 hover:text-amber-700;
+  }
+  
+  .nav-button.info {
+    @apply hover:from-purple-50 hover:to-purple-100 hover:border-purple-300 hover:text-purple-700;
+  }
+  
+  .nav-button.secondary {
+    @apply hover:from-cyan-50 hover:to-cyan-100 hover:border-cyan-300 hover:text-cyan-700;
+  }
+  
+  .nav-button-icon {
+    @apply w-4 h-4 group-hover:scale-110 transition-transform;
   }
 }

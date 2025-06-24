@@ -145,76 +145,73 @@ export default function ExtraIncomeList({ date }: Props) {
 
   return (
     <>
-      <Card className="w-full shadow-sm">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">진료외수입</CardTitle>
-        </CardHeader>
-        <CardContent className="p-3">
-          {isLoading ? (
-            <div className="text-center py-2 text-sm">로딩 중...</div>
-          ) : extraincomes.length === 0 ? (
-            <div className="text-center py-2 text-xs text-muted-foreground">
-              등록된 진료외수입이 없습니다.
-            </div>
-          ) : (
-            <>
-              <div className="border rounded-md overflow-hidden">
-                <Table className="text-sm">
-                  <TableHeader>
-                    <TableRow className="hover:bg-muted/50">
-                      <TableHead className="h-8 text-xs font-medium">유형</TableHead>
-                      <TableHead className="h-8 text-xs font-medium text-right">금액</TableHead>
-                      <TableHead className="h-8 text-xs font-medium">비고</TableHead>
-                      <TableHead className="h-8 text-xs font-medium w-20"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {extraincomes.map((item) => (
-                      <TableRow key={item._id} className="h-8 hover:bg-muted/50">
-                        <TableCell className="py-1 text-xs">{item.type}</TableCell>
-                        <TableCell className="py-1 text-xs text-right">
-                          ₩{formatAmount(item.amount)}
-                        </TableCell>
-                        <TableCell className="py-1 text-xs max-w-[120px] truncate">
-                          {item.notes || '-'}
-                        </TableCell>
-                        <TableCell className="py-1 text-xs">
-                          <div className="flex justify-end space-x-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6"
-                              onClick={() => handleOpenEditModal(item)}
-                            >
-                              <Edit className="h-3 w-3 text-blue-500" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6"
-                              onClick={() => handleOpenDeleteDialog(item._id || '')}
-                            >
-                              <Trash2 className="h-3 w-3 text-red-500" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    <TableRow className="h-8 bg-muted/20 hover:bg-muted/50">
-                      <TableCell className="py-1 text-xs font-bold">합계</TableCell>
-                      <TableCell className="py-1 text-xs font-bold text-right">
-                        ₩{formatAmount(calculateTotal())}
+      <div className="w-full">
+        <div className="mb-4">
+          <h3 className="text-lg font-bold text-violet-800 mb-2">💎 진료외수입</h3>
+          <div className="flex items-center gap-2 text-sm text-violet-700 bg-violet-50/50 px-3 py-2 rounded-lg border border-violet-200">
+            <span className="font-medium">총 {extraincomes.length}건</span>
+            <span className="text-violet-500">•</span>
+            <span className="font-semibold">{formatAmount(calculateTotal())}원</span>
+          </div>
+        </div>
+
+        {isLoading ? (
+          <div className="text-center py-8 text-slate-600">데이터를 불러오는 중...</div>
+        ) : extraincomes.length === 0 ? (
+          <div className="text-center py-12 text-slate-500 bg-gradient-to-r from-slate-50 to-white rounded-xl">
+            <div className="mb-2 text-4xl opacity-50">💎</div>
+            <div>등록된 진료외수입이 없습니다.</div>
+          </div>
+        ) : (
+          <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div className="max-h-[400px] overflow-y-auto">
+              <Table>
+                <TableHeader className="sticky top-0 bg-violet-50 z-10">
+                  <TableRow className="border-b border-violet-200">
+                    <TableHead className="font-semibold text-violet-800">유형</TableHead>
+                    <TableHead className="font-semibold text-violet-800 text-right">금액</TableHead>
+                    <TableHead className="font-semibold text-violet-800">비고</TableHead>
+                    <TableHead className="text-right font-semibold text-violet-800">관리</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {extraincomes.map((item) => (
+                    <TableRow key={item._id} className="hover:bg-violet-50/30 transition-colors">
+                      <TableCell className="font-medium">{item.type}</TableCell>
+                      <TableCell className="font-semibold text-violet-700 text-right">
+                        ₩{formatAmount(item.amount)}
                       </TableCell>
-                      <TableCell className="py-1 text-xs"></TableCell>
-                      <TableCell></TableCell>
+                      <TableCell className="max-w-[120px] truncate">
+                        {item.notes || '-'}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex gap-1 justify-end">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="hover:bg-blue-100 hover:text-blue-700 transition-colors"
+                            onClick={() => handleOpenEditModal(item)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="hover:bg-red-100 hover:text-red-700 transition-colors"
+                            onClick={() => handleOpenDeleteDialog(item._id || '')}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
                     </TableRow>
-                  </TableBody>
-                </Table>
-              </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* 진료외수입 등록/수정 모달 */}
       <ExtraIncomeModal
