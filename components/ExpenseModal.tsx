@@ -228,10 +228,12 @@ export default function ExpenseModal({ isOpen, onClose, onSuccess, defaultDate, 
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl border-0 shadow-lg">
         <DialogHeader className="space-y-3">
-          <DialogTitle className="text-lg font-semibold flex items-center gap-2">
-            <DollarSign className="w-5 h-5 text-primary" />
+          <DialogTitle className="text-lg font-semibold flex items-center gap-3">
+            <div className="p-2 bg-amber-50 rounded-lg">
+              <DollarSign className="w-5 h-5 text-amber-600" />
+            </div>
             {isEditMode ? '지출 수정' : '지출 등록'}
           </DialogTitle>
         </DialogHeader>
@@ -239,24 +241,24 @@ export default function ExpenseModal({ isOpen, onClose, onSuccess, defaultDate, 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* 기본 정보 */}
           <div className="space-y-4">
-            <h3 className="text-base font-medium text-foreground border-b pb-2">기본 정보</h3>
+            <h3 className="text-base font-medium text-gray-900 border-b border-gray-200 pb-2">기본 정보</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* 날짜 선택 */}
               <div className="space-y-2">
-                <Label htmlFor="date" className="text-sm font-medium">
-                  날짜 <span className="text-destructive">*</span>
+                <Label htmlFor="date" className="text-sm font-medium text-gray-700">
+                  날짜 <span className="text-red-500">*</span>
                 </Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
                       className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !formData.date && "text-muted-foreground"
+                        "w-full justify-start text-left font-normal border-gray-200 hover:bg-gray-50",
+                        !formData.date && "text-gray-400"
                       )}
                     >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      <CalendarIcon className="mr-2 h-4 w-4 text-blue-600" />
                       {formData.date ? (
                         format(formData.date, 'PPP', { locale: ko })
                       ) : (
@@ -264,7 +266,7 @@ export default function ExpenseModal({ isOpen, onClose, onSuccess, defaultDate, 
                       )}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
+                  <PopoverContent className="w-auto p-0 border-0 shadow-lg">
                     <Calendar
                       mode="single"
                       selected={formData.date}
@@ -276,8 +278,8 @@ export default function ExpenseModal({ isOpen, onClose, onSuccess, defaultDate, 
               
               {/* 금액 입력 */}
               <div className="space-y-2">
-                <Label htmlFor="amount" className="text-sm font-medium">
-                  금액 <span className="text-destructive">*</span>
+                <Label htmlFor="amount" className="text-sm font-medium text-gray-700">
+                  금액 <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="amount"
@@ -287,15 +289,15 @@ export default function ExpenseModal({ isOpen, onClose, onSuccess, defaultDate, 
                   onChange={handleChange}
                   required
                   placeholder="금액을 입력하세요"
-                  className="text-right"
+                  className="text-right border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
                 />
               </div>
             </div>
             
             {/* 지출 내역 입력 */}
             <div className="space-y-2">
-              <Label htmlFor="details" className="text-sm font-medium">
-                지출 내역 <span className="text-destructive">*</span>
+              <Label htmlFor="details" className="text-sm font-medium text-gray-700">
+                지출 내역 <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="details"
@@ -304,25 +306,26 @@ export default function ExpenseModal({ isOpen, onClose, onSuccess, defaultDate, 
                 onChange={handleChange}
                 required
                 placeholder="지출 내역을 입력하세요"
+                className="border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
               />
             </div>
           </div>
           
           {/* 결제 정보 */}
           <div className="space-y-4">
-            <h3 className="text-base font-medium text-foreground border-b pb-2">결제 정보</h3>
+            <h3 className="text-base font-medium text-gray-900 border-b border-gray-200 pb-2">결제 정보</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* 지불 방법 선택 */}
               <div className="space-y-2">
-                <Label htmlFor="method" className="text-sm font-medium">
-                  지불 방법 <span className="text-destructive">*</span>
+                <Label htmlFor="method" className="text-sm font-medium text-gray-700">
+                  지불 방법 <span className="text-red-500">*</span>
                 </Label>
                 <Select value={formData.method} onValueChange={handleMethodChange}>
-                  <SelectTrigger>
+                  <SelectTrigger className="border-gray-200 hover:bg-gray-50">
                     <SelectValue placeholder="지불 방법을 선택하세요" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="border-0 shadow-lg">
                     <SelectItem value="현금">현금</SelectItem>
                     <SelectItem value="카드">카드</SelectItem>
                     <SelectItem value="계좌이체">계좌이체</SelectItem>
@@ -347,7 +350,7 @@ export default function ExpenseModal({ isOpen, onClose, onSuccess, defaultDate, 
           
           {/* 추가 정보 */}
           <div className="space-y-4">
-            <h3 className="text-base font-medium text-foreground border-b pb-2">추가 정보 (선택사항)</h3>
+            <h3 className="text-base font-medium text-gray-900 border-b border-gray-200 pb-2">추가 정보 (선택사항)</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* 거래처 선택 */}
@@ -408,12 +411,14 @@ export default function ExpenseModal({ isOpen, onClose, onSuccess, defaultDate, 
               type="button" 
               onClick={onClose}
               disabled={isLoading}
+              className="border-gray-200 hover:bg-gray-50"
             >
               취소
             </Button>
             <Button 
               type="submit" 
               disabled={isLoading}
+              className="bg-amber-600 hover:bg-amber-700 text-white"
             >
               {isLoading ? '처리 중...' : isEditMode ? '수정' : '등록'}
             </Button>

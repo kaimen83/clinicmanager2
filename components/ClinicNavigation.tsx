@@ -145,67 +145,63 @@ export default function ClinicNavigation() {
   };
 
   return (
-    <Card className="p-6 bg-white/90 backdrop-blur-lg border-0 shadow-lg relative overflow-hidden">
-      {/* 배경 장식 요소 */}
-      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-50 to-transparent rounded-full -translate-y-16 translate-x-16 opacity-50"></div>
-      <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-indigo-50 to-transparent rounded-full translate-y-12 -translate-x-12 opacity-30"></div>
-      
-      <div className="flex flex-col md:flex-row justify-between gap-6 relative z-10">
+    <Card className="p-6 bg-white border-0 shadow-sm">
+      <div className="flex flex-col lg:flex-row justify-between gap-6">
         <div className="flex flex-wrap gap-3">
           <Button 
             variant="outline" 
-            className="flex items-center gap-2 bg-gradient-to-r from-slate-50 to-white border-slate-200 hover:from-blue-50 hover:to-blue-100 hover:border-blue-300 hover:shadow-lg text-slate-700 hover:text-blue-700 transition-all duration-300 font-medium group"
+            className="flex items-center gap-2 bg-white border-gray-200 hover:bg-blue-50 hover:border-blue-300 text-gray-700 hover:text-blue-700 transition-all duration-200 font-medium"
             onClick={handlePatientFormOpen}
           >
-            <UserPlus className="w-4 h-4 group-hover:scale-110 transition-transform" />
+            <UserPlus className="w-4 h-4" />
             <span>내원정보등록</span>
           </Button>
           
           <Button 
             variant="outline" 
-            className="flex items-center gap-2 bg-gradient-to-r from-slate-50 to-white border-slate-200 hover:from-emerald-50 hover:to-emerald-100 hover:border-emerald-300 hover:shadow-lg text-slate-700 hover:text-emerald-700 transition-all duration-300 font-medium group"
+            className="flex items-center gap-2 bg-white border-gray-200 hover:bg-green-50 hover:border-green-300 text-gray-700 hover:text-green-700 transition-all duration-200 font-medium"
             onClick={handleExtraIncomeModalOpen}
           >
-            <CreditCard className="w-4 h-4 group-hover:scale-110 transition-transform" />
+            <CreditCard className="w-4 h-4" />
             <span>진료 외 수입</span>
           </Button>
           
           <Button 
             variant="outline" 
-            className="flex items-center gap-2 bg-gradient-to-r from-slate-50 to-white border-slate-200 hover:from-amber-50 hover:to-amber-100 hover:border-amber-300 hover:shadow-lg text-slate-700 hover:text-amber-700 transition-all duration-300 font-medium group"
+            className="flex items-center gap-2 bg-white border-gray-200 hover:bg-amber-50 hover:border-amber-300 text-gray-700 hover:text-amber-700 transition-all duration-200 font-medium"
             onClick={handleExpenseModalOpen}
           >
-            <DollarSign className="w-4 h-4 group-hover:scale-110 transition-transform" />
+            <DollarSign className="w-4 h-4" />
             <span>지출등록</span>
           </Button>
           
           <Button 
             variant="outline" 
-            className="flex items-center gap-2 bg-gradient-to-r from-slate-50 to-white border-slate-200 hover:from-purple-50 hover:to-purple-100 hover:border-purple-300 hover:shadow-lg text-slate-700 hover:text-purple-700 transition-all duration-300 font-medium group"
+            className="flex items-center gap-2 bg-white border-gray-200 hover:bg-purple-50 hover:border-purple-300 text-gray-700 hover:text-purple-700 transition-all duration-200 font-medium"
             onClick={handleCashManagementModalOpen}
           >
-            <Calculator className="w-4 h-4 group-hover:scale-110 transition-transform" />
+            <Calculator className="w-4 h-4" />
             <span>시재관리</span>
           </Button>
           
           <Button 
             variant="outline" 
-            className="flex items-center gap-2 bg-gradient-to-r from-slate-50 to-white border-slate-200 hover:from-cyan-50 hover:to-cyan-100 hover:border-cyan-300 hover:shadow-lg text-slate-700 hover:text-cyan-700 transition-all duration-300 font-medium group"
+            className="flex items-center gap-2 bg-white border-gray-200 hover:bg-cyan-50 hover:border-cyan-300 text-gray-700 hover:text-cyan-700 transition-all duration-200 font-medium"
             onClick={handleSupplyModalOpen}
           >
-            <ShoppingCart className="w-4 h-4 group-hover:scale-110 transition-transform" />
+            <ShoppingCart className="w-4 h-4" />
             <span>매입원장</span>
           </Button>
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="flex items-center gap-2 bg-gradient-to-r from-slate-50 to-white border-slate-200 hover:from-indigo-50 hover:to-indigo-100 hover:border-indigo-300 hover:shadow-lg text-slate-700 hover:text-indigo-700 transition-all duration-300 font-medium group">
-                <ClipboardList className="w-4 h-4 group-hover:scale-110 transition-transform" />
+              <Button variant="outline" className="flex items-center gap-2 bg-white border-gray-200 hover:bg-indigo-50 hover:border-indigo-300 text-gray-700 hover:text-indigo-700 transition-all duration-200 font-medium">
+                <ClipboardList className="w-4 h-4" />
                 <span>수불부</span>
-                <ChevronDown className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                <ChevronDown className="w-4 h-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent>
+            <DropdownMenuContent className="border-0 shadow-lg">
               <DropdownMenuItem onClick={handleDentalProductInventoryModalOpen}>
                 구강용품 수불부
               </DropdownMenuItem>
@@ -215,7 +211,7 @@ export default function ClinicNavigation() {
             </DropdownMenuContent>
           </DropdownMenu>
           
-          <Button variant="outline" className="flex items-center gap-2">
+          <Button variant="outline" className="flex items-center gap-2 bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300 text-gray-700 transition-all duration-200 font-medium">
             <Star className="w-4 h-4" />
             <span>병원리뷰</span>
           </Button>
@@ -229,7 +225,7 @@ export default function ClinicNavigation() {
             size="icon" 
             onClick={goToPreviousDay} 
             title="이전 날짜"
-            className="h-10 w-10 rounded-lg border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all duration-200"
+            className="h-10 w-10 border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all duration-200"
           >
             <ChevronLeft className="h-4 w-4 text-gray-600" />
           </Button>
@@ -242,7 +238,7 @@ export default function ClinicNavigation() {
                   className={cn(
                     "justify-start text-left font-medium px-4 py-2 h-10 min-w-[220px]",
                     "bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300",
-                    "rounded-lg transition-all duration-200 shadow-sm hover:shadow-md",
+                    "transition-all duration-200",
                     !selectedDate && "text-gray-400"
                   )}
                 >
@@ -254,7 +250,7 @@ export default function ClinicNavigation() {
                   )}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
+              <PopoverContent className="w-auto p-0 border-0 shadow-lg">
                 <Calendar
                   mode="single"
                   selected={selectedDate}
@@ -269,14 +265,14 @@ export default function ClinicNavigation() {
             size="icon" 
             onClick={goToNextDay} 
             title="다음 날짜"
-            className="h-10 w-10 rounded-lg border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all duration-200"
+            className="h-10 w-10 border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all duration-200"
           >
             <ChevronRight className="h-4 w-4 text-gray-600" />
           </Button>
           
           <Button 
             onClick={goToToday}
-            className="h-10 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-200 shadow-sm hover:shadow-md"
+            className="h-10 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium transition-all duration-200"
           >
             오늘
           </Button>

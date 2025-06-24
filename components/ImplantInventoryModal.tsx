@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Package, Minus } from 'lucide-react';
 import { safeRestorePointerEvents, createSafeOnOpenChange } from '@/lib/pointer-events-fix';
 
 interface ImplantProduct {
@@ -314,32 +314,38 @@ export default function ImplantInventoryModal({ isOpen, onClose }: ImplantInvent
         onOpenChange={createSafeOnOpenChange(onClose)}
         modal={true}
       >
-        <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto border-0 shadow-lg">
           <DialogHeader>
-            <DialogTitle>임플란트 수불부</DialogTitle>
+            <DialogTitle className="flex items-center gap-3">
+              <div className="p-2 bg-indigo-50 rounded-lg">
+                <Package className="w-5 h-5 text-indigo-600" />
+              </div>
+              임플란트 수불부
+            </DialogTitle>
           </DialogHeader>
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList>
-              <TabsTrigger value="inventory">재고관리</TabsTrigger>
-              <TabsTrigger value="statistics">사용통계</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 bg-gray-50 border-0">
+              <TabsTrigger value="inventory" className="data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm">재고관리</TabsTrigger>
+              <TabsTrigger value="statistics" className="data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm">사용통계</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="inventory" className="space-y-4">
+            <TabsContent value="inventory" className="space-y-6">
               {/* 필터 섹션 */}
-              <Card>
-                <CardContent className="p-4">
+              <Card className="border-0 shadow-sm bg-white">
+                <CardContent className="p-6">
                   <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
                     <Input
                       placeholder="품목명 검색"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
+                      className="border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
                     />
                     <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                      <SelectTrigger>
+                      <SelectTrigger className="border-gray-200 hover:bg-gray-50">
                         <SelectValue placeholder="전체 카테고리" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="border-0 shadow-lg">
                         <SelectItem value="all">전체 카테고리</SelectItem>
                         <SelectItem value="fixture">Fixture</SelectItem>
                         <SelectItem value="이식재">이식재</SelectItem>
@@ -348,10 +354,10 @@ export default function ImplantInventoryModal({ isOpen, onClose }: ImplantInvent
                       </SelectContent>
                     </Select>
                     <Select value={nameFilter} onValueChange={setNameFilter}>
-                      <SelectTrigger>
+                      <SelectTrigger className="border-gray-200 hover:bg-gray-50">
                         <SelectValue placeholder="전체 품목" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="border-0 shadow-lg">
                         <SelectItem value="all">전체 품목</SelectItem>
                         {uniqueNames.map(name => (
                           <SelectItem key={name} value={name}>{name}</SelectItem>
@@ -359,10 +365,10 @@ export default function ImplantInventoryModal({ isOpen, onClose }: ImplantInvent
                       </SelectContent>
                     </Select>
                     <Select value={usageFilter} onValueChange={setUsageFilter}>
-                      <SelectTrigger>
+                      <SelectTrigger className="border-gray-200 hover:bg-gray-50">
                         <SelectValue placeholder="전체 사용처" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="border-0 shadow-lg">
                         <SelectItem value="all">전체 사용처</SelectItem>
                         <SelectItem value="원내">원내</SelectItem>
                         <SelectItem value="기공소">기공소</SelectItem>
@@ -382,7 +388,7 @@ export default function ImplantInventoryModal({ isOpen, onClose }: ImplantInvent
               </Card>
 
               {/* 재고 테이블 */}
-              <Card>
+              <Card className="border-0 shadow-sm bg-white">
                 <CardContent className="p-0">
                   <div className="overflow-x-auto">
                     <table className="w-full">
@@ -421,6 +427,7 @@ export default function ImplantInventoryModal({ isOpen, onClose }: ImplantInvent
                                     setSelectedProduct(product._id);
                                     setStockInModal(true);
                                   }}
+                                  className="bg-blue-600 hover:bg-blue-700 text-white"
                                 >
                                   입고
                                 </Button>
@@ -431,6 +438,7 @@ export default function ImplantInventoryModal({ isOpen, onClose }: ImplantInvent
                                     setSelectedProduct(product._id);
                                     setStockOutModal(true);
                                   }}
+                                  className="border-gray-200 hover:bg-gray-50"
                                 >
                                   출고
                                 </Button>
@@ -445,7 +453,7 @@ export default function ImplantInventoryModal({ isOpen, onClose }: ImplantInvent
               </Card>
 
               {/* 요약 정보 */}
-              <Card>
+              <Card className="border-0 shadow-sm bg-white">
                 <CardContent className="p-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>총 품목 수: <span className="font-bold">{filteredProducts.length}개</span></div>
@@ -459,7 +467,7 @@ export default function ImplantInventoryModal({ isOpen, onClose }: ImplantInvent
 
             <TabsContent value="statistics" className="space-y-4">
               {/* 통계 필터 섹션 */}
-              <Card>
+              <Card className="border-0 shadow-sm bg-white">
                 <CardContent className="p-4">
                   <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
                     <div className="flex space-x-2">
@@ -477,10 +485,10 @@ export default function ImplantInventoryModal({ isOpen, onClose }: ImplantInvent
                       </Button>
                     </div>
                     <Select value={statCategoryFilter} onValueChange={setStatCategoryFilter}>
-                      <SelectTrigger>
+                      <SelectTrigger className="border-gray-200 hover:bg-gray-50">
                         <SelectValue placeholder="전체 카테고리" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="border-0 shadow-lg">
                         <SelectItem value="all">전체 카테고리</SelectItem>
                         <SelectItem value="fixture">Fixture</SelectItem>
                         <SelectItem value="이식재">이식재</SelectItem>
@@ -492,11 +500,13 @@ export default function ImplantInventoryModal({ isOpen, onClose }: ImplantInvent
                       type="date"
                       value={startDate}
                       onChange={(e) => setStartDate(e.target.value)}
+                      className="border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
                     />
                     <Input
                       type="date"
                       value={endDate}
                       onChange={(e) => setEndDate(e.target.value)}
+                      className="border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
                     />
                   </div>
                 </CardContent>
@@ -505,7 +515,7 @@ export default function ImplantInventoryModal({ isOpen, onClose }: ImplantInvent
               {/* 통계 요약 */}
               {statistics && (
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <Card>
+                  <Card className="border-0 shadow-sm bg-white">
                     <CardHeader className="pb-2">
                       <CardTitle className="text-sm">총 사용수량</CardTitle>
                     </CardHeader>
@@ -513,7 +523,7 @@ export default function ImplantInventoryModal({ isOpen, onClose }: ImplantInvent
                       <div className="text-2xl font-bold">{statistics.totalUsage.toLocaleString()}개</div>
                     </CardContent>
                   </Card>
-                  <Card>
+                  <Card className="border-0 shadow-sm bg-white">
                     <CardHeader className="pb-2">
                       <CardTitle className="text-sm">총 사용금액</CardTitle>
                     </CardHeader>
@@ -521,7 +531,7 @@ export default function ImplantInventoryModal({ isOpen, onClose }: ImplantInvent
                       <div className="text-2xl font-bold">{statistics.totalAmount.toLocaleString()}원</div>
                     </CardContent>
                   </Card>
-                  <Card>
+                  <Card className="border-0 shadow-sm bg-white">
                     <CardHeader className="pb-2">
                       <CardTitle className="text-sm">입고금액</CardTitle>
                     </CardHeader>
@@ -529,7 +539,7 @@ export default function ImplantInventoryModal({ isOpen, onClose }: ImplantInvent
                       <div className="text-2xl font-bold">{statistics.totalStockInAmount.toLocaleString()}원</div>
                     </CardContent>
                   </Card>
-                  <Card>
+                  <Card className="border-0 shadow-sm bg-white">
                     <CardHeader className="pb-2">
                       <CardTitle className="text-sm">폐기수량</CardTitle>
                     </CardHeader>
@@ -542,7 +552,7 @@ export default function ImplantInventoryModal({ isOpen, onClose }: ImplantInvent
 
               {/* 통계 테이블 */}
               {statistics && (
-                <Card>
+                <Card className="border-0 shadow-sm bg-white">
                   <CardContent className="p-0">
                     <div className="overflow-x-auto">
                       {view === 'date' ? (
@@ -639,41 +649,48 @@ export default function ImplantInventoryModal({ isOpen, onClose }: ImplantInvent
         })}
         modal={true}
       >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>입고 등록</DialogTitle>
+        <DialogContent className="max-w-md border-0 shadow-lg">
+          <DialogHeader className="space-y-3">
+            <DialogTitle className="text-lg font-semibold flex items-center gap-3">
+              <div className="p-2 bg-blue-50 rounded-lg">
+                <Package className="w-5 h-5 text-blue-600" />
+              </div>
+              입고 등록
+            </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleStockIn} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">날짜*</label>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">날짜*</label>
               <Input
                 type="date"
                 value={stockInForm.date}
                 onChange={(e) => setStockInForm(prev => ({ ...prev, date: e.target.value }))}
                 required
+                className="border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">수량*</label>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">수량*</label>
               <Input
                 type="number"
                 min="1"
                 value={stockInForm.quantity}
                 onChange={(e) => setStockInForm(prev => ({ ...prev, quantity: e.target.value }))}
                 required
+                className="border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">비고</label>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">비고</label>
               <textarea
-                className="w-full p-2 border rounded-md"
+                className="w-full p-2 border border-gray-200 rounded-md resize-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 focus:outline-none"
                 rows={3}
                 value={stockInForm.notes}
                 onChange={(e) => setStockInForm(prev => ({ ...prev, notes: e.target.value }))}
               />
             </div>
-            <div className="flex space-x-2">
-              <Button type="submit">저장</Button>
+            <div className="flex space-x-2 pt-4">
+              <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white">저장</Button>
               <Button 
                 type="button" 
                 variant="outline" 
@@ -690,6 +707,7 @@ export default function ImplantInventoryModal({ isOpen, onClose }: ImplantInvent
                     document.body.style.pointerEvents = '';
                   }, 50);
                 }}
+                className="border-gray-200 hover:bg-gray-50"
               >
                 취소
               </Button>
@@ -716,41 +734,48 @@ export default function ImplantInventoryModal({ isOpen, onClose }: ImplantInvent
         })}
         modal={true}
       >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>출고 등록</DialogTitle>
+        <DialogContent className="max-w-md border-0 shadow-lg">
+          <DialogHeader className="space-y-3">
+            <DialogTitle className="text-lg font-semibold flex items-center gap-3">
+              <div className="p-2 bg-red-50 rounded-lg">
+                <Minus className="w-5 h-5 text-red-600" />
+              </div>
+              출고 등록
+            </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleStockOut} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">날짜*</label>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">날짜*</label>
               <Input
                 type="date"
                 value={stockOutForm.date}
                 onChange={(e) => setStockOutForm(prev => ({ ...prev, date: e.target.value }))}
                 required
+                className="border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">수량*</label>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">수량*</label>
               <Input
                 type="number"
                 min="1"
                 value={stockOutForm.quantity}
                 onChange={(e) => setStockOutForm(prev => ({ ...prev, quantity: e.target.value }))}
                 required
+                className="border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">출고사유*</label>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">출고사유*</label>
               <Select
                 value={stockOutForm.outReason}
                 onValueChange={(value) => setStockOutForm(prev => ({ ...prev, outReason: value }))}
                 required
               >
-                <SelectTrigger>
+                <SelectTrigger className="border-gray-200 hover:bg-gray-50">
                   <SelectValue placeholder="선택하세요" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="border-0 shadow-lg">
                   <SelectItem value="환자사용">환자사용</SelectItem>
                   <SelectItem value="폐기">폐기</SelectItem>
                   <SelectItem value="기타">기타</SelectItem>
@@ -759,43 +784,46 @@ export default function ImplantInventoryModal({ isOpen, onClose }: ImplantInvent
             </div>
             {stockOutForm.outReason === '환자사용' && (
               <>
-                <div>
-                  <label className="block text-sm font-medium mb-1">차트번호*</label>
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">차트번호*</label>
                   <Input
                     value={stockOutForm.chartNumber}
                     onChange={(e) => setStockOutForm(prev => ({ ...prev, chartNumber: e.target.value }))}
                     required
+                    className="border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">환자명*</label>
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">환자명*</label>
                   <Input
                     value={stockOutForm.patientName}
                     onChange={(e) => setStockOutForm(prev => ({ ...prev, patientName: e.target.value }))}
                     required
+                    className="border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">담당의*</label>
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">담당의*</label>
                   <Input
                     value={stockOutForm.doctor}
                     onChange={(e) => setStockOutForm(prev => ({ ...prev, doctor: e.target.value }))}
                     required
+                    className="border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
                   />
                 </div>
               </>
             )}
-            <div>
-              <label className="block text-sm font-medium mb-1">비고</label>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">비고</label>
               <textarea
-                className="w-full p-2 border rounded-md"
+                className="w-full p-2 border border-gray-200 rounded-md resize-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 focus:outline-none"
                 rows={3}
                 value={stockOutForm.notes}
                 onChange={(e) => setStockOutForm(prev => ({ ...prev, notes: e.target.value }))}
               />
             </div>
-            <div className="flex space-x-2">
-              <Button type="submit">저장</Button>
+            <div className="flex space-x-2 pt-4">
+              <Button type="submit" className="bg-red-600 hover:bg-red-700 text-white">저장</Button>
               <Button 
                 type="button" 
                 variant="outline" 
@@ -816,6 +844,7 @@ export default function ImplantInventoryModal({ isOpen, onClose }: ImplantInvent
                     document.body.style.pointerEvents = '';
                   }, 50);
                 }}
+                className="border-gray-200 hover:bg-gray-50"
               >
                 취소
               </Button>

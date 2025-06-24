@@ -174,10 +174,12 @@ export default function ExtraIncomeModal({ isOpen, onClose, onSuccess, defaultDa
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md border-0 shadow-lg">
         <DialogHeader className="space-y-3">
-          <DialogTitle className="text-lg font-semibold flex items-center gap-2">
-            <CreditCard className="w-5 h-5 text-primary" />
+          <DialogTitle className="text-lg font-semibold flex items-center gap-3">
+            <div className="p-2 bg-green-50 rounded-lg">
+              <CreditCard className="w-5 h-5 text-green-600" />
+            </div>
             {isEditMode ? '진료외수입 수정' : '진료외수입 등록'}
           </DialogTitle>
         </DialogHeader>
@@ -185,19 +187,19 @@ export default function ExtraIncomeModal({ isOpen, onClose, onSuccess, defaultDa
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* 날짜 선택 */}
           <div className="space-y-2">
-            <Label htmlFor="date" className="text-sm font-medium">
-              날짜 <span className="text-destructive">*</span>
+            <Label htmlFor="date" className="text-sm font-medium text-gray-700">
+              날짜 <span className="text-red-500">*</span>
             </Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !formData.date && "text-muted-foreground"
+                    "w-full justify-start text-left font-normal border-gray-200 hover:bg-gray-50",
+                    !formData.date && "text-gray-400"
                   )}
                 >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  <CalendarIcon className="mr-2 h-4 w-4 text-blue-600" />
                   {formData.date ? (
                     format(formData.date, 'PPP', { locale: ko })
                   ) : (
@@ -205,7 +207,7 @@ export default function ExtraIncomeModal({ isOpen, onClose, onSuccess, defaultDa
                   )}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
+              <PopoverContent className="w-auto p-0 border-0 shadow-lg">
                 <Calendar
                   mode="single"
                   selected={formData.date}
@@ -217,14 +219,14 @@ export default function ExtraIncomeModal({ isOpen, onClose, onSuccess, defaultDa
           
           {/* 수입 유형 선택 */}
           <div className="space-y-2">
-            <Label htmlFor="type" className="text-sm font-medium">
-              수입 유형 <span className="text-destructive">*</span>
+            <Label htmlFor="type" className="text-sm font-medium text-gray-700">
+              수입 유형 <span className="text-red-500">*</span>
             </Label>
             <Select value={formData.type} onValueChange={handleTypeChange}>
-              <SelectTrigger>
+              <SelectTrigger className="border-gray-200 hover:bg-gray-50">
                 <SelectValue placeholder="수입 유형을 선택하세요" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="border-0 shadow-lg">
                 {incomeTypes.map((type) => (
                   <SelectItem key={type._id} value={type.value}>
                     {type.value}
@@ -236,8 +238,8 @@ export default function ExtraIncomeModal({ isOpen, onClose, onSuccess, defaultDa
           
           {/* 금액 입력 */}
           <div className="space-y-2">
-            <Label htmlFor="amount" className="text-sm font-medium">
-              금액 <span className="text-destructive">*</span>
+            <Label htmlFor="amount" className="text-sm font-medium text-gray-700">
+              금액 <span className="text-red-500">*</span>
             </Label>
             <Input
               id="amount"
@@ -247,13 +249,13 @@ export default function ExtraIncomeModal({ isOpen, onClose, onSuccess, defaultDa
               onChange={handleChange}
               required
               placeholder="금액을 입력하세요"
-              className="text-right"
+              className="text-right border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
             />
           </div>
           
           {/* 비고 입력 */}
           <div className="space-y-2">
-            <Label htmlFor="notes" className="text-sm font-medium">비고</Label>
+            <Label htmlFor="notes" className="text-sm font-medium text-gray-700">비고</Label>
             <Textarea
               id="notes"
               name="notes"
@@ -261,7 +263,7 @@ export default function ExtraIncomeModal({ isOpen, onClose, onSuccess, defaultDa
               onChange={handleChange}
               placeholder="비고 사항을 입력하세요"
               rows={3}
-              className="resize-none"
+              className="resize-none border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
             />
           </div>
           
@@ -271,12 +273,14 @@ export default function ExtraIncomeModal({ isOpen, onClose, onSuccess, defaultDa
               variant="outline" 
               onClick={onClose}
               disabled={isLoading}
+              className="border-gray-200 hover:bg-gray-50"
             >
               취소
             </Button>
             <Button 
               type="submit" 
               disabled={isLoading}
+              className="bg-green-600 hover:bg-green-700 text-white"
             >
               {isLoading ? '처리 중...' : isEditMode ? '수정' : '등록'}
             </Button>

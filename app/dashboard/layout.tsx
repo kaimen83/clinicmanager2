@@ -12,18 +12,18 @@ export default function DashboardLayout({
 }>) {
   return (
     <DateProvider>
-      <div className="flex flex-col min-h-screen">
+      <div className="flex flex-col min-h-screen bg-gray-50">
         <Header />
         
-        <div className="flex-1 overflow-hidden">
+        <main className="flex-1">
           <DashboardContent>
             {children}
           </DashboardContent>
-        </div>
+        </main>
         
-        <footer className="border-t py-6 bg-white mt-auto">
-          <div className="container mx-auto text-center text-sm text-gray-500">
-            &copy; 2025 인천센터치과. All right reserved.
+        <footer className="border-t border-gray-200 py-6 bg-white">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm text-gray-500">
+            &copy; 2025 인천센터치과. All rights reserved.
           </div>
         </footer>
       </div>

@@ -735,15 +735,15 @@ export default function DoctorPatientList({ date }: Props) {
                       </TableHeader>
                       <TableBody style={{
                         display: 'block',
-                        height: '336px', // 7명의 환자가 보이도록 고정 높이 설정 (48px * 7 = 336px)
+                        height: '300px',
                         overflowY: 'auto',
                         width: '100%'
                       }}>
                         {groupedTransactions[doctor].map((transaction, index) => (
                           <TableRow key={transaction._id} style={{ display: 'table', width: '100%', tableLayout: 'fixed' }} className="hover:bg-blue-50/30 transition-colors">
-                            <TableCell className="py-2 w-12">{index + 1}</TableCell>
-                            <TableCell className="py-2 w-24">{transaction.chartNumber}</TableCell>
-                            <TableCell className="py-2 w-32">
+                            <TableCell className="py-1.5 w-12">{index + 1}</TableCell>
+                            <TableCell className="py-1.5 w-24">{transaction.chartNumber}</TableCell>
+                            <TableCell className="py-1.5 w-32">
                               <div className="flex items-center gap-1">
                                 {transaction.patientName}
                                 {transaction.isNew && (
@@ -751,20 +751,20 @@ export default function DoctorPatientList({ date }: Props) {
                                 )}
                               </div>
                             </TableCell>
-                            <TableCell className="py-2 truncate">
+                            <TableCell className="py-1.5 truncate">
                               {transaction.treatments && transaction.treatments.length > 0 
                                 ? transaction.treatments[0].treatmentType
                                 : transaction.treatmentType
                               }
                             </TableCell>
-                            <TableCell className="py-2 text-right w-28 font-semibold text-blue-700">
+                            <TableCell className="py-1.5 text-right w-28 font-semibold text-blue-700">
                               {transaction.treatments && transaction.treatments.length > 0 
                                 ? `${formatAmount(transaction.treatments[0].paymentAmount)}원`
                                 : `${formatAmount(transaction.paymentAmount)}원`
                               }
                             </TableCell>
-                            <TableCell className="py-2 w-44">{formatPaymentMethod(transaction)}</TableCell>
-                            <TableCell className="py-2 text-right w-24">
+                            <TableCell className="py-1.5 w-44">{formatPaymentMethod(transaction)}</TableCell>
+                            <TableCell className="py-1.5 text-right w-24">
                               <div className="flex justify-end gap-1">
                                 <Button 
                                   variant="ghost" 

@@ -353,29 +353,31 @@ export default function DentalProductInventoryModal({ isOpen, onClose }: Props) 
         onOpenChange={createSafeOnOpenChange(onClose)}
         modal={true}
       >
-        <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto border-0 shadow-lg">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Package className="w-5 h-5" />
+            <DialogTitle className="flex items-center gap-3">
+              <div className="p-2 bg-cyan-50 rounded-lg">
+                <Package className="w-5 h-5 text-cyan-600" />
+              </div>
               구강용품 수불부
             </DialogTitle>
           </DialogHeader>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="inventory">재고관리</TabsTrigger>
-              <TabsTrigger value="statistics">판매통계</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 bg-gray-50 border-0">
+              <TabsTrigger value="inventory" className="data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm">재고관리</TabsTrigger>
+              <TabsTrigger value="statistics" className="data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm">판매통계</TabsTrigger>
             </TabsList>
 
             {/* 재고관리 탭 */}
-            <TabsContent value="inventory" className="space-y-4">
-              <Card>
+            <TabsContent value="inventory" className="space-y-6">
+              <Card className="border-0 shadow-sm bg-white">
                 <CardHeader>
-                  <CardTitle>재고 현황</CardTitle>
+                  <CardTitle className="text-lg font-semibold text-gray-900">재고 현황</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {/* 검색 및 필터 */}
-                  <div className="flex gap-4 mb-4">
+                  <div className="flex gap-4 mb-6">
                     <div className="flex-1">
                       <div className="relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -383,7 +385,7 @@ export default function DentalProductInventoryModal({ isOpen, onClose }: Props) 
                           placeholder="품목명, 제조사, 규격 검색..."
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
-                          className="pl-10"
+                          className="pl-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
                         />
                       </div>
                     </div>
@@ -393,14 +395,14 @@ export default function DentalProductInventoryModal({ isOpen, onClose }: Props) 
                         id="lowStockFilter"
                         checked={showLowStockOnly}
                         onChange={(e) => setShowLowStockOnly(e.target.checked)}
-                        className="rounded"
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500/20"
                       />
-                      <Label htmlFor="lowStockFilter">재고 부족 상품만</Label>
+                      <Label htmlFor="lowStockFilter" className="text-sm font-medium text-gray-700">재고 부족 상품만</Label>
                     </div>
                   </div>
 
                   {/* 재고 테이블 */}
-                  <div className="border rounded-md">
+                  <div className="border border-gray-200 rounded-lg shadow-sm">
                     <Table>
                       <TableHeader>
                         <TableRow>
@@ -458,6 +460,7 @@ export default function DentalProductInventoryModal({ isOpen, onClose }: Props) 
                                       size="sm"
                                       variant="outline"
                                       onClick={() => handleStockModalOpen(product, 'IN')}
+                                      className="border-gray-200 hover:bg-blue-50 hover:border-blue-300 text-gray-700 hover:text-blue-700"
                                     >
                                       <Plus className="w-3 h-3 mr-1" />
                                       입고
@@ -466,6 +469,7 @@ export default function DentalProductInventoryModal({ isOpen, onClose }: Props) 
                                       size="sm"
                                       variant="outline"
                                       onClick={() => handleStockModalOpen(product, 'OUT')}
+                                      className="border-gray-200 hover:bg-red-50 hover:border-red-300 text-gray-700 hover:text-red-700"
                                     >
                                       <Minus className="w-3 h-3 mr-1" />
                                       출고
@@ -498,35 +502,37 @@ export default function DentalProductInventoryModal({ isOpen, onClose }: Props) 
             </TabsContent>
 
             {/* 판매통계 탭 */}
-            <TabsContent value="statistics" className="space-y-4">
-              <Card>
+            <TabsContent value="statistics" className="space-y-6">
+              <Card className="border-0 shadow-sm bg-white">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5" />
+                  <CardTitle className="flex items-center gap-3">
+                    <div className="p-2 bg-emerald-50 rounded-lg">
+                      <TrendingUp className="w-5 h-5 text-emerald-600" />
+                    </div>
                     판매 통계
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   {/* 기간 선택 및 뷰 전환 */}
-                  <div className="flex justify-between items-center mb-4">
+                  <div className="flex justify-between items-center mb-6">
                     <div className="flex gap-4 items-center">
                       <div className="flex gap-2 items-center">
-                        <Label>기간:</Label>
+                        <Label className="text-sm font-medium text-gray-700">기간:</Label>
                         <Input
                           type="date"
                           value={dateRange.start}
                           onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-                          className="w-40"
+                          className="w-40 border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
                         />
-                        <span>~</span>
+                        <span className="text-gray-500">~</span>
                         <Input
                           type="date"
                           value={dateRange.end}
                           onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-                          className="w-40"
+                          className="w-40 border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
                         />
                       </div>
-                      <Button onClick={loadStatistics} size="sm">
+                      <Button onClick={loadStatistics} size="sm" className="bg-blue-600 hover:bg-blue-700 text-white">
                         조회
                       </Button>
                     </div>
@@ -535,6 +541,7 @@ export default function DentalProductInventoryModal({ isOpen, onClose }: Props) 
                         variant={statisticsView === 'date' ? 'default' : 'outline'}
                         size="sm"
                         onClick={() => setStatisticsView('date')}
+                        className={statisticsView === 'date' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'border-gray-200 hover:bg-gray-50 text-gray-700'}
                       >
                         날짜별 보기
                       </Button>
@@ -542,6 +549,7 @@ export default function DentalProductInventoryModal({ isOpen, onClose }: Props) 
                         variant={statisticsView === 'product' ? 'default' : 'outline'}
                         size="sm"
                         onClick={() => setStatisticsView('product')}
+                        className={statisticsView === 'product' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'border-gray-200 hover:bg-gray-50 text-gray-700'}
                       >
                         품목별 보기
                       </Button>
@@ -724,22 +732,29 @@ export default function DentalProductInventoryModal({ isOpen, onClose }: Props) 
         })}
         modal={true}
       >
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md border-0 shadow-lg">
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className="flex items-center gap-3">
+              <div className={`p-2 rounded-lg ${stockModalType === 'IN' ? 'bg-blue-50' : 'bg-red-50'}`}>
+                {stockModalType === 'IN' ? (
+                  <Plus className={`w-5 h-5 ${stockModalType === 'IN' ? 'text-blue-600' : 'text-red-600'}`} />
+                ) : (
+                  <Minus className={`w-5 h-5 ${stockModalType === 'IN' ? 'text-blue-600' : 'text-red-600'}`} />
+                )}
+              </div>
               {stockModalType === 'IN' ? '입고 등록' : '출고 등록'}
             </DialogTitle>
           </DialogHeader>
           
-          <form onSubmit={handleStockSubmit} className="space-y-4">
+          <form onSubmit={handleStockSubmit} className="space-y-6">
             <div>
-              <Label>품목명</Label>
-              <Input value={selectedProduct?.name || ''} disabled />
+              <Label className="text-sm font-medium text-gray-700">품목명</Label>
+              <Input value={selectedProduct?.name || ''} disabled className="bg-gray-50 border-gray-200" />
             </div>
 
             {/* 현재 재고량 표시 (출고 시에만) */}
             {stockModalType === 'OUT' && selectedProduct && (
-              <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium text-blue-800">현재 재고량</span>
                   <span className="text-lg font-bold text-blue-900">
@@ -755,8 +770,8 @@ export default function DentalProductInventoryModal({ isOpen, onClose }: Props) 
             )}
             
             <div>
-              <Label htmlFor="quantity">
-                수량 * 
+              <Label htmlFor="quantity" className="text-sm font-medium text-gray-700">
+                수량 <span className="text-red-500">*</span>
                 {stockModalType === 'OUT' && selectedProduct && (
                   <span className="text-sm text-gray-500 ml-2">
                     (최대 {selectedProduct.stock}개)
@@ -783,13 +798,13 @@ export default function DentalProductInventoryModal({ isOpen, onClose }: Props) 
                   }}
                   required
                   placeholder={stockModalType === 'OUT' ? `1 ~ ${selectedProduct?.stock || 0}` : '수량 입력'}
-                  className={
+                  className={`border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 ${
                     stockModalType === 'OUT' && 
                     selectedProduct && 
                     parseInt(stockFormData.quantity) > selectedProduct.stock
-                      ? 'border-red-500 focus:border-red-500'
+                      ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
                       : ''
-                  }
+                  }`}
                 />
                 {/* 실시간 유효성 검사 메시지 */}
                 {stockModalType === 'OUT' && 
@@ -804,26 +819,28 @@ export default function DentalProductInventoryModal({ isOpen, onClose }: Props) 
             
             {stockModalType === 'IN' ? (
               <div>
-                <Label htmlFor="price">매입가 (선택)</Label>
+                <Label htmlFor="price" className="text-sm font-medium text-gray-700">매입가 (선택)</Label>
                 <Input
                   id="price"
                   type="number"
                   min="0"
                   value={stockFormData.price}
                   onChange={(e) => setStockFormData(prev => ({ ...prev, price: e.target.value }))}
+                  className="border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
+                  placeholder="매입가 입력"
                 />
               </div>
             ) : (
               <div>
-                <Label htmlFor="reason">출고사유 *</Label>
+                <Label htmlFor="reason" className="text-sm font-medium text-gray-700">출고사유 <span className="text-red-500">*</span></Label>
                 <Select 
                   value={stockFormData.reason} 
                   onValueChange={(value) => setStockFormData(prev => ({ ...prev, reason: value }))}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="border-gray-200 hover:bg-gray-50">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="border-0 shadow-lg">
                     <SelectItem value="판매">판매</SelectItem>
                     <SelectItem value="폐기">폐기</SelectItem>
                     <SelectItem value="기타">기타</SelectItem>
@@ -833,29 +850,18 @@ export default function DentalProductInventoryModal({ isOpen, onClose }: Props) 
             )}
             
             <div>
-              <Label htmlFor="notes">비고</Label>
+              <Label htmlFor="notes" className="text-sm font-medium text-gray-700">비고</Label>
               <Textarea
                 id="notes"
                 value={stockFormData.notes}
                 onChange={(e) => setStockFormData(prev => ({ ...prev, notes: e.target.value }))}
                 rows={3}
+                className="resize-none border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
+                placeholder="비고 사항을 입력하세요"
               />
             </div>
             
             <div className="flex gap-2 pt-4">
-              <Button 
-                type="submit" 
-                className="flex-1"
-                disabled={(() => {
-                  if (!stockFormData.quantity) return true;
-                  const quantity = Number(stockFormData.quantity);
-                  if (isNaN(quantity) || quantity <= 0) return true;
-                  if (stockModalType === 'OUT' && selectedProduct && quantity > selectedProduct.stock) return true;
-                  return false;
-                })()}
-              >
-                저장
-              </Button>
               <Button 
                 type="button" 
                 variant="outline" 
@@ -873,9 +879,22 @@ export default function DentalProductInventoryModal({ isOpen, onClose }: Props) 
                     document.body.style.pointerEvents = '';
                   }, 50);
                 }}
-                className="flex-1"
+                className="flex-1 border-gray-200 hover:bg-gray-50"
               >
                 취소
+              </Button>
+              <Button 
+                type="submit" 
+                className={`flex-1 text-white ${stockModalType === 'IN' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-red-600 hover:bg-red-700'}`}
+                disabled={(() => {
+                  if (!stockFormData.quantity) return true;
+                  const quantity = Number(stockFormData.quantity);
+                  if (isNaN(quantity) || quantity <= 0) return true;
+                  if (stockModalType === 'OUT' && selectedProduct && quantity > selectedProduct.stock) return true;
+                  return false;
+                })()}
+              >
+                저장
               </Button>
             </div>
           </form>
