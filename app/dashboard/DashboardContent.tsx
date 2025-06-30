@@ -7,10 +7,11 @@ import DoctorPatientList from '@/components/DoctorPatientList';
 import ClinicStats from '@/components/ClinicStats';
 import ExtraIncomeList from '@/components/ExtraIncomeList';
 import ExpenseList from '@/components/ExpenseList';
+import DailySettlementModal from '@/components/DailySettlementModal';
 
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { TrendingUp, Wallet } from 'lucide-react';
+import { TrendingUp, Wallet, Calculator } from 'lucide-react';
 
 type Props = {
   children?: ReactNode;
@@ -18,6 +19,7 @@ type Props = {
 
 export default function DashboardContent({ children: _ }: Props) {
   const { selectedDate } = useDateContext();
+  const [isDailySettlementModalOpen, setIsDailySettlementModalOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -36,11 +38,22 @@ export default function DashboardContent({ children: _ }: Props) {
             {/* Stats Card */}
             <Card className="border-0 shadow-sm bg-white">
               <div className="p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-blue-50 rounded-lg">
-                    <TrendingUp className="h-5 w-5 text-blue-600" />
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-50 rounded-lg">
+                      <TrendingUp className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900">진료 통계</h3>
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900">진료 통계</h3>
+                  <Button
+                    onClick={() => setIsDailySettlementModalOpen(true)}
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-2 hover:bg-blue-50 hover:border-blue-300"
+                  >
+                    <Calculator className="h-4 w-4" />
+                    일일결산
+                  </Button>
                 </div>
                 <ClinicStats date={selectedDate} />
               </div>
@@ -61,6 +74,13 @@ export default function DashboardContent({ children: _ }: Props) {
           </div>
         </div>
       </div>
+      
+      {/* Daily Settlement Modal */}
+      <DailySettlementModal
+        isOpen={isDailySettlementModalOpen}
+        onClose={() => setIsDailySettlementModalOpen(false)}
+        date={selectedDate}
+      />
     </div>
   );
 } 
