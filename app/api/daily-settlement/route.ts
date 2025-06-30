@@ -46,6 +46,18 @@ export async function GET(request: NextRequest) {
       acc[method].transactions.push(t);
       return acc;
     }, {});
+
+    // 카드 결제 세부 정보 (카드사별 그룹화)
+    const cardTransactions = transactions.filter(t => t.paymentMethod === '카드');
+    const cardByCompany = cardTransactions.reduce((acc, t) => {
+      const company = t.cardCompany || '기타카드';
+      if (!acc[company]) {
+        acc[company] = { count: 0, amount: 0 };
+      }
+      acc[company].count += 1;
+      acc[company].amount += Number(t.paymentAmount) || 0;
+      return acc;
+    }, {});
     
     // 2. 지출내역
     const dateParts = date.split('-').map(Number);
@@ -65,6 +77,33 @@ export async function GET(request: NextRequest) {
       .find({
         date: { $gte: startDate, $lte: endDate }
       })
+      .toArray();
+    
+    // 현금 흐름 계산
+    const cashIncome = cashRecords
+      .filter(record => record.type === '수입')
+      .reduce((sum, record) => sum + (Number(record.amount) || 0), 0);
+    
+    const cashExpense = cashRecords
+      .filter(record => record.type === '지출')
+      .reduce((sum, record) => sum + (Number(record.amount) || 0), 0);
+    
+    const bankDeposit = cashRecords
+      .filter(record => record.type === '통장입금')
+      .reduce((sum, record) => sum + (Number(record.amount) || 0), 0);
+    
+    // 이전 날짜의 마지막 잔액 조회 (시작 잔액으로 사용)
+    const previousDate = new Date(startDate);
+    previousDate.setDate(previousDate.getDate() - 1);
+    const previousEndDate = new Date(previousDate);
+    previousEndDate.setHours(23, 59, 59, 999);
+    
+    const previousCashRecords = await db.collection('cashrecords')
+      .find({
+        date: { $lte: previousEndDate }
+      })
+      .sort({ date: -1 })
+      .limit(1)
       .toArray();
     
     // 4. 임플란트 식립수 및 입출고
@@ -109,6 +148,13 @@ export async function GET(request: NextRequest) {
       })
       .toArray();
     
+    // 신환수 계산 (오늘 처음 방문한 환자)
+    const newPatients = await db.collection('patients')
+      .find({
+        createdAt: { $gte: startDate, $lte: endDate }
+      })
+      .toArray();
+    
     // 응답 데이터 구성
     const settlementData = {
       date,
@@ -116,6 +162,7 @@ export async function GET(request: NextRequest) {
       // 1. 수입내역
       income: {
         paymentByMethod,
+        cardByCompany,
         totalAmount: transactions.reduce((sum, t) => sum + (Number(t.paymentAmount) || 0), 0),
         extraIncomes,
         extraIncomeTotal: extraIncomes.reduce((sum, income) => sum + (Number(income.amount) || 0), 0)
@@ -128,7 +175,17 @@ export async function GET(request: NextRequest) {
       },
       
       // 3. 데스크 현금시재
-      cashRecords,
+      cashRecords: {
+        records: cashRecords,
+        summary: {
+          cashIncome,
+          cashExpense,
+          bankDeposit,
+          netCash: cashIncome - cashExpense - bankDeposit,
+          startBalance: 0, // 이전 잔액 계산 로직 필요
+          endBalance: cashIncome - cashExpense - bankDeposit
+        }
+      },
       
       // 4. 임플란트 관련
       implant: {
@@ -160,7 +217,10 @@ export async function GET(request: NextRequest) {
         nonAgreed: consultations.filter(c => c.agreed === false),
         agreedAmount: consultations.filter(c => c.agreed === true).reduce((sum, c) => sum + (Number(c.amount) || 0), 0),
         nonAgreedAmount: consultations.filter(c => c.agreed === false).reduce((sum, c) => sum + (Number(c.amount) || 0), 0)
-      }
+      },
+      
+      // 8. 신환수
+      newPatientCount: newPatients.length
     };
     
     return NextResponse.json(settlementData);

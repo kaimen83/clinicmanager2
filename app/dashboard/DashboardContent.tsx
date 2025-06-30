@@ -18,7 +18,7 @@ type Props = {
 };
 
 export default function DashboardContent({ children: _ }: Props) {
-  const { selectedDate } = useDateContext();
+  const { selectedDate, setSelectedDate } = useDateContext();
   const [isDailySettlementModalOpen, setIsDailySettlementModalOpen] = useState(false);
 
   return (
@@ -80,6 +80,9 @@ export default function DashboardContent({ children: _ }: Props) {
         isOpen={isDailySettlementModalOpen}
         onClose={() => setIsDailySettlementModalOpen(false)}
         date={selectedDate}
+        onDateChange={(newDate) => {
+          setSelectedDate(newDate);
+        }}
       />
     </div>
   );

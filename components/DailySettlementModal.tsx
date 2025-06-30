@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { toISODateString } from '@/lib/utils';
 import { 
   CreditCard, 
@@ -19,7 +20,10 @@ import {
   Package, 
   Receipt, 
   Users,
-  Calculator 
+  UserPlus,
+  Calculator,
+  ChevronLeft,
+  ChevronRight 
 } from 'lucide-react';
 
 type PaymentMethodData = {
@@ -32,6 +36,7 @@ type SettlementData = {
   date: string;
   income: {
     paymentByMethod: Record<string, PaymentMethodData>;
+    cardByCompany: Record<string, { count: number; amount: number }>;
     totalAmount: number;
     extraIncomes: any[];
     extraIncomeTotal: number;
@@ -40,7 +45,17 @@ type SettlementData = {
     items: any[];
     totalAmount: number;
   };
-  cashRecords: any[];
+  cashRecords: {
+    records: any[];
+    summary: {
+      cashIncome: number;
+      cashExpense: number;
+      bankDeposit: number;
+      netCash: number;
+      startBalance: number;
+      endBalance: number;
+    };
+  };
   implant: {
     placementCount: number;
     placementDetails: any[];
@@ -65,15 +80,17 @@ type SettlementData = {
     agreedAmount: number;
     nonAgreedAmount: number;
   };
+  newPatientCount: number;
 };
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
   date: Date;
+  onDateChange?: (date: Date) => void;
 };
 
-export default function DailySettlementModal({ isOpen, onClose, date }: Props) {
+export default function DailySettlementModal({ isOpen, onClose, date, onDateChange }: Props) {
   const [data, setData] = useState<SettlementData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -143,20 +160,56 @@ export default function DailySettlementModal({ isOpen, onClose, date }: Props) {
   if (!data) return null;
 
   const totalIncome = data.income.totalAmount + data.income.extraIncomeTotal;
-  const netProfit = totalIncome - data.expenses.totalAmount;
   const patientCount = Object.values(data.income.paymentByMethod).reduce((sum, method) => sum + method.count, 0);
+  
+  const handlePreviousDay = () => {
+    if (onDateChange) {
+      const newDate = new Date(date);
+      newDate.setDate(newDate.getDate() - 1);
+      onDateChange(newDate);
+    }
+  };
+  
+  const handleNextDay = () => {
+    if (onDateChange) {
+      const newDate = new Date(date);
+      newDate.setDate(newDate.getDate() + 1);
+      onDateChange(newDate);
+    }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-7xl max-h-[95vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Calculator className="h-6 w-6" />
-            일일결산 - {date.toLocaleDateString('ko-KR', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-            })}
+          <DialogTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Calculator className="h-6 w-6" />
+              일일결산
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handlePreviousDay}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="text-base font-medium px-3">
+                {date.toLocaleDateString('ko-KR', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                })}
+              </span>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleNextDay}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
           </DialogTitle>
         </DialogHeader>
         
@@ -191,12 +244,10 @@ export default function DailySettlementModal({ isOpen, onClose, date }: Props) {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600">순익</p>
-                    <p className={`text-2xl font-bold ${netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      ₩{formatAmount(netProfit)}
-                    </p>
+                    <p className="text-sm text-gray-600">신환수</p>
+                    <p className="text-2xl font-bold text-green-600">{data.newPatientCount}명</p>
                   </div>
-                  <Calculator className="h-8 w-8 text-green-500" />
+                  <UserPlus className="h-8 w-8 text-green-500" />
                 </div>
               </CardContent>
             </Card>
@@ -230,14 +281,26 @@ export default function DailySettlementModal({ isOpen, onClose, date }: Props) {
                 <CardContent>
                   <div className="space-y-3">
                     {Object.entries(data.income.paymentByMethod).map(([method, details]) => (
-                      <div key={method} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                        <div>
-                          <p className="font-semibold">{method}</p>
-                          <p className="text-sm text-gray-600">{details.count}건</p>
+                      <div key={method}>
+                        <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                          <div>
+                            <p className="font-semibold">{method}</p>
+                            <p className="text-sm text-gray-600">{details.count}건</p>
+                          </div>
+                          <p className="font-bold text-blue-600">
+                            ₩{formatAmount(details.amount)}
+                          </p>
                         </div>
-                        <p className="font-bold text-blue-600">
-                          ₩{formatAmount(details.amount)}
-                        </p>
+                        {method === '카드' && data.income.cardByCompany && Object.keys(data.income.cardByCompany).length > 0 && (
+                          <div className="ml-4 mt-2 space-y-1">
+                            {Object.entries(data.income.cardByCompany).map(([company, info]) => (
+                              <div key={company} className="flex justify-between items-center p-2 bg-blue-50 rounded text-sm">
+                                <span className="text-gray-700">{company}</span>
+                                <span className="font-medium">₩{formatAmount(info.amount)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     ))}
                     
@@ -276,11 +339,18 @@ export default function DailySettlementModal({ isOpen, onClose, date }: Props) {
                     <div className="space-y-2 max-h-60 overflow-y-auto">
                       {data.expenses.items.map((expense, index) => (
                         <div key={index} className="flex justify-between items-center p-2 border rounded">
-                          <div>
-                            <p className="font-semibold text-sm">{expense.category}</p>
-                            <p className="text-xs text-gray-600">{expense.description}</p>
+                          <div className="flex-1">
+                            <p className="font-semibold text-sm">{expense.details || expense.description || '지출'}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <p className="text-xs text-gray-600">{expense.vendor || expense.category || ''}</p>
+                              {expense.method && (
+                                <Badge variant="outline" className="text-xs">
+                                  {expense.method}
+                                </Badge>
+                              )}
+                            </div>
                           </div>
-                          <span className="font-bold text-red-600">
+                          <span className="font-bold text-red-600 ml-2">
                             ₩{formatAmount(expense.amount)}
                           </span>
                         </div>
@@ -396,26 +466,63 @@ export default function DailySettlementModal({ isOpen, onClose, date }: Props) {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {data.cashRecords.length > 0 ? (
-                    <div className="space-y-3">
-                      {data.cashRecords.map((record, index) => (
-                        <div key={index} className="p-3 border rounded-lg">
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <p className="text-xs text-gray-600">시작</p>
-                              <p className="font-bold">₩{formatAmount(record.startAmount || 0)}</p>
-                            </div>
-                            <div>
-                              <p className="text-xs text-gray-600">종료</p>
-                              <p className="font-bold">₩{formatAmount(record.endAmount || 0)}</p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+                  <div className="space-y-3">
+                    {/* 현금 흐름 요약 */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="p-2 bg-green-50 rounded">
+                        <p className="text-xs text-gray-600">현금수입</p>
+                        <p className="font-bold text-green-600">₩{formatAmount(data.cashRecords.summary.cashIncome)}</p>
+                      </div>
+                      <div className="p-2 bg-red-50 rounded">
+                        <p className="text-xs text-gray-600">현금지출</p>
+                        <p className="font-bold text-red-600">₩{formatAmount(data.cashRecords.summary.cashExpense)}</p>
+                      </div>
+                      <div className="p-2 bg-blue-50 rounded">
+                        <p className="text-xs text-gray-600">통장입금</p>
+                        <p className="font-bold text-blue-600">₩{formatAmount(data.cashRecords.summary.bankDeposit)}</p>
+                      </div>
+                      <div className="p-2 bg-gray-50 rounded">
+                        <p className="text-xs text-gray-600">현금잔액</p>
+                        <p className="font-bold">₩{formatAmount(data.cashRecords.summary.netCash)}</p>
+                      </div>
                     </div>
-                  ) : (
-                    <p className="text-center text-gray-500 py-8 text-sm">현금시재 기록이 없습니다.</p>
-                  )}
+                    
+                    {/* 상세 내역 */}
+                    {data.cashRecords.records.length > 0 && (
+                      <div className="border-t pt-2">
+                        <p className="text-xs font-semibold text-gray-700 mb-2">상세내역</p>
+                        <div className="space-y-1 max-h-32 overflow-y-auto">
+                          {data.cashRecords.records.slice(0, 5).map((record, index) => (
+                            <div key={index} className="flex justify-between items-center p-1 text-xs">
+                              <div className="flex items-center gap-2">
+                                <Badge 
+                                  variant={record.type === '수입' ? 'default' : record.type === '지출' ? 'destructive' : 'secondary'}
+                                  className="text-xs px-1 py-0"
+                                >
+                                  {record.type}
+                                </Badge>
+                                <span className="text-gray-600 truncate max-w-[120px]">
+                                  {record.description || '-'}
+                                </span>
+                              </div>
+                              <span className={`font-medium ${
+                                record.type === '수입' ? 'text-green-600' : 
+                                record.type === '지출' ? 'text-red-600' : 
+                                'text-blue-600'
+                              }`}>
+                                {record.type === '지출' ? '-' : ''}₩{formatAmount(record.amount)}
+                              </span>
+                            </div>
+                          ))}
+                          {data.cashRecords.records.length > 5 && (
+                            <p className="text-xs text-gray-500 text-center pt-1">
+                              외 {data.cashRecords.records.length - 5}건
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
 
