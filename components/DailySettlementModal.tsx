@@ -48,25 +48,22 @@ type SettlementData = {
   cashRecords: {
     records: any[];
     summary: {
+      previousBalance: number;
       cashIncome: number;
       cashExpense: number;
       bankDeposit: number;
       netCash: number;
-      startBalance: number;
       endBalance: number;
     };
   };
   implant: {
-    placementCount: number;
-    placementDetails: any[];
-    inventoryLogs: any[];
-    inCount: number;
-    outCount: number;
+    implantCount: number;
+    fixtureCount: number;
+    placements: any[];
   };
   dentalProducts: {
+    sales: any[];
     inventoryLogs: any[];
-    inCount: number;
-    outCount: number;
   };
   cashReceipts: {
     transactions: any[];
@@ -375,36 +372,61 @@ export default function DailySettlementModal({ isOpen, onClose, date, onDateChan
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center gap-2 text-lg">
-                    <Zap className="h-5 w-5" />
-                    임플란트
+                    🦷 임플란트
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-3 gap-3 mb-4">
+                  <div className="grid grid-cols-2 gap-3 mb-4">
                     <div className="p-3 bg-blue-50 rounded-lg text-center">
                       <p className="text-xs text-gray-600">식립수</p>
-                      <p className="text-xl font-bold text-blue-600">{data.implant.placementCount}</p>
+                      <p className="text-xl font-bold text-blue-600">{data.implant.implantCount}</p>
                     </div>
                     <div className="p-3 bg-green-50 rounded-lg text-center">
-                      <p className="text-xs text-gray-600">입고</p>
-                      <p className="text-xl font-bold text-green-600">{data.implant.inCount}</p>
-                    </div>
-                    <div className="p-3 bg-red-50 rounded-lg text-center">
-                      <p className="text-xs text-gray-600">출고</p>
-                      <p className="text-xl font-bold text-red-600">{data.implant.outCount}</p>
+                      <p className="text-xs text-gray-600">이식재</p>
+                      <p className="text-xl font-bold text-green-600">{data.implant.fixtureCount}</p>
                     </div>
                   </div>
 
-                  {data.implant.placementDetails.length > 0 && (
-                    <div className="space-y-2 max-h-32 overflow-y-auto">
-                      <p className="font-semibold text-sm mb-2">식립 상세</p>
-                      {data.implant.placementDetails.map((detail, index) => (
-                        <div key={index} className="flex justify-between items-center p-2 bg-blue-50 rounded text-sm">
-                          <span>{detail.patientName}</span>
-                          <Badge variant="secondary" className="text-xs">{detail.quantity}개</Badge>
+                  {data.implant.placements.length > 0 ? (
+                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                      <p className="font-semibold text-sm mb-2">환자별 식립 내역</p>
+                      {data.implant.placements.map((placement, index) => (
+                        <div key={index} className="p-3 bg-blue-50 rounded-lg">
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="font-semibold text-sm">{placement.patientName}</span>
+                            <span className="text-xs text-gray-600">{placement.doctor}</span>
+                          </div>
+                          
+                          {/* 임플란트 상세 */}
+                          {placement.implants && placement.implants.length > 0 && (
+                            <div className="mb-2">
+                              <p className="text-xs text-gray-700 mb-1">임플란트:</p>
+                              {placement.implants.map((implant, idx) => (
+                                <div key={idx} className="flex justify-between items-center text-xs bg-white p-2 rounded mb-1">
+                                  <span>{implant.manufacturer} {implant.specification || ''}</span>
+                                  <Badge variant="outline" className="text-xs">{implant.quantity}개</Badge>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          
+                          {/* 이식재 상세 */}
+                          {placement.fixtures && placement.fixtures.length > 0 && (
+                            <div>
+                              <p className="text-xs text-gray-700 mb-1">이식재:</p>
+                              {placement.fixtures.map((fixture, idx) => (
+                                <div key={idx} className="flex justify-between items-center text-xs bg-white p-2 rounded mb-1">
+                                  <span>{fixture.type} {fixture.specification || ''}</span>
+                                  <Badge variant="outline" className="text-xs">{fixture.quantity}개</Badge>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
+                  ) : (
+                    <p className="text-center text-gray-500 py-4 text-sm">임플란트 식립 내역이 없습니다.</p>
                   )}
                 </CardContent>
               </Card>
@@ -418,38 +440,51 @@ export default function DailySettlementModal({ isOpen, onClose, date, onDateChan
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 gap-3 mb-4">
-                    <div className="p-3 bg-green-50 rounded-lg text-center">
-                      <p className="text-xs text-gray-600">입고</p>
-                      <p className="text-xl font-bold text-green-600">{data.dentalProducts.inCount}</p>
-                    </div>
-                    <div className="p-3 bg-red-50 rounded-lg text-center">
-                      <p className="text-xs text-gray-600">출고</p>
-                      <p className="text-xl font-bold text-red-600">{data.dentalProducts.outCount}</p>
-                    </div>
-                  </div>
-
-                  {data.dentalProducts.inventoryLogs.length > 0 ? (
-                    <div className="space-y-2 max-h-40 overflow-y-auto">
-                      {data.dentalProducts.inventoryLogs.slice(0, 5).map((log, index) => (
-                        <div key={index} className="flex justify-between items-center p-2 border rounded text-sm">
-                          <div className="flex items-center gap-2">
-                            <span className={`px-2 py-1 rounded text-xs ${
-                              log.type === 'in' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                            }`}>
-                              {log.type === 'in' ? '입고' : '출고'}
-                            </span>
-                            <span className="text-xs">{log.notes || '구강용품'}</span>
+                  {/* 환자별 구매 내역 */}
+                  {data.dentalProducts.sales.length > 0 && (
+                    <div className="mb-4">
+                      <p className="font-semibold text-sm mb-2">환자별 구매 내역</p>
+                      <div className="space-y-2 max-h-40 overflow-y-auto">
+                        {data.dentalProducts.sales.map((sale, index) => (
+                          <div key={index} className="p-3 bg-purple-50 rounded-lg">
+                            <div className="flex justify-between items-center mb-2">
+                              <span className="font-semibold text-sm">{sale.patientName}</span>
+                              <span className="font-bold text-purple-600">₩{formatAmount(sale.totalAmount)}</span>
+                            </div>
+                            <div className="space-y-1">
+                              {sale.products && sale.products.map((product, idx) => (
+                                <div key={idx} className="flex justify-between items-center text-xs bg-white p-2 rounded">
+                                  <span>{product.name} - {product.manufacturer}</span>
+                                  <div className="flex items-center gap-2">
+                                    <Badge variant="outline" className="text-xs">{product.quantity}개</Badge>
+                                    <span className="font-medium">₩{formatAmount(product.salePrice * product.quantity)}</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
                           </div>
-                          <Badge variant="outline" className="text-xs">{log.quantity}</Badge>
-                        </div>
-                      ))}
-                      {data.dentalProducts.inventoryLogs.length > 5 && (
-                        <p className="text-xs text-gray-500 text-center">외 {data.dentalProducts.inventoryLogs.length - 5}건</p>
-                      )}
+                        ))}
+                      </div>
                     </div>
-                  ) : (
-                    <p className="text-center text-gray-500 py-4 text-sm">입출고 내역이 없습니다.</p>
+                  )}
+
+                  {/* 입고 내역 */}
+                  {data.dentalProducts.inventoryLogs.length > 0 && (
+                    <div>
+                      <p className="font-semibold text-sm mb-2">입고 내역</p>
+                      <div className="space-y-2 max-h-32 overflow-y-auto">
+                        {data.dentalProducts.inventoryLogs.map((log, index) => (
+                          <div key={index} className="flex justify-between items-center p-2 bg-green-50 rounded text-sm">
+                            <span className="text-sm">{log.notes || '구강용품'}</span>
+                            <Badge variant="outline" className="text-xs">{log.quantity}개</Badge>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {data.dentalProducts.sales.length === 0 && data.dentalProducts.inventoryLogs.length === 0 && (
+                    <p className="text-center text-gray-500 py-8 text-sm">구강용품 관련 내역이 없습니다.</p>
                   )}
                 </CardContent>
               </Card>
@@ -469,6 +504,10 @@ export default function DailySettlementModal({ isOpen, onClose, date, onDateChan
                   <div className="space-y-3">
                     {/* 현금 흐름 요약 */}
                     <div className="grid grid-cols-2 gap-2">
+                      <div className="p-2 bg-purple-50 rounded">
+                        <p className="text-xs text-gray-600">전일이월</p>
+                        <p className="font-bold text-purple-600">₩{formatAmount(data.cashRecords.summary.previousBalance)}</p>
+                      </div>
                       <div className="p-2 bg-green-50 rounded">
                         <p className="text-xs text-gray-600">현금수입</p>
                         <p className="font-bold text-green-600">₩{formatAmount(data.cashRecords.summary.cashIncome)}</p>
@@ -481,10 +520,12 @@ export default function DailySettlementModal({ isOpen, onClose, date, onDateChan
                         <p className="text-xs text-gray-600">통장입금</p>
                         <p className="font-bold text-blue-600">₩{formatAmount(data.cashRecords.summary.bankDeposit)}</p>
                       </div>
-                      <div className="p-2 bg-gray-50 rounded">
-                        <p className="text-xs text-gray-600">현금잔액</p>
-                        <p className="font-bold">₩{formatAmount(data.cashRecords.summary.netCash)}</p>
-                      </div>
+                    </div>
+                    
+                    {/* 당일마감 시재 */}
+                    <div className="p-3 bg-gray-100 rounded-lg border border-gray-300">
+                      <p className="text-sm text-gray-600 mb-1">당일마감 시재</p>
+                      <p className="text-xl font-bold">₩{formatAmount(data.cashRecords.summary.endBalance)}</p>
                     </div>
                     
                     {/* 상세 내역 */}
@@ -549,8 +590,8 @@ export default function DailySettlementModal({ isOpen, onClose, date, onDateChan
                   </div>
 
                   {data.consultations.all.length > 0 ? (
-                    <div className="space-y-2 max-h-32 overflow-y-auto">
-                      {data.consultations.all.slice(0, 3).map((consultation, index) => (
+                    <div className="space-y-2 max-h-40 overflow-y-auto">
+                      {data.consultations.all.map((consultation, index) => (
                         <div key={index} className="flex justify-between items-center p-2 border rounded text-sm">
                           <div className="flex items-center gap-2">
                             <span>{consultation.patientName}</span>
@@ -564,9 +605,6 @@ export default function DailySettlementModal({ isOpen, onClose, date, onDateChan
                           <span className="font-semibold text-xs">₩{formatAmount(consultation.amount)}</span>
                         </div>
                       ))}
-                      {data.consultations.all.length > 3 && (
-                        <p className="text-xs text-gray-500 text-center">외 {data.consultations.all.length - 3}건</p>
-                      )}
                     </div>
                   ) : (
                     <p className="text-center text-gray-500 py-4 text-sm">상담 내역이 없습니다.</p>

@@ -92,39 +92,61 @@ export async function GET(request: NextRequest) {
       .filter(record => record.type === '통장입금')
       .reduce((sum, record) => sum + (Number(record.amount) || 0), 0);
     
-    // 이전 날짜의 마지막 잔액 조회 (시작 잔액으로 사용)
+    // 전일까지의 모든 현금 기록으로 전일이월 잔액 계산
     const previousDate = new Date(startDate);
     previousDate.setDate(previousDate.getDate() - 1);
-    const previousEndDate = new Date(previousDate);
-    previousEndDate.setHours(23, 59, 59, 999);
+    previousDate.setHours(23, 59, 59, 999);
     
     const previousCashRecords = await db.collection('cashrecords')
       .find({
-        date: { $lte: previousEndDate }
+        date: { $lt: startDate }
       })
-      .sort({ date: -1 })
-      .limit(1)
       .toArray();
     
-    // 4. 임플란트 식립수 및 입출고
-    const implantLogs = await db.collection('implantinventorylogs')
+    // 전일까지의 누적 잔액 계산
+    let previousBalance = 0;
+    previousCashRecords.forEach(record => {
+      if (record.type === '수입') {
+        previousBalance += Number(record.amount) || 0;
+      } else if (record.type === '지출') {
+        previousBalance -= Number(record.amount) || 0;
+      } else if (record.type === '통장입금') {
+        previousBalance -= Number(record.amount) || 0;
+      }
+    });
+    
+    // 4. 임플란트 식립 데이터 (FirstOp 컬렉션에서 조회)
+    const firstOps = await db.collection('firstops')
       .find({
         date: { $gte: startDate, $lte: endDate }
       })
       .toArray();
     
-    // 임플란트 식립수 계산 (type="out"이고 outReason이 "식립" 관련)
-    const implantPlacements = implantLogs.filter(log => 
-      log.type === 'out' && 
-      (log.outReason?.includes('식립') || log.outReason?.includes('임플란트'))
-    );
+    // 임플란트 및 이식재 총 개수 계산
+    let totalImplantCount = 0;
+    let totalFixtureCount = 0;
     
-    const implantPlacementCount = implantPlacements.reduce((sum, log) => sum + (log.quantity || 0), 0);
+    firstOps.forEach(op => {
+      if (op.implants && Array.isArray(op.implants)) {
+        totalImplantCount += op.implants.reduce((sum, implant) => sum + (implant.quantity || 0), 0);
+      }
+      if (op.fixtures && Array.isArray(op.fixtures)) {
+        totalFixtureCount += op.fixtures.reduce((sum, fixture) => sum + (fixture.quantity || 0), 0);
+      }
+    });
     
-    // 5. 구강용품 입출고
-    const dentalProductLogs = await db.collection('dentalproductinventorylogs')
+    // 5. 구강용품 판매 데이터 (DentalProductSale 컬렉션에서 조회)
+    const dentalProductSales = await db.collection('dentalproductsales')
       .find({
         date: { $gte: startDate, $lte: endDate }
+      })
+      .toArray();
+    
+    // 구강용품 입고 데이터 (DentalProductInventoryLog 컬렉션에서 조회)
+    const dentalProductInventoryLogs = await db.collection('dentalproductinventorylogs')
+      .find({
+        date: { $gte: startDate, $lte: endDate },
+        type: 'in'
       })
       .toArray();
     
@@ -178,29 +200,26 @@ export async function GET(request: NextRequest) {
       cashRecords: {
         records: cashRecords,
         summary: {
+          previousBalance, // 전일이월
           cashIncome,
           cashExpense,
           bankDeposit,
           netCash: cashIncome - cashExpense - bankDeposit,
-          startBalance: 0, // 이전 잔액 계산 로직 필요
-          endBalance: cashIncome - cashExpense - bankDeposit
+          endBalance: previousBalance + cashIncome - cashExpense - bankDeposit // 당일마감 시재
         }
       },
       
       // 4. 임플란트 관련
       implant: {
-        placementCount: implantPlacementCount,
-        placementDetails: implantPlacements,
-        inventoryLogs: implantLogs,
-        inCount: implantLogs.filter(log => log.type === 'in').reduce((sum, log) => sum + (log.quantity || 0), 0),
-        outCount: implantLogs.filter(log => log.type === 'out').reduce((sum, log) => sum + (log.quantity || 0), 0)
+        implantCount: totalImplantCount,
+        fixtureCount: totalFixtureCount,
+        placements: firstOps
       },
       
-      // 5. 구강용품 입출고
+      // 5. 구강용품 관련
       dentalProducts: {
-        inventoryLogs: dentalProductLogs,
-        inCount: dentalProductLogs.filter(log => log.type === 'in').reduce((sum, log) => sum + (log.quantity || 0), 0),
-        outCount: dentalProductLogs.filter(log => log.type === 'out').reduce((sum, log) => sum + (log.quantity || 0), 0)
+        sales: dentalProductSales,
+        inventoryLogs: dentalProductInventoryLogs
       },
       
       // 6. 현금영수증 발행내역
