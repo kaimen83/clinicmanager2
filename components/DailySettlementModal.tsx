@@ -10,6 +10,8 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { toISODateString } from '@/lib/utils';
 import { 
   CreditCard, 
@@ -91,6 +93,7 @@ export default function DailySettlementModal({ isOpen, onClose, date, onDateChan
   const [data, setData] = useState<SettlementData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
   const fetchSettlementData = async () => {
     try {
@@ -175,6 +178,13 @@ export default function DailySettlementModal({ isOpen, onClose, date, onDateChan
     }
   };
 
+  const handleDateSelect = (selectedDate: Date | undefined) => {
+    if (selectedDate && onDateChange) {
+      onDateChange(selectedDate);
+      setIsCalendarOpen(false);
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-7xl max-h-[95vh] overflow-y-auto">
@@ -192,13 +202,28 @@ export default function DailySettlementModal({ isOpen, onClose, date, onDateChan
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <span className="text-base font-medium px-3">
-                {date.toLocaleDateString('ko-KR', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                })}
-              </span>
+              <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="text-base font-medium px-3 hover:bg-gray-50"
+                  >
+                    {date.toLocaleDateString('ko-KR', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    })}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="center">
+                  <Calendar
+                    mode="single"
+                    selected={date}
+                    onSelect={handleDateSelect}
+                    className="rounded-md border"
+                  />
+                </PopoverContent>
+              </Popover>
               <Button
                 variant="outline"
                 size="icon"
