@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { toISODateString } from '@/lib/utils';
+import { useUser } from '@clerk/nextjs';
 import { 
   CreditCard, 
   Banknote, 
@@ -24,7 +25,9 @@ import {
   UserPlus,
   Calculator,
   ChevronLeft,
-  ChevronRight 
+  ChevronRight,
+  CheckCircle,
+  Circle
 } from 'lucide-react';
 
 type PaymentMethodData = {
@@ -80,6 +83,18 @@ type SettlementData = {
     nonAgreedAmount: number;
   };
   newPatientCount: number;
+  settlementCheck?: {
+    income: { checked: boolean; checkedBy?: string; checkedAt?: Date };
+    expenses: { checked: boolean; checkedBy?: string; checkedAt?: Date };
+    cashRecords: { checked: boolean; checkedBy?: string; checkedAt?: Date };
+    implant: { checked: boolean; checkedBy?: string; checkedAt?: Date };
+    dentalProducts: { checked: boolean; checkedBy?: string; checkedAt?: Date };
+    consultations: { checked: boolean; checkedBy?: string; checkedAt?: Date };
+    cashReceipts: { checked: boolean; checkedBy?: string; checkedAt?: Date };
+    isCompleted: boolean;
+    completedBy?: string;
+    completedAt?: Date;
+  };
 };
 
 type Props = {
@@ -90,10 +105,12 @@ type Props = {
 };
 
 export default function DailySettlementModal({ isOpen, onClose, date, onDateChange }: Props) {
+  const { user } = useUser();
   const [data, setData] = useState<SettlementData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [checkStates, setCheckStates] = useState<any>({});
 
   const fetchSettlementData = async () => {
     try {
@@ -101,13 +118,24 @@ export default function DailySettlementModal({ isOpen, onClose, date, onDateChan
       setError(null);
       
       const dateString = toISODateString(date);
-      const response = await fetch(`/api/daily-settlement?date=${dateString}`);
       
-      if (!response.ok) {
+      // 일일결산 데이터와 체크 상태를 병렬로 조회
+      const [settlementResponse, checkResponse] = await Promise.all([
+        fetch(`/api/daily-settlement?date=${dateString}`),
+        fetch(`/api/daily-settlement-check?date=${dateString}`)
+      ]);
+      
+      if (!settlementResponse.ok) {
         throw new Error('일일결산 데이터를 가져오는데 실패했습니다.');
       }
       
-      const settlementData = await response.json();
+      const settlementData = await settlementResponse.json();
+      
+      if (checkResponse.ok) {
+        const checkData = await checkResponse.json();
+        setCheckStates(checkData);
+      }
+      
       setData(settlementData);
     } catch (err) {
       setError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.');
@@ -183,6 +211,60 @@ export default function DailySettlementModal({ isOpen, onClose, date, onDateChan
       onDateChange(selectedDate);
       setIsCalendarOpen(false);
     }
+  };
+
+  const handleSectionCheck = async (section: string, checked: boolean) => {
+    try {
+      const dateString = toISODateString(date);
+      
+      const response = await fetch('/api/daily-settlement-check', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          date: dateString,
+          section,
+          checked,
+          checkedBy: user?.fullName || user?.firstName || user?.emailAddresses[0]?.emailAddress || 'Unknown User'
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('체크 상태 업데이트에 실패했습니다.');
+      }
+
+      const updatedCheckData = await response.json();
+      setCheckStates(updatedCheckData);
+    } catch (err) {
+      console.error('체크 상태 업데이트 오류:', err);
+      // 에러 발생 시 UI 상태 되돌리기
+      fetchSettlementData();
+    }
+  };
+
+  // 체크박스 컴포넌트
+  const SectionCheckbox = ({ section, title }: { section: string; title: string }) => {
+    const isChecked = checkStates[section]?.checked || false;
+    const checkedBy = checkStates[section]?.checkedBy;
+    const checkedAt = checkStates[section]?.checkedAt;
+
+    return (
+      <div 
+        className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 rounded p-1 transition-colors"
+        onClick={() => handleSectionCheck(section, !isChecked)}
+        title={isChecked ? `${checkedBy}가 ${checkedAt ? new Date(checkedAt).toLocaleString('ko-KR') : ''}에 확인함` : '클릭하여 확인 완료 표시'}
+      >
+        {isChecked ? (
+          <CheckCircle className="h-4 w-4 text-green-600" />
+        ) : (
+          <Circle className="h-4 w-4 text-gray-400" />
+        )}
+        <span className="text-xs text-gray-600 select-none">
+          {isChecked ? '확인완료' : '미확인'}
+        </span>
+      </div>
+    );
   };
 
   return (
@@ -279,18 +361,38 @@ export default function DailySettlementModal({ isOpen, onClose, date, onDateChan
             </div>
           </div>
 
+          {/* 전체 마감 완료 상태 표시 */}
+          {checkStates.isCompleted && (
+            <div className="bg-gradient-to-r from-green-100 to-green-200 border border-green-300 rounded-lg p-4">
+              <div className="flex items-center gap-3">
+                <CheckCircle className="h-6 w-6 text-green-600" />
+                <div>
+                  <p className="font-semibold text-green-800">일일결산 완료</p>
+                  <p className="text-sm text-green-700">
+                    {checkStates.completedBy} 에 의해 {checkStates.completedAt ? new Date(checkStates.completedAt).toLocaleString('ko-KR') : ''}에 완료했습니다.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* 메인 콘텐츠 영역 - 컴팩트 */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             
             {/* 첫 번째 열: 수입/지출/현금시재 */}
             <div className="space-y-4">
               {/* 수입내역 - 컴팩트 */}
-              <Card className="shadow-sm">
+              <Card className={`shadow-sm ${checkStates.income?.checked ? 'ring-2 ring-green-200 bg-green-50/30' : ''}`}>
                 <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <CreditCard className="h-4 w-4 text-blue-600" />
-                    수입내역
-                  </CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <div className="h-4 w-4 bg-blue-600 rounded flex items-center justify-center">
+                        <CreditCard className="h-3 w-3 text-white" />
+                      </div>
+                      수입내역
+                    </CardTitle>
+                    <SectionCheckbox section="income" title="수입내역" />
+                  </div>
                 </CardHeader>
                 <CardContent className="pt-0">
                   <div className="space-y-2">
@@ -332,12 +434,17 @@ export default function DailySettlementModal({ isOpen, onClose, date, onDateChan
               </Card>
 
               {/* 지출내역 - 컴팩트 */}
-              <Card className="shadow-sm">
+              <Card className={`shadow-sm ${checkStates.expenses?.checked ? 'ring-2 ring-green-200 bg-green-50/30' : ''}`}>
                 <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <TrendingDown className="h-4 w-4 text-red-600" />
-                    지출내역
-                  </CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <div className="h-4 w-4 bg-red-600 rounded flex items-center justify-center">
+                        <TrendingDown className="h-3 w-3 text-white" />
+                      </div>
+                      지출내역
+                    </CardTitle>
+                    <SectionCheckbox section="expenses" title="지출내역" />
+                  </div>
                 </CardHeader>
                 <CardContent className="pt-0">
                   {data.expenses.items.length > 0 ? (
@@ -366,12 +473,17 @@ export default function DailySettlementModal({ isOpen, onClose, date, onDateChan
               </Card>
 
               {/* 현금시재 - 컴팩트 */}
-              <Card className="shadow-sm">
+              <Card className={`shadow-sm ${checkStates.cashRecords?.checked ? 'ring-2 ring-green-200 bg-green-50/30' : ''}`}>
                 <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <Banknote className="h-4 w-4 text-green-600" />
-                    현금시재
-                  </CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <div className="h-4 w-4 bg-green-600 rounded flex items-center justify-center">
+                        <Banknote className="h-3 w-3 text-white" />
+                      </div>
+                      현금시재
+                    </CardTitle>
+                    <SectionCheckbox section="cashRecords" title="현금시재" />
+                  </div>
                 </CardHeader>
                 <CardContent className="pt-0">
                   <div className="grid grid-cols-2 gap-2 mb-3">
@@ -403,11 +515,17 @@ export default function DailySettlementModal({ isOpen, onClose, date, onDateChan
             {/* 두 번째 열: 임플란트/구강용품/상담/현금영수증 */}
             <div className="space-y-4">
               {/* 임플란트 - 컴팩트 */}
-              <Card className="shadow-sm">
+              <Card className={`shadow-sm ${checkStates.implant?.checked ? 'ring-2 ring-green-200 bg-green-50/30' : ''}`}>
                 <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    🦷 <span className="text-blue-600">임플란트</span>
-                  </CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <div className="h-4 w-4 bg-blue-600 rounded flex items-center justify-center">
+                        <span className="text-white text-xs">🦷</span>
+                      </div>
+                      임플란트
+                    </CardTitle>
+                    <SectionCheckbox section="implant" title="임플란트" />
+                  </div>
                 </CardHeader>
                 <CardContent className="pt-0">
                   <div className="grid grid-cols-2 gap-2 mb-3">
@@ -449,12 +567,17 @@ export default function DailySettlementModal({ isOpen, onClose, date, onDateChan
               </Card>
 
               {/* 구강용품 - 컴팩트 */}
-              <Card className="shadow-sm">
+              <Card className={`shadow-sm ${checkStates.dentalProducts?.checked ? 'ring-2 ring-green-200 bg-green-50/30' : ''}`}>
                 <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <Package className="h-4 w-4 text-purple-600" />
-                    구강용품
-                  </CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <div className="h-4 w-4 bg-purple-600 rounded flex items-center justify-center">
+                        <Package className="h-3 w-3 text-white" />
+                      </div>
+                      구강용품
+                    </CardTitle>
+                    <SectionCheckbox section="dentalProducts" title="구강용품" />
+                  </div>
                 </CardHeader>
                 <CardContent className="pt-0">
                   {data.dentalProducts.sales.length > 0 ? (
@@ -480,12 +603,17 @@ export default function DailySettlementModal({ isOpen, onClose, date, onDateChan
               </Card>
 
               {/* 상담내역 - 컴팩트 */}
-              <Card className="shadow-sm">
+              <Card className={`shadow-sm ${checkStates.consultations?.checked ? 'ring-2 ring-green-200 bg-green-50/30' : ''}`}>
                 <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <Users className="h-4 w-4 text-gray-600" />
-                    상담내역
-                  </CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <div className="h-4 w-4 bg-gray-600 rounded flex items-center justify-center">
+                        <Users className="h-3 w-3 text-white" />
+                      </div>
+                      상담내역
+                    </CardTitle>
+                    <SectionCheckbox section="consultations" title="상담내역" />
+                  </div>
                 </CardHeader>
                 <CardContent className="pt-0">
                   <div className="grid grid-cols-2 gap-2 mb-3">
@@ -502,8 +630,8 @@ export default function DailySettlementModal({ isOpen, onClose, date, onDateChan
                   </div>
 
                   {data.consultations.all.length > 0 ? (
-                    <div className="space-y-1 max-h-24 overflow-y-auto">
-                      {data.consultations.all.slice(0, 3).map((consultation, index) => (
+                    <div className="space-y-1 max-h-32 overflow-y-auto">
+                      {data.consultations.all.map((consultation, index) => (
                         <div key={index} className="flex justify-between items-center p-1 bg-gray-50 rounded text-sm">
                           <div className="flex items-center gap-2">
                             <span className="text-xs">{consultation.patientName}</span>
@@ -517,9 +645,6 @@ export default function DailySettlementModal({ isOpen, onClose, date, onDateChan
                           <span className="text-xs font-medium">₩{formatAmount(consultation.amount)}</span>
                         </div>
                       ))}
-                      {data.consultations.all.length > 3 && (
-                        <p className="text-xs text-gray-500 text-center">외 {data.consultations.all.length - 3}건</p>
-                      )}
                     </div>
                   ) : (
                     <p className="text-center text-gray-400 py-2 text-sm">상담 내역이 없습니다.</p>
@@ -528,12 +653,17 @@ export default function DailySettlementModal({ isOpen, onClose, date, onDateChan
               </Card>
 
               {/* 현금영수증 - 컴팩트 */}
-              <Card className="shadow-sm">
+              <Card className={`shadow-sm ${checkStates.cashReceipts?.checked ? 'ring-2 ring-green-200 bg-green-50/30' : ''}`}>
                 <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <Receipt className="h-4 w-4 text-orange-600" />
-                    현금영수증
-                  </CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <div className="h-4 w-4 bg-orange-600 rounded flex items-center justify-center">
+                        <Receipt className="h-3 w-3 text-white" />
+                      </div>
+                      현금영수증
+                    </CardTitle>
+                    <SectionCheckbox section="cashReceipts" title="현금영수증" />
+                  </div>
                 </CardHeader>
                 <CardContent className="pt-0">
                   <div className="grid grid-cols-2 gap-2 mb-3">
