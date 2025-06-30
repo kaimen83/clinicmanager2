@@ -16,7 +16,6 @@ import {
   Banknote, 
   TrendingDown, 
   TrendingUp,
-  Zap, 
   Package, 
   Receipt, 
   Users,
@@ -69,6 +68,7 @@ type SettlementData = {
     transactions: any[];
     count: number;
     totalAmount: number;
+    nonIssuedTransactions?: any[];
   };
   consultations: {
     all: any[];
@@ -401,7 +401,7 @@ export default function DailySettlementModal({ isOpen, onClose, date, onDateChan
                           {placement.implants && placement.implants.length > 0 && (
                             <div className="mb-2">
                               <p className="text-xs text-gray-700 mb-1">임플란트:</p>
-                              {placement.implants.map((implant, idx) => (
+                              {placement.implants.map((implant: any, idx: number) => (
                                 <div key={idx} className="flex justify-between items-center text-xs bg-white p-2 rounded mb-1">
                                   <span>{implant.manufacturer} {implant.specification || ''}</span>
                                   <Badge variant="outline" className="text-xs">{implant.quantity}개</Badge>
@@ -414,7 +414,7 @@ export default function DailySettlementModal({ isOpen, onClose, date, onDateChan
                           {placement.fixtures && placement.fixtures.length > 0 && (
                             <div>
                               <p className="text-xs text-gray-700 mb-1">이식재:</p>
-                              {placement.fixtures.map((fixture, idx) => (
+                              {placement.fixtures.map((fixture: any, idx: number) => (
                                 <div key={idx} className="flex justify-between items-center text-xs bg-white p-2 rounded mb-1">
                                   <span>{fixture.type} {fixture.specification || ''}</span>
                                   <Badge variant="outline" className="text-xs">{fixture.quantity}개</Badge>
@@ -452,7 +452,7 @@ export default function DailySettlementModal({ isOpen, onClose, date, onDateChan
                               <span className="font-bold text-purple-600">₩{formatAmount(sale.totalAmount)}</span>
                             </div>
                             <div className="space-y-1">
-                              {sale.products && sale.products.map((product, idx) => (
+                              {sale.products && sale.products.map((product: any, idx: number) => (
                                 <div key={idx} className="flex justify-between items-center text-xs bg-white p-2 rounded">
                                   <span>{product.name} - {product.manufacturer}</span>
                                   <div className="flex items-center gap-2">
@@ -632,20 +632,39 @@ export default function DailySettlementModal({ isOpen, onClose, date, onDateChan
                     </div>
                   </div>
 
+                  {/* 발행된 현금영수증 목록 */}
                   {data.cashReceipts.transactions.length > 0 ? (
-                    <div className="space-y-2 max-h-24 overflow-y-auto">
-                      {data.cashReceipts.transactions.slice(0, 3).map((transaction, index) => (
-                        <div key={index} className="flex justify-between p-2 bg-gray-50 rounded text-sm">
-                          <span>{transaction.patientName}</span>
-                          <span className="font-semibold">₩{formatAmount(transaction.paymentAmount)}</span>
-                        </div>
-                      ))}
-                      {data.cashReceipts.transactions.length > 3 && (
-                        <p className="text-xs text-gray-500 text-center">외 {data.cashReceipts.transactions.length - 3}건</p>
-                      )}
+                    <div className="mb-4">
+                      <p className="text-sm font-semibold text-gray-700 mb-2">발행 내역</p>
+                      <div className="space-y-2 max-h-32 overflow-y-auto">
+                        {data.cashReceipts.transactions.map((transaction, index) => (
+                          <div key={index} className="flex justify-between items-center p-2 bg-blue-50 rounded text-sm">
+                            <span>{transaction.patientName}</span>
+                            <span className="font-semibold text-blue-600">₩{formatAmount(transaction.paymentAmount)}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   ) : (
-                    <p className="text-center text-gray-500 py-4 text-sm">발행 내역이 없습니다.</p>
+                    <div className="mb-4">
+                      <p className="text-sm font-semibold text-gray-700 mb-2">발행 내역</p>
+                      <p className="text-center text-gray-500 py-4 text-sm">발행 내역이 없습니다.</p>
+                    </div>
+                  )}
+
+                  {/* 미발행 현금영수증 목록 */}
+                  {data.cashReceipts.nonIssuedTransactions && data.cashReceipts.nonIssuedTransactions.length > 0 && (
+                    <div className="border-t pt-3">
+                      <p className="text-sm font-semibold text-gray-700 mb-2">미발행 내역</p>
+                      <div className="space-y-2 max-h-32 overflow-y-auto">
+                        {data.cashReceipts.nonIssuedTransactions.map((transaction, index) => (
+                          <div key={index} className="flex justify-between items-center p-2 bg-orange-50 rounded text-sm">
+                            <span>{transaction.patientName}</span>
+                            <span className="font-semibold text-orange-600">₩{formatAmount(transaction.paymentAmount)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   )}
                 </CardContent>
               </Card>

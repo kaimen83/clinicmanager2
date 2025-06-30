@@ -152,6 +152,7 @@ export async function GET(request: NextRequest) {
     
     // 6. 현금영수증 발행내역
     const cashReceiptTransactions = transactions.filter(t => t.cashReceipt === true);
+    const nonIssuedCashReceiptTransactions = transactions.filter(t => t.cashReceipt === false && (t.paymentMethod === '현금' || t.paymentMethod === '계좌이체'));
     
     // 7. 상담내역
     const consultations = await db.collection('consultations')
@@ -226,7 +227,8 @@ export async function GET(request: NextRequest) {
       cashReceipts: {
         transactions: cashReceiptTransactions,
         count: cashReceiptTransactions.length,
-        totalAmount: cashReceiptTransactions.reduce((sum, t) => sum + (Number(t.paymentAmount) || 0), 0)
+        totalAmount: cashReceiptTransactions.reduce((sum, t) => sum + (Number(t.paymentAmount) || 0), 0),
+        nonIssuedTransactions: nonIssuedCashReceiptTransactions
       },
       
       // 7. 상담내역
