@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
       .toArray();
     
     // 결제 방법별 그룹화
-    const paymentByMethod = transactions.reduce((acc, t) => {
+    const paymentByMethod = transactions.reduce((acc: Record<string, { count: number; amount: number; transactions: any[] }>, t) => {
       const method = t.paymentMethod || '기타';
       if (!acc[method]) {
         acc[method] = { count: 0, amount: 0, transactions: [] };
@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
 
     // 카드 결제 세부 정보 (카드사별 그룹화)
     const cardTransactions = transactions.filter(t => t.paymentMethod === '카드');
-    const cardByCompany = cardTransactions.reduce((acc, t) => {
+    const cardByCompany = cardTransactions.reduce((acc: Record<string, { count: number; amount: number }>, t) => {
       const company = t.cardCompany || '기타카드';
       if (!acc[company]) {
         acc[company] = { count: 0, amount: 0 };
