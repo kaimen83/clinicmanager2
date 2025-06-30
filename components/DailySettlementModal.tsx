@@ -235,90 +235,80 @@ export default function DailySettlementModal({ isOpen, onClose, date, onDateChan
           </DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-6">
-          {/* 상단 요약 통계 */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card className="border-l-4 border-l-blue-500">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">총 수입</p>
-                    <p className="text-2xl font-bold text-blue-600">₩{formatAmount(totalIncome)}</p>
-                  </div>
-                  <TrendingUp className="h-8 w-8 text-blue-500" />
+        <div className="space-y-4">
+          {/* 상단 요약 통계 - 컴팩트 */}
+          <div className="grid grid-cols-4 gap-3">
+            <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-3 rounded-lg border-l-4 border-blue-500">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-blue-600" />
+                <div>
+                  <p className="text-xs text-gray-600">총 수입</p>
+                  <p className="text-lg font-bold text-blue-700">₩{formatAmount(totalIncome)}</p>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
             
-            <Card className="border-l-4 border-l-red-500">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">총 지출</p>
-                    <p className="text-2xl font-bold text-red-600">₩{formatAmount(data.expenses.totalAmount)}</p>
-                  </div>
-                  <TrendingDown className="h-8 w-8 text-red-500" />
+            <div className="bg-gradient-to-r from-red-50 to-red-100 p-3 rounded-lg border-l-4 border-red-500">
+              <div className="flex items-center gap-2">
+                <TrendingDown className="h-4 w-4 text-red-600" />
+                <div>
+                  <p className="text-xs text-gray-600">총 지출</p>
+                  <p className="text-lg font-bold text-red-700">₩{formatAmount(data.expenses.totalAmount)}</p>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
             
-            <Card className="border-l-4 border-l-green-500">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">신환수</p>
-                    <p className="text-2xl font-bold text-green-600">{data.newPatientCount}명</p>
-                  </div>
-                  <UserPlus className="h-8 w-8 text-green-500" />
+            <div className="bg-gradient-to-r from-green-50 to-green-100 p-3 rounded-lg border-l-4 border-green-500">
+              <div className="flex items-center gap-2">
+                <UserPlus className="h-4 w-4 text-green-600" />
+                <div>
+                  <p className="text-xs text-gray-600">신환수</p>
+                  <p className="text-lg font-bold text-green-700">{data.newPatientCount}명</p>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
             
-            <Card className="border-l-4 border-l-purple-500">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">환자수</p>
-                    <p className="text-2xl font-bold text-purple-600">{patientCount}명</p>
-                  </div>
-                  <Users className="h-8 w-8 text-purple-500" />
+            <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-3 rounded-lg border-l-4 border-purple-500">
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-purple-600" />
+                <div>
+                  <p className="text-xs text-gray-600">환자수</p>
+                  <p className="text-lg font-bold text-purple-700">{patientCount}명</p>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </div>
 
-          {/* 메인 콘텐츠 영역 */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* 메인 콘텐츠 영역 - 컴팩트 */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             
-            {/* 첫 번째 열: 수입/지출 */}
-            <div className="space-y-6">
-              {/* 수입내역 */}
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <CreditCard className="h-5 w-5" />
+            {/* 첫 번째 열: 수입/지출/현금시재 */}
+            <div className="space-y-4">
+              {/* 수입내역 - 컴팩트 */}
+              <Card className="shadow-sm">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <CreditCard className="h-4 w-4 text-blue-600" />
                     수입내역
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
+                <CardContent className="pt-0">
+                  <div className="space-y-2">
                     {Object.entries(data.income.paymentByMethod).map(([method, details]) => (
-                      <div key={method}>
-                        <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                          <div>
-                            <p className="font-semibold">{method}</p>
-                            <p className="text-sm text-gray-600">{details.count}건</p>
+                      <div key={method} className="bg-gray-50 rounded-lg p-2">
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-sm">{method}</span>
+                            <Badge variant="secondary" className="text-xs">{details.count}건</Badge>
                           </div>
-                          <p className="font-bold text-blue-600">
-                            ₩{formatAmount(details.amount)}
-                          </p>
+                          <span className="font-bold text-blue-600 text-sm">₩{formatAmount(details.amount)}</span>
                         </div>
                         {method === '카드' && data.income.cardByCompany && Object.keys(data.income.cardByCompany).length > 0 && (
-                          <div className="ml-4 mt-2 space-y-1">
+                          <div className="mt-1 ml-2 space-y-1">
                             {Object.entries(data.income.cardByCompany).map(([company, info]) => (
-                              <div key={company} className="flex justify-between items-center p-2 bg-blue-50 rounded text-sm">
-                                <span className="text-gray-700">{company}</span>
-                                <span className="font-medium">₩{formatAmount(info.amount)}</span>
+                              <div key={company} className="flex justify-between text-xs text-gray-600">
+                                <span>└ {company}</span>
+                                <span>₩{formatAmount(info.amount)}</span>
                               </div>
                             ))}
                           </div>
@@ -327,370 +317,278 @@ export default function DailySettlementModal({ isOpen, onClose, date, onDateChan
                     ))}
                     
                     {data.income.extraIncomeTotal > 0 && (
-                      <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
-                        <div>
-                          <p className="font-semibold">진료외수입</p>
-                          <p className="text-sm text-gray-600">{data.income.extraIncomes.length}건</p>
+                      <div className="bg-green-50 rounded-lg p-2">
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-sm">진료외수입</span>
+                            <Badge variant="secondary" className="text-xs">{data.income.extraIncomes.length}건</Badge>
+                          </div>
+                          <span className="font-bold text-green-600 text-sm">₩{formatAmount(data.income.extraIncomeTotal)}</span>
                         </div>
-                        <p className="font-bold text-green-600">
-                          ₩{formatAmount(data.income.extraIncomeTotal)}
-                        </p>
                       </div>
                     )}
-                    
-                    <div className="border-t pt-3 mt-3">
-                      <div className="flex justify-between items-center font-bold">
-                        <span>총계</span>
-                        <span className="text-blue-700">₩{formatAmount(totalIncome)}</span>
-                      </div>
-                    </div>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* 지출내역 */}
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <TrendingDown className="h-5 w-5" />
+              {/* 지출내역 - 컴팩트 */}
+              <Card className="shadow-sm">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <TrendingDown className="h-4 w-4 text-red-600" />
                     지출내역
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-0">
                   {data.expenses.items.length > 0 ? (
-                    <div className="space-y-2 max-h-60 overflow-y-auto">
+                    <div className="space-y-2 max-h-40 overflow-y-auto">
                       {data.expenses.items.map((expense, index) => (
-                        <div key={index} className="flex justify-between items-center p-2 border rounded">
-                          <div className="flex-1">
-                            <p className="font-semibold text-sm">{expense.details || expense.description || '지출'}</p>
-                            <div className="flex items-center gap-2 mt-1">
-                              <p className="text-xs text-gray-600">{expense.vendor || expense.category || ''}</p>
-                              {expense.method && (
-                                <Badge variant="outline" className="text-xs">
-                                  {expense.method}
-                                </Badge>
-                              )}
+                        <div key={index} className="bg-gray-50 rounded-lg p-2">
+                          <div className="flex justify-between items-center">
+                            <div className="flex-1">
+                              <p className="font-medium text-sm">{expense.details || expense.description || '지출'}</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <p className="text-xs text-gray-500">{expense.vendor || expense.category || ''}</p>
+                                {expense.method && (
+                                  <Badge variant="outline" className="text-xs">{expense.method}</Badge>
+                                )}
+                              </div>
                             </div>
+                            <span className="font-bold text-red-600 text-sm ml-2">₩{formatAmount(expense.amount)}</span>
                           </div>
-                          <span className="font-bold text-red-600 ml-2">
-                            ₩{formatAmount(expense.amount)}
-                          </span>
                         </div>
                       ))}
-                      <div className="border-t pt-2 mt-2">
-                        <div className="flex justify-between items-center font-bold">
-                          <span>총계</span>
-                          <span className="text-red-700">₩{formatAmount(data.expenses.totalAmount)}</span>
-                        </div>
-                      </div>
                     </div>
                   ) : (
-                    <p className="text-center text-gray-500 py-8">지출 내역이 없습니다.</p>
+                    <p className="text-center text-gray-400 py-4 text-sm">지출 내역이 없습니다.</p>
                   )}
+                </CardContent>
+              </Card>
+
+              {/* 현금시재 - 컴팩트 */}
+              <Card className="shadow-sm">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <Banknote className="h-4 w-4 text-green-600" />
+                    현금시재
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="grid grid-cols-2 gap-2 mb-3">
+                    <div className="bg-purple-50 rounded-lg p-2 text-center">
+                      <p className="text-xs text-gray-600">전일이월</p>
+                      <p className="font-bold text-purple-600 text-sm">₩{formatAmount(data.cashRecords.summary.previousBalance)}</p>
+                    </div>
+                    <div className="bg-green-50 rounded-lg p-2 text-center">
+                      <p className="text-xs text-gray-600">현금수입</p>
+                      <p className="font-bold text-green-600 text-sm">₩{formatAmount(data.cashRecords.summary.cashIncome)}</p>
+                    </div>
+                    <div className="bg-red-50 rounded-lg p-2 text-center">
+                      <p className="text-xs text-gray-600">현금지출</p>
+                      <p className="font-bold text-red-600 text-sm">₩{formatAmount(data.cashRecords.summary.cashExpense)}</p>
+                    </div>
+                    <div className="bg-blue-50 rounded-lg p-2 text-center">
+                      <p className="text-xs text-gray-600">통장입금</p>
+                      <p className="font-bold text-blue-600 text-sm">₩{formatAmount(data.cashRecords.summary.bankDeposit)}</p>
+                    </div>
+                  </div>
+                  <div className="bg-gray-100 rounded-lg p-2 border-2 border-gray-300">
+                    <p className="text-xs text-gray-600 text-center">당일마감 시재</p>
+                    <p className="text-lg font-bold text-center">₩{formatAmount(data.cashRecords.summary.endBalance)}</p>
+                  </div>
                 </CardContent>
               </Card>
             </div>
 
-            {/* 두 번째 열: 임플란트/구강용품 */}
-            <div className="space-y-6">
-              {/* 임플란트 */}
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    🦷 임플란트
+            {/* 두 번째 열: 임플란트/구강용품/상담/현금영수증 */}
+            <div className="space-y-4">
+              {/* 임플란트 - 컴팩트 */}
+              <Card className="shadow-sm">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    🦷 <span className="text-blue-600">임플란트</span>
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-3 mb-4">
-                    <div className="p-3 bg-blue-50 rounded-lg text-center">
+                <CardContent className="pt-0">
+                  <div className="grid grid-cols-2 gap-2 mb-3">
+                    <div className="bg-blue-50 rounded-lg p-2 text-center">
                       <p className="text-xs text-gray-600">식립수</p>
-                      <p className="text-xl font-bold text-blue-600">{data.implant.implantCount}</p>
+                      <p className="text-lg font-bold text-blue-600">{data.implant.implantCount}</p>
                     </div>
-                    <div className="p-3 bg-green-50 rounded-lg text-center">
+                    <div className="bg-green-50 rounded-lg p-2 text-center">
                       <p className="text-xs text-gray-600">이식재</p>
-                      <p className="text-xl font-bold text-green-600">{data.implant.fixtureCount}</p>
+                      <p className="text-lg font-bold text-green-600">{data.implant.fixtureCount}</p>
                     </div>
                   </div>
 
                   {data.implant.placements.length > 0 ? (
-                    <div className="space-y-2 max-h-48 overflow-y-auto">
-                      <p className="font-semibold text-sm mb-2">환자별 식립 내역</p>
+                    <div className="space-y-2 max-h-32 overflow-y-auto">
                       {data.implant.placements.map((placement, index) => (
-                        <div key={index} className="p-3 bg-blue-50 rounded-lg">
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="font-semibold text-sm">{placement.patientName}</span>
+                        <div key={index} className="bg-blue-50 rounded-lg p-2">
+                          <div className="flex justify-between items-center text-sm">
+                            <span className="font-medium">{placement.patientName}</span>
                             <span className="text-xs text-gray-600">{placement.doctor}</span>
                           </div>
-                          
-                          {/* 임플란트 상세 */}
                           {placement.implants && placement.implants.length > 0 && (
-                            <div className="mb-2">
-                              <p className="text-xs text-gray-700 mb-1">임플란트:</p>
-                              {placement.implants.map((implant: any, idx: number) => (
-                                <div key={idx} className="flex justify-between items-center text-xs bg-white p-2 rounded mb-1">
-                                  <span>{implant.manufacturer} {implant.specification || ''}</span>
-                                  <Badge variant="outline" className="text-xs">{implant.quantity}개</Badge>
-                                </div>
-                              ))}
+                            <div className="mt-1 text-xs text-gray-600">
+                              임플란트: {placement.implants.reduce((sum: number, implant: any) => sum + (implant.quantity || 0), 0)}개
                             </div>
                           )}
-                          
-                          {/* 이식재 상세 */}
                           {placement.fixtures && placement.fixtures.length > 0 && (
-                            <div>
-                              <p className="text-xs text-gray-700 mb-1">이식재:</p>
-                              {placement.fixtures.map((fixture: any, idx: number) => (
-                                <div key={idx} className="flex justify-between items-center text-xs bg-white p-2 rounded mb-1">
-                                  <span>{fixture.type} {fixture.specification || ''}</span>
-                                  <Badge variant="outline" className="text-xs">{fixture.quantity}개</Badge>
-                                </div>
-                              ))}
+                            <div className="text-xs text-gray-600">
+                              이식재: {placement.fixtures.reduce((sum: number, fixture: any) => sum + (fixture.quantity || 0), 0)}개
                             </div>
                           )}
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-center text-gray-500 py-4 text-sm">임플란트 식립 내역이 없습니다.</p>
+                    <p className="text-center text-gray-400 py-2 text-sm">식립 내역이 없습니다.</p>
                   )}
                 </CardContent>
               </Card>
 
-              {/* 구강용품 */}
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <Package className="h-5 w-5" />
+              {/* 구강용품 - 컴팩트 */}
+              <Card className="shadow-sm">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <Package className="h-4 w-4 text-purple-600" />
                     구강용품
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  {/* 환자별 구매 내역 */}
-                  {data.dentalProducts.sales.length > 0 && (
-                    <div className="mb-4">
-                      <p className="font-semibold text-sm mb-2">환자별 구매 내역</p>
-                      <div className="space-y-2 max-h-40 overflow-y-auto">
-                        {data.dentalProducts.sales.map((sale, index) => (
-                          <div key={index} className="p-3 bg-purple-50 rounded-lg">
-                            <div className="flex justify-between items-center mb-2">
-                              <span className="font-semibold text-sm">{sale.patientName}</span>
-                              <span className="font-bold text-purple-600">₩{formatAmount(sale.totalAmount)}</span>
-                            </div>
-                            <div className="space-y-1">
-                              {sale.products && sale.products.map((product: any, idx: number) => (
-                                <div key={idx} className="flex justify-between items-center text-xs bg-white p-2 rounded">
-                                  <span>{product.name} - {product.manufacturer}</span>
-                                  <div className="flex items-center gap-2">
-                                    <Badge variant="outline" className="text-xs">{product.quantity}개</Badge>
-                                    <span className="font-medium">₩{formatAmount(product.salePrice * product.quantity)}</span>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
+                <CardContent className="pt-0">
+                  {data.dentalProducts.sales.length > 0 ? (
+                    <div className="space-y-2 max-h-32 overflow-y-auto">
+                      {data.dentalProducts.sales.map((sale, index) => (
+                        <div key={index} className="bg-purple-50 rounded-lg p-2">
+                          <div className="flex justify-between items-center text-sm">
+                            <span className="font-medium">{sale.patientName}</span>
+                            <span className="font-bold text-purple-600">₩{formatAmount(sale.totalAmount)}</span>
                           </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* 입고 내역 */}
-                  {data.dentalProducts.inventoryLogs.length > 0 && (
-                    <div>
-                      <p className="font-semibold text-sm mb-2">입고 내역</p>
-                      <div className="space-y-2 max-h-32 overflow-y-auto">
-                        {data.dentalProducts.inventoryLogs.map((log, index) => (
-                          <div key={index} className="flex justify-between items-center p-2 bg-green-50 rounded text-sm">
-                            <span className="text-sm">{log.notes || '구강용품'}</span>
-                            <Badge variant="outline" className="text-xs">{log.quantity}개</Badge>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {data.dentalProducts.sales.length === 0 && data.dentalProducts.inventoryLogs.length === 0 && (
-                    <p className="text-center text-gray-500 py-8 text-sm">구강용품 관련 내역이 없습니다.</p>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* 세 번째 열: 현금시재/상담/영수증 */}
-            <div className="space-y-6">
-              {/* 현금시재 */}
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <Banknote className="h-5 w-5" />
-                    현금시재
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {/* 현금 흐름 요약 */}
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="p-2 bg-purple-50 rounded">
-                        <p className="text-xs text-gray-600">전일이월</p>
-                        <p className="font-bold text-purple-600">₩{formatAmount(data.cashRecords.summary.previousBalance)}</p>
-                      </div>
-                      <div className="p-2 bg-green-50 rounded">
-                        <p className="text-xs text-gray-600">현금수입</p>
-                        <p className="font-bold text-green-600">₩{formatAmount(data.cashRecords.summary.cashIncome)}</p>
-                      </div>
-                      <div className="p-2 bg-red-50 rounded">
-                        <p className="text-xs text-gray-600">현금지출</p>
-                        <p className="font-bold text-red-600">₩{formatAmount(data.cashRecords.summary.cashExpense)}</p>
-                      </div>
-                      <div className="p-2 bg-blue-50 rounded">
-                        <p className="text-xs text-gray-600">통장입금</p>
-                        <p className="font-bold text-blue-600">₩{formatAmount(data.cashRecords.summary.bankDeposit)}</p>
-                      </div>
-                    </div>
-                    
-                    {/* 당일마감 시재 */}
-                    <div className="p-3 bg-gray-100 rounded-lg border border-gray-300">
-                      <p className="text-sm text-gray-600 mb-1">당일마감 시재</p>
-                      <p className="text-xl font-bold">₩{formatAmount(data.cashRecords.summary.endBalance)}</p>
-                    </div>
-                    
-                    {/* 상세 내역 */}
-                    {data.cashRecords.records.length > 0 && (
-                      <div className="border-t pt-2">
-                        <p className="text-xs font-semibold text-gray-700 mb-2">상세내역</p>
-                        <div className="space-y-1 max-h-32 overflow-y-auto">
-                          {data.cashRecords.records.slice(0, 5).map((record, index) => (
-                            <div key={index} className="flex justify-between items-center p-1 text-xs">
-                              <div className="flex items-center gap-2">
-                                <Badge 
-                                  variant={record.type === '수입' ? 'default' : record.type === '지출' ? 'destructive' : 'secondary'}
-                                  className="text-xs px-1 py-0"
-                                >
-                                  {record.type}
-                                </Badge>
-                                <span className="text-gray-600 truncate max-w-[120px]">
-                                  {record.description || '-'}
-                                </span>
-                              </div>
-                              <span className={`font-medium ${
-                                record.type === '수입' ? 'text-green-600' : 
-                                record.type === '지출' ? 'text-red-600' : 
-                                'text-blue-600'
-                              }`}>
-                                {record.type === '지출' ? '-' : ''}₩{formatAmount(record.amount)}
-                              </span>
+                          {sale.products && sale.products.length > 0 && (
+                            <div className="text-xs text-gray-600 mt-1">
+                              {sale.products.length}개 품목
                             </div>
-                          ))}
-                          {data.cashRecords.records.length > 5 && (
-                            <p className="text-xs text-gray-500 text-center pt-1">
-                              외 {data.cashRecords.records.length - 5}건
-                            </p>
                           )}
                         </div>
-                      </div>
-                    )}
-                  </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-center text-gray-400 py-2 text-sm">구매 내역이 없습니다.</p>
+                  )}
                 </CardContent>
               </Card>
 
-              {/* 상담내역 */}
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <Users className="h-5 w-5" />
+              {/* 상담내역 - 컴팩트 */}
+              <Card className="shadow-sm">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <Users className="h-4 w-4 text-gray-600" />
                     상담내역
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-3 mb-4">
-                    <div className="p-3 bg-green-50 rounded-lg text-center">
+                <CardContent className="pt-0">
+                  <div className="grid grid-cols-2 gap-2 mb-3">
+                    <div className="bg-green-50 rounded-lg p-2 text-center">
                       <p className="text-xs text-gray-600">동의</p>
-                      <p className="text-lg font-bold text-green-600">{data.consultations.agreed.length}건</p>
-                      <p className="text-xs font-semibold">₩{formatAmount(data.consultations.agreedAmount)}</p>
+                      <p className="text-base font-bold text-green-600">{data.consultations.agreed.length}건</p>
+                      <p className="text-xs">₩{formatAmount(data.consultations.agreedAmount)}</p>
                     </div>
-                    <div className="p-3 bg-red-50 rounded-lg text-center">
+                    <div className="bg-red-50 rounded-lg p-2 text-center">
                       <p className="text-xs text-gray-600">미동의</p>
-                      <p className="text-lg font-bold text-red-600">{data.consultations.nonAgreed.length}건</p>
-                      <p className="text-xs font-semibold">₩{formatAmount(data.consultations.nonAgreedAmount)}</p>
+                      <p className="text-base font-bold text-red-600">{data.consultations.nonAgreed.length}건</p>
+                      <p className="text-xs">₩{formatAmount(data.consultations.nonAgreedAmount)}</p>
                     </div>
                   </div>
 
                   {data.consultations.all.length > 0 ? (
-                    <div className="space-y-2 max-h-40 overflow-y-auto">
-                      {data.consultations.all.map((consultation, index) => (
-                        <div key={index} className="flex justify-between items-center p-2 border rounded text-sm">
+                    <div className="space-y-1 max-h-24 overflow-y-auto">
+                      {data.consultations.all.slice(0, 3).map((consultation, index) => (
+                        <div key={index} className="flex justify-between items-center p-1 bg-gray-50 rounded text-sm">
                           <div className="flex items-center gap-2">
-                            <span>{consultation.patientName}</span>
+                            <span className="text-xs">{consultation.patientName}</span>
                             <Badge 
                               variant={consultation.agreed ? "default" : "destructive"}
-                              className="text-xs"
+                              className="text-xs px-1 py-0"
                             >
                               {consultation.agreed ? '동의' : '미동의'}
                             </Badge>
                           </div>
-                          <span className="font-semibold text-xs">₩{formatAmount(consultation.amount)}</span>
+                          <span className="text-xs font-medium">₩{formatAmount(consultation.amount)}</span>
                         </div>
                       ))}
+                      {data.consultations.all.length > 3 && (
+                        <p className="text-xs text-gray-500 text-center">외 {data.consultations.all.length - 3}건</p>
+                      )}
                     </div>
                   ) : (
-                    <p className="text-center text-gray-500 py-4 text-sm">상담 내역이 없습니다.</p>
+                    <p className="text-center text-gray-400 py-2 text-sm">상담 내역이 없습니다.</p>
                   )}
                 </CardContent>
               </Card>
 
-              {/* 현금영수증 */}
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <Receipt className="h-5 w-5" />
+              {/* 현금영수증 - 컴팩트 */}
+              <Card className="shadow-sm">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <Receipt className="h-4 w-4 text-orange-600" />
                     현금영수증
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-3 mb-3">
-                    <div className="p-3 bg-blue-50 rounded-lg text-center">
-                      <p className="text-xs text-gray-600">발행건수</p>
-                      <p className="text-lg font-bold text-blue-600">{data.cashReceipts.count}건</p>
+                <CardContent className="pt-0">
+                  <div className="grid grid-cols-2 gap-2 mb-3">
+                    <div className="bg-blue-50 rounded-lg p-2 text-center">
+                      <p className="text-xs text-gray-600">발행</p>
+                      <p className="text-base font-bold text-blue-600">{data.cashReceipts.count}건</p>
+                      <p className="text-xs">₩{formatAmount(data.cashReceipts.totalAmount)}</p>
                     </div>
-                    <div className="p-3 bg-blue-50 rounded-lg text-center">
-                      <p className="text-xs text-gray-600">총 금액</p>
-                      <p className="text-lg font-bold text-blue-600">₩{formatAmount(data.cashReceipts.totalAmount)}</p>
+                    <div className="bg-orange-50 rounded-lg p-2 text-center">
+                      <p className="text-xs text-gray-600">미발행</p>
+                      <p className="text-base font-bold text-orange-600">
+                        {data.cashReceipts.nonIssuedTransactions ? data.cashReceipts.nonIssuedTransactions.length : 0}건
+                      </p>
+                      <p className="text-xs">
+                        ₩{formatAmount(data.cashReceipts.nonIssuedTransactions ? 
+                          data.cashReceipts.nonIssuedTransactions.reduce((sum, t) => sum + (Number(t.paymentAmount) || 0), 0) : 0)}
+                      </p>
                     </div>
                   </div>
 
-                  {/* 발행된 현금영수증 목록 */}
-                  {data.cashReceipts.transactions.length > 0 ? (
-                    <div className="mb-4">
-                      <p className="text-sm font-semibold text-gray-700 mb-2">발행 내역</p>
-                      <div className="space-y-2 max-h-32 overflow-y-auto">
-                        {data.cashReceipts.transactions.map((transaction, index) => (
-                          <div key={index} className="flex justify-between items-center p-2 bg-blue-50 rounded text-sm">
-                            <span>{transaction.patientName}</span>
-                            <span className="font-semibold text-blue-600">₩{formatAmount(transaction.paymentAmount)}</span>
-                          </div>
-                        ))}
+                  {/* 발행 + 미발행 내역을 합쳐서 표시 */}
+                  <div className="space-y-1 max-h-24 overflow-y-auto">
+                    {/* 발행된 현금영수증 */}
+                    {data.cashReceipts.transactions.slice(0, 2).map((transaction, index) => (
+                      <div key={`issued-${index}`} className="flex justify-between items-center p-1 bg-blue-50 rounded text-sm">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs">{transaction.patientName}</span>
+                          <Badge variant="default" className="text-xs px-1 py-0">발행</Badge>
+                        </div>
+                        <span className="text-xs font-medium text-blue-600">₩{formatAmount(transaction.paymentAmount)}</span>
                       </div>
-                    </div>
-                  ) : (
-                    <div className="mb-4">
-                      <p className="text-sm font-semibold text-gray-700 mb-2">발행 내역</p>
-                      <p className="text-center text-gray-500 py-4 text-sm">발행 내역이 없습니다.</p>
-                    </div>
-                  )}
+                    ))}
+                    
+                    {/* 미발행 현금영수증 */}
+                    {data.cashReceipts.nonIssuedTransactions && data.cashReceipts.nonIssuedTransactions.slice(0, 2).map((transaction, index) => (
+                      <div key={`non-issued-${index}`} className="flex justify-between items-center p-1 bg-orange-50 rounded text-sm">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs">{transaction.patientName}</span>
+                          <Badge variant="destructive" className="text-xs px-1 py-0">미발행</Badge>
+                        </div>
+                        <span className="text-xs font-medium text-orange-600">₩{formatAmount(transaction.paymentAmount)}</span>
+                      </div>
+                    ))}
+                    
+                    {/* 더 많은 항목이 있을 때 */}
+                    {(data.cashReceipts.transactions.length + (data.cashReceipts.nonIssuedTransactions?.length || 0)) > 4 && (
+                      <p className="text-xs text-gray-500 text-center">
+                        외 {(data.cashReceipts.transactions.length + (data.cashReceipts.nonIssuedTransactions?.length || 0)) - 4}건
+                      </p>
+                    )}
 
-                  {/* 미발행 현금영수증 목록 */}
-                  {data.cashReceipts.nonIssuedTransactions && data.cashReceipts.nonIssuedTransactions.length > 0 && (
-                    <div className="border-t pt-3">
-                      <p className="text-sm font-semibold text-gray-700 mb-2">미발행 내역</p>
-                      <div className="space-y-2 max-h-32 overflow-y-auto">
-                        {data.cashReceipts.nonIssuedTransactions.map((transaction, index) => (
-                          <div key={index} className="flex justify-between items-center p-2 bg-orange-50 rounded text-sm">
-                            <span>{transaction.patientName}</span>
-                            <span className="font-semibold text-orange-600">₩{formatAmount(transaction.paymentAmount)}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                    {data.cashReceipts.transactions.length === 0 && (!data.cashReceipts.nonIssuedTransactions || data.cashReceipts.nonIssuedTransactions.length === 0) && (
+                      <p className="text-center text-gray-400 py-2 text-sm">현금영수증 내역이 없습니다.</p>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             </div>
