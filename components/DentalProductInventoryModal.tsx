@@ -197,7 +197,7 @@ export default function DentalProductInventoryModal({ isOpen, onClose }: Props) 
       if (!response.ok) throw new Error('구강용품 목록 조회 실패');
       
       const data = await response.json();
-      setProducts(data);
+      setProducts(data.products || []);
     } catch (error) {
       console.error('구강용품 목록 로드 오류:', error);
       toast.error('구강용품 목록을 불러오는데 실패했습니다.');

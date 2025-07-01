@@ -48,7 +48,6 @@ export default function DentalProductsList({ title }: DentalProductsListProps) {
   const [newSpecification, setNewSpecification] = useState('');
   const [newPurchasePrice, setNewPurchasePrice] = useState<number | ''>('');
   const [newSellingPrice, setNewSellingPrice] = useState<number | ''>('');
-  const [newStock, setNewStock] = useState<number | ''>('');
   
   // 다이얼로그 핸들러
   const handleAddDialogChange = (open: boolean) => {
@@ -74,7 +73,6 @@ export default function DentalProductsList({ title }: DentalProductsListProps) {
     setNewSpecification('');
     setNewPurchasePrice('');
     setNewSellingPrice('');
-    setNewStock('');
   };
 
   // 제품 목록 불러오기
@@ -123,7 +121,7 @@ export default function DentalProductsList({ title }: DentalProductsListProps) {
           specification: newSpecification,
           purchasePrice: newPurchasePrice,
           sellingPrice: newSellingPrice,
-          stock: newStock === '' ? 0 : newStock
+          stock: 0
         }),
         cache: 'no-store'
       });
@@ -341,23 +339,6 @@ export default function DentalProductsList({ title }: DentalProductsListProps) {
                   placeholder="판매가격 (원)"
                 />
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="stock" className="text-right">
-                  재고
-                </Label>
-                <Input
-                  id="stock"
-                  type="number"
-                  min="0"
-                  value={newStock}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                    const value = e.target.value ? Number(e.target.value) : '';
-                    setNewStock(value);
-                  }}
-                  className="col-span-3"
-                  placeholder="재고 수량"
-                />
-              </div>
             </div>
             <DialogFooter>
               <DialogClose asChild>
@@ -378,14 +359,13 @@ export default function DentalProductsList({ title }: DentalProductsListProps) {
               <TableHead>규격</TableHead>
               <TableHead className="text-right">구매가격</TableHead>
               <TableHead className="text-right">판매가격</TableHead>
-              <TableHead className="text-right">재고</TableHead>
               <TableHead className="text-right">작업</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {products.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center">
+                <TableCell colSpan={6} className="text-center">
                   등록된 구강용품이 없습니다
                 </TableCell>
               </TableRow>
@@ -397,7 +377,6 @@ export default function DentalProductsList({ title }: DentalProductsListProps) {
                   <TableCell>{product.specification || '-'}</TableCell>
                   <TableCell className="text-right">{formatPrice(product.purchasePrice)}원</TableCell>
                   <TableCell className="text-right">{formatPrice(product.sellingPrice)}원</TableCell>
-                  <TableCell className="text-right">{product.stock}개</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       <Button
@@ -498,22 +477,6 @@ export default function DentalProductsList({ title }: DentalProductsListProps) {
                   onChange={(e: ChangeEvent<HTMLInputElement>) => {
                     const value = e.target.value ? Number(e.target.value) : 0;
                     setCurrentProduct({...currentProduct, sellingPrice: value});
-                  }}
-                  className="col-span-3"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="edit-stock" className="text-right">
-                  재고
-                </Label>
-                <Input
-                  id="edit-stock"
-                  type="number"
-                  min="0"
-                  value={currentProduct.stock}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                    const value = e.target.value ? Number(e.target.value) : 0;
-                    setCurrentProduct({...currentProduct, stock: value});
                   }}
                   className="col-span-3"
                 />

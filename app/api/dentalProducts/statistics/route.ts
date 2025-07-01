@@ -14,17 +14,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: '시작일과 종료일을 모두 지정해주세요.' }, { status: 400 });
     }
 
-    // 날짜 범위 설정 (한국 시간 기준으로 처리)
+    // 날짜 필터 추가 (한국 시간 기준으로 처리)
     const startParts = startDate.split('-').map(Number);
     const endParts = endDate.split('-').map(Number);
     
-    const start = new Date(startParts[0], startParts[1] - 1, startParts[2], 0, 0, 0, 0);
-    const end = new Date(endParts[0], endParts[1] - 1, endParts[2], 23, 59, 59, 999);
-    
-    // 한국 시간과 UTC 간의 시차 조정 (9시간)
-    const kstOffset = 9 * 60 * 60 * 1000;
-    const startUtc = new Date(start.getTime() - kstOffset);
-    const endUtc = new Date(end.getTime() - kstOffset);
+    // 한국시간 기준으로 날짜 생성 (JavaScript Date는 현지 시간대를 자동으로 고려)
+    const startUtc = new Date(startParts[0], startParts[1] - 1, startParts[2], 0, 0, 0, 0);
+    const endUtc = new Date(endParts[0], endParts[1] - 1, endParts[2], 23, 59, 59, 999);
 
     if (isNaN(startUtc.getTime()) || isNaN(endUtc.getTime())) {
       return NextResponse.json({ error: '올바른 날짜 형식이 아닙니다.' }, { status: 400 });
