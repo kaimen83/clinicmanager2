@@ -15,7 +15,9 @@ import {
 import { Transaction } from '@/lib/types';
 import { toISODateString } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
-import { Search } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import { Search, RefreshCw, CheckCircle2, XCircle } from 'lucide-react';
 
 type Props = {
   isOpen: boolean;
@@ -31,6 +33,13 @@ export default function PaymentListModal({ isOpen, onClose, title, date, payment
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([]);
+  const [crawlingStatus, setCrawlingStatus] = useState<{
+    isRunning: boolean;
+    progress: number;
+    message: string;
+    error: string | null;
+  } | null>(null);
+  const [isVerifying, setIsVerifying] = useState(false);
 
   // 트랜잭션 목록 조회
   const fetchTransactions = async () => {
@@ -112,6 +121,82 @@ export default function PaymentListModal({ isOpen, onClose, title, date, payment
     return format(date, 'yyyy-MM-dd', { locale: ko });
   };
 
+  // 홈텍스 크롤링 시작
+  const startHometaxCrawling = async () => {
+    try {
+      const response = await fetch('/api/hometax/crawl-script', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        // 크롤링 상태 모니터링 시작
+        monitorCrawlingStatus();
+      } else {
+        alert(data.error || '크롤링 시작에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('크롤링 시작 에러:', error);
+      alert('크롤링 시작 중 오류가 발생했습니다.');
+    }
+  };
+
+  // 크롤링 상태 모니터링
+  const monitorCrawlingStatus = () => {
+    const interval = setInterval(async () => {
+      try {
+        const response = await fetch('/api/hometax/crawl-script');
+        const data = await response.json();
+        
+        if (data.success && data.status) {
+          setCrawlingStatus(data.status);
+          
+          // 크롤링이 완료되면 모니터링 중지
+          if (!data.status.isRunning) {
+            clearInterval(interval);
+            
+            // 완료 후 자동으로 검증 실행
+            if (data.status.progress === 100) {
+              setTimeout(() => {
+                verifyHometaxData();
+              }, 2000);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('상태 확인 에러:', error);
+      }
+    }, 1000); // 1초마다 상태 확인
+  };
+
+  // 홈텍스 데이터 검증
+  const verifyHometaxData = async () => {
+    setIsVerifying(true);
+    try {
+      const response = await fetch('/api/hometax/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date: toISODateString(date) }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        alert(`검증 완료: ${data.matchedCount}건이 확인되었습니다.`);
+        // 트랜잭션 목록 새로고침
+        fetchTransactions();
+      } else {
+        alert('검증 중 오류가 발생했습니다.');
+      }
+    } catch (error) {
+      console.error('검증 에러:', error);
+      alert('검증 중 오류가 발생했습니다.');
+    } finally {
+      setIsVerifying(false);
+      setCrawlingStatus(null);
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[900px] max-h-[80vh] overflow-hidden flex flex-col bg-white rounded-2xl shadow-xl border border-gray-100">
@@ -138,14 +223,62 @@ export default function PaymentListModal({ isOpen, onClose, title, date, payment
           </div>
         </DialogHeader>
         
-        <div className="relative mb-4 pt-2">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input
-            placeholder="차트번호 또는 환자명으로 검색"
-            className="pl-10 bg-gray-50 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+        <div className="space-y-4 pt-2">
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="차트번호 또는 환자명으로 검색"
+                className="pl-10 bg-gray-50 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            {paymentMethod === '현금' && (
+              <Button
+                onClick={startHometaxCrawling}
+                disabled={crawlingStatus?.isRunning || isVerifying}
+                className="flex items-center gap-2"
+                variant="outline"
+              >
+                <RefreshCw className={`h-4 w-4 ${crawlingStatus?.isRunning ? 'animate-spin' : ''}`} />
+                홈텍스 확인
+              </Button>
+            )}
+          </div>
+          
+          {/* 크롤링 상태 인디케이터 */}
+          {crawlingStatus && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-blue-700">
+                  {crawlingStatus.message}
+                </span>
+                <span className="text-sm text-blue-600">
+                  {crawlingStatus.progress}%
+                </span>
+              </div>
+              <Progress value={crawlingStatus.progress} className="h-2" />
+              {crawlingStatus.error && (
+                <div className="mt-2 flex items-center gap-2 text-red-600">
+                  <XCircle className="h-4 w-4" />
+                  <span className="text-sm">{crawlingStatus.error}</span>
+                </div>
+              )}
+            </div>
+          )}
+          
+          {/* 검증 중 인디케이터 */}
+          {isVerifying && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-green-600 border-t-transparent rounded-full animate-spin"></div>
+                <span className="text-sm font-medium text-green-700">
+                  홈텍스 데이터와 매칭 중입니다...
+                </span>
+              </div>
+            </div>
+          )}
         </div>
         
         <div className="overflow-y-auto flex-1">
@@ -173,6 +306,7 @@ export default function PaymentListModal({ isOpen, onClose, title, date, payment
                     <TableHead className="font-bold text-green-800 py-3">환자명</TableHead>
                     <TableHead className="font-bold text-green-800 py-3">결제방법</TableHead>
                     <TableHead className="font-bold text-green-800 py-3">현금영수증</TableHead>
+                    <TableHead className="font-bold text-green-800 py-3">홈텍스 확인</TableHead>
                     <TableHead className="text-right font-bold text-green-800 py-3">금액</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -195,6 +329,13 @@ export default function PaymentListModal({ isOpen, onClose, title, date, payment
                           <span className="bg-green-50 text-green-700 px-2 py-1 rounded-md text-sm font-medium">발행</span>
                         ) : (
                           <span className="text-gray-400">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="py-3">
+                        {tx.hometaxVerified ? (
+                          <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded-md text-sm font-medium">확인</span>
+                        ) : (
+                          <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-md text-sm font-medium">미확인</span>
                         )}
                       </TableCell>
                       <TableCell className="text-right py-3 font-semibold text-green-700">

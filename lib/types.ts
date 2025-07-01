@@ -73,6 +73,7 @@ export interface Transaction {
   updatedAt: Date;
   cashReceipt: boolean;
   cashRecordId?: string;
+  hometaxVerified?: boolean;
 }
 
 // 진료외수입 타입
