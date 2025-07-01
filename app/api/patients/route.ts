@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
+import { requireRole } from '@/lib/utils/auth';
 
 // GET 요청 처리 - 환자 목록 조회 (페이지네이션, 검색 지원)
 export async function GET(request: NextRequest) {
   try {
+    // 환자 조회는 기본 기능이므로 권한 검증 없이 허용
     const searchParams = request.nextUrl.searchParams;
     const query = searchParams.get('query') || '';
     const page = parseInt(searchParams.get('page') || '1');
@@ -46,6 +48,9 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('환자 목록 조회 중 에러:', error);
+    if (error instanceof Error && (error.message === 'Unauthorized' || error.message === 'Insufficient permissions')) {
+      return NextResponse.json({ error: '접근 권한이 없습니다.' }, { status: 403 });
+    }
     return NextResponse.json(
       { error: "환자 목록 조회 중 오류가 발생했습니다." },
       { status: 500 }
@@ -56,6 +61,8 @@ export async function GET(request: NextRequest) {
 // POST 요청 처리 - 새 환자 등록
 export async function POST(request: NextRequest) {
   try {
+    // 권한 검증 - STAFF 이상 필요
+    await requireRole('STAFF');
     const data = await request.json();
     const { chartNumber, name, visitPath } = data;
 
@@ -98,6 +105,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(insertedPatient, { status: 201 });
   } catch (error) {
     console.error('환자 등록 중 에러:', error);
+    if (error instanceof Error && (error.message === 'Unauthorized' || error.message === 'Insufficient permissions')) {
+      return NextResponse.json({ error: '접근 권한이 없습니다.' }, { status: 403 });
+    }
     return NextResponse.json(
       { error: "환자 등록 중 오류가 발생했습니다." },
       { status: 500 }

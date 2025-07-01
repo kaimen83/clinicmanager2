@@ -4,13 +4,15 @@ import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { UserButton } from '@clerk/nextjs';
-import { LogOut, Clock, Calculator, Home } from 'lucide-react';
+import { LogOut, Clock, Calculator, Home, Users, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getCurrentKstDate } from '@/lib/utils';
+import { useUserRole } from './UserRoleProvider';
 
 export default function Header() {
   const [currentDateTime, setCurrentDateTime] = useState<string>('');
   const pathname = usePathname();
+  const { userWithRole } = useUserRole();
   
   useEffect(() => {
     const updateDateTime = () => {
@@ -73,6 +75,19 @@ export default function Header() {
           </div>
           
           <div className="flex items-center gap-3">
+            {userWithRole?.role === 'SUPER_ADMIN' && (
+              <Link href="/user-management">
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="flex items-center gap-2 text-white hover:bg-white/10 hover:text-white transition-all duration-300 px-3 py-2"
+                >
+                  <Users className="w-4 h-4" />
+                  <span className="hidden sm:inline">사용자관리</span>
+                </Button>
+              </Link>
+            )}
+            
             <div className="bg-white/10 backdrop-blur-md rounded-lg p-1 border border-white/20">
               <UserButton afterSignOutUrl="/" />
             </div>

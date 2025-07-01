@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { currentUser } from '@clerk/nextjs/server';
 import { ObjectId } from 'mongodb';
+import { requireRole } from '@/lib/utils/auth';
 
 export async function GET(request: NextRequest) {
   try {
+    // 설정 조회는 기본 기능이므로 권한 검증 없이 허용
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type');
     
@@ -58,12 +60,17 @@ export async function GET(request: NextRequest) {
     }
   } catch (error) {
     console.error('설정 조회 오류:', error);
+    if (error instanceof Error && (error.message === 'Unauthorized' || error.message === 'Insufficient permissions')) {
+      return NextResponse.json({ error: '접근 권한이 없습니다.' }, { status: 403 });
+    }
     return NextResponse.json({ error: '설정을 조회하는 중 오류가 발생했습니다.' }, { status: 500 });
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
+    // 권한 검증 - ADMIN 이상 필요
+    await requireRole('ADMIN');
     const body = await request.json();
     const { type, value, order, feeRate, isActive } = body;
     
@@ -120,12 +127,17 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('설정 생성 오류:', error);
+    if (error instanceof Error && (error.message === 'Unauthorized' || error.message === 'Insufficient permissions')) {
+      return NextResponse.json({ error: '접근 권한이 없습니다.' }, { status: 403 });
+    }
     return NextResponse.json({ error: '설정을 생성하는 중 오류가 발생했습니다.' }, { status: 500 });
   }
 }
 
 export async function PUT(request: NextRequest) {
   try {
+    // 권한 검증 - ADMIN 이상 필요
+    await requireRole('ADMIN');
     const body = await request.json();
     const { id, value, order, feeRate, isActive } = body;
     
@@ -172,12 +184,17 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ message: '설정이 업데이트되었습니다.' });
   } catch (error) {
     console.error('설정 업데이트 오류:', error);
+    if (error instanceof Error && (error.message === 'Unauthorized' || error.message === 'Insufficient permissions')) {
+      return NextResponse.json({ error: '접근 권한이 없습니다.' }, { status: 403 });
+    }
     return NextResponse.json({ error: '설정을 업데이트하는 중 오류가 발생했습니다.' }, { status: 500 });
   }
 }
 
 export async function DELETE(request: NextRequest) {
   try {
+    // 권한 검증 - ADMIN 이상 필요
+    await requireRole('ADMIN');
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
     
@@ -204,6 +221,9 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ message: '설정이 삭제되었습니다.' });
   } catch (error) {
     console.error('설정 삭제 오류:', error);
+    if (error instanceof Error && (error.message === 'Unauthorized' || error.message === 'Insufficient permissions')) {
+      return NextResponse.json({ error: '접근 권한이 없습니다.' }, { status: 403 });
+    }
     return NextResponse.json({ error: '설정을 삭제하는 중 오류가 발생했습니다.' }, { status: 500 });
   }
 } 
