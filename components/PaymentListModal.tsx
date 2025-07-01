@@ -199,37 +199,37 @@ export default function PaymentListModal({ isOpen, onClose, title, date, payment
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[900px] max-h-[80vh] overflow-hidden flex flex-col bg-white rounded-2xl shadow-xl border border-gray-100">
-        <DialogHeader className="pb-4 border-b border-gray-100">
+      <DialogContent className="sm:max-w-[1000px] max-h-[85vh] overflow-hidden flex flex-col bg-white rounded-2xl shadow-2xl border-0">
+        <DialogHeader className="pb-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-green-50 rounded-lg">
+            <div className="p-3 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl shadow-lg">
               {paymentMethod ? (
                 paymentMethod === '카드' ? (
-                  <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                   </svg>
                 ) : (
-                  <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 )
               ) : (
-                <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
               )}
             </div>
-            <DialogTitle className="text-lg font-semibold text-gray-800">{title}</DialogTitle>
+            <DialogTitle className="text-xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">{title}</DialogTitle>
           </div>
         </DialogHeader>
         
         <div className="space-y-4 pt-2">
           <div className="flex items-center gap-2">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
               <Input
                 placeholder="차트번호 또는 환자명으로 검색"
-                className="pl-10 bg-gray-50 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="pl-10 bg-gray-50 border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -238,8 +238,7 @@ export default function PaymentListModal({ isOpen, onClose, title, date, payment
               <Button
                 onClick={startHometaxCrawling}
                 disabled={crawlingStatus?.isRunning || isVerifying}
-                className="flex items-center gap-2"
-                variant="outline"
+                className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl px-4 py-2 transition-all shadow-md hover:shadow-lg disabled:opacity-50"
               >
                 <RefreshCw className={`h-4 w-4 ${crawlingStatus?.isRunning ? 'animate-spin' : ''}`} />
                 홈텍스 확인
@@ -249,19 +248,19 @@ export default function PaymentListModal({ isOpen, onClose, title, date, payment
           
           {/* 크롤링 상태 인디케이터 */}
           {crawlingStatus && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4 shadow-sm">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-blue-700">
+                <span className="text-sm font-semibold text-blue-800">
                   {crawlingStatus.message}
                 </span>
-                <span className="text-sm text-blue-600">
+                <span className="text-sm font-bold text-blue-600">
                   {crawlingStatus.progress}%
                 </span>
               </div>
-              <Progress value={crawlingStatus.progress} className="h-2" />
+              <Progress value={crawlingStatus.progress} className="h-2 bg-blue-100" />
               {crawlingStatus.error && (
-                <div className="mt-2 flex items-center gap-2 text-red-600">
-                  <XCircle className="h-4 w-4" />
+                <div className="mt-2 flex items-center gap-2 text-red-600 bg-red-50 rounded-lg p-2">
+                  <XCircle className="h-4 w-4 flex-shrink-0" />
                   <span className="text-sm">{crawlingStatus.error}</span>
                 </div>
               )}
@@ -270,10 +269,10 @@ export default function PaymentListModal({ isOpen, onClose, title, date, payment
           
           {/* 검증 중 인디케이터 */}
           {isVerifying && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <div className="flex items-center gap-2">
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4 shadow-sm">
+              <div className="flex items-center gap-3">
                 <div className="w-4 h-4 border-2 border-green-600 border-t-transparent rounded-full animate-spin"></div>
-                <span className="text-sm font-medium text-green-700">
+                <span className="text-sm font-semibold text-green-800">
                   홈텍스 데이터와 매칭 중입니다...
                 </span>
               </div>
@@ -297,48 +296,56 @@ export default function PaymentListModal({ isOpen, onClose, title, date, payment
               </div>
             </div>
           ) : (
-            <div className="bg-gray-50 rounded-xl overflow-hidden border border-gray-100">
+            <div className="bg-white rounded-xl overflow-hidden shadow-lg border border-gray-100">
               <Table>
-                <TableHeader className="bg-gradient-to-r from-green-50 to-green-100">
-                  <TableRow className="border-b border-green-200 hover:bg-green-50">
-                    <TableHead className="w-24 font-bold text-green-800 py-3">날짜</TableHead>
-                    <TableHead className="w-24 font-bold text-green-800 py-3">차트번호</TableHead>
-                    <TableHead className="font-bold text-green-800 py-3">환자명</TableHead>
-                    <TableHead className="font-bold text-green-800 py-3">결제방법</TableHead>
-                    <TableHead className="font-bold text-green-800 py-3">현금영수증</TableHead>
-                    <TableHead className="font-bold text-green-800 py-3">홈텍스 확인</TableHead>
-                    <TableHead className="text-right font-bold text-green-800 py-3">금액</TableHead>
+                <TableHeader className="bg-gradient-to-r from-gray-50 to-gray-100">
+                  <TableRow className="border-b border-gray-200">
+                    <TableHead className="w-24 font-semibold text-gray-700 py-4 text-sm">날짜</TableHead>
+                    <TableHead className="w-20 font-semibold text-gray-700 py-4 text-sm">차트번호</TableHead>
+                    <TableHead className="w-24 font-semibold text-gray-700 py-4 text-sm">환자명</TableHead>
+                    <TableHead className="w-20 font-semibold text-gray-700 py-4 text-sm">결제방법</TableHead>
+                    <TableHead className="w-20 font-semibold text-gray-700 py-4 text-sm text-center">현금영수증</TableHead>
+                    <TableHead className="w-20 font-semibold text-gray-700 py-4 text-sm text-center">홈텍스</TableHead>
+                    <TableHead className="text-right font-semibold text-gray-700 py-4 text-sm">금액</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredTransactions.map((tx, index) => (
                     <TableRow 
                       key={tx._id} 
-                      className={`hover:bg-green-50/30 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}
+                      className={`hover:bg-gray-50 transition-all duration-200 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`}
                     >
-                      <TableCell className="py-3 text-gray-600 font-medium">{formatDate(tx.date)}</TableCell>
-                      <TableCell className="py-3 text-gray-700 font-medium">{tx.chartNumber}</TableCell>
-                      <TableCell className="py-3 text-gray-700 font-medium">{tx.patientName}</TableCell>
-                      <TableCell className="py-3">
-                        <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded-md text-sm font-medium">
+                      <TableCell className="py-3.5 text-gray-700 font-medium text-sm whitespace-nowrap">{formatDate(tx.date)}</TableCell>
+                      <TableCell className="py-3.5 text-gray-800 font-semibold text-sm">{tx.chartNumber}</TableCell>
+                      <TableCell className="py-3.5 text-gray-800 font-medium text-sm">{tx.patientName}</TableCell>
+                      <TableCell className="py-3.5 text-sm font-medium">
+                        <span className={`
+                          ${tx.paymentMethod === '카드' ? 'text-blue-700' : 
+                            tx.paymentMethod === '현금' ? 'text-green-700' : 
+                            'text-purple-700'}`}>
                           {tx.paymentMethod}
                         </span>
                       </TableCell>
-                      <TableCell className="py-3">
+                      <TableCell className="py-3.5 text-center text-sm font-medium">
                         {tx.cashReceipt ? (
-                          <span className="bg-green-50 text-green-700 px-2 py-1 rounded-md text-sm font-medium">발행</span>
+                          <span className="text-emerald-700">발행</span>
                         ) : (
                           <span className="text-gray-400">-</span>
                         )}
                       </TableCell>
-                      <TableCell className="py-3">
+                      <TableCell className="py-3.5 text-center">
                         {tx.hometaxVerified ? (
-                          <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded-md text-sm font-medium">확인</span>
+                          <span className="inline-flex items-center justify-center px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold">
+                            <CheckCircle2 className="w-3 h-3 mr-1" />
+                            확인
+                          </span>
                         ) : (
-                          <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-md text-sm font-medium">미확인</span>
+                          <span className="inline-flex items-center justify-center px-2 py-1 bg-gray-100 text-gray-500 rounded-lg text-xs font-medium">
+                            미확인
+                          </span>
                         )}
                       </TableCell>
-                      <TableCell className="text-right py-3 font-semibold text-green-700">
+                      <TableCell className="text-right py-3.5 font-bold text-gray-900 pr-6 text-sm">
                         ₩{formatAmount(tx.paymentAmount)}
                       </TableCell>
                     </TableRow>
@@ -351,13 +358,25 @@ export default function PaymentListModal({ isOpen, onClose, title, date, payment
         
         {/* Footer with total */}
         {filteredTransactions.length > 0 && (
-          <div className="mt-4 pt-4 border-t border-gray-100">
-            <div className="flex justify-between items-center">
-              <div className="text-sm text-gray-600">
-                총 <span className="font-semibold text-gray-800">{filteredTransactions.length}</span>건
+          <div className="mt-4 pt-4 border-t border-gray-200 bg-gradient-to-r from-gray-50 to-white rounded-b-xl">
+            <div className="flex justify-between items-center px-4">
+              <div className="flex items-center gap-4">
+                <div className="text-sm text-gray-600">
+                  총 <span className="font-bold text-gray-900 text-base">{filteredTransactions.length}</span>건
+                </div>
+                {paymentMethod === '현금' && (
+                  <div className="text-sm text-gray-600">
+                    홈텍스 확인: <span className="font-bold text-blue-700">
+                      {filteredTransactions.filter(tx => tx.hometaxVerified).length}
+                    </span>건
+                  </div>
+                )}
               </div>
-              <div className="text-lg font-bold text-green-700">
-                합계: ₩{formatAmount(filteredTransactions.reduce((sum, tx) => sum + tx.paymentAmount, 0))}
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-500">합계</span>
+                <span className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">
+                  ₩{formatAmount(filteredTransactions.reduce((sum, tx) => sum + tx.paymentAmount, 0))}
+                </span>
               </div>
             </div>
           </div>
