@@ -15,6 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
 import { toISODateString } from '@/lib/utils';
 import { useDateContext } from '@/lib/context/dateContext';
+import { useUserRole } from '@/components/UserRoleProvider';
 
 // Transaction 타입 확장 (기존 Transaction 타입에 treatments 추가)
 interface ExtendedTransaction extends Transaction {
@@ -108,6 +109,7 @@ type SortDirection = 'asc' | 'desc';
 
 export default function DoctorPatientList({ date }: Props) {
   const { refreshTrigger, triggerRefresh, triggerCashRefresh, triggerStatsRefresh } = useDateContext();
+  const { userWithRole } = useUserRole();
   const [transactions, setTransactions] = useState<ExtendedTransaction[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -130,6 +132,27 @@ export default function DoctorPatientList({ date }: Props) {
   const [treatmentTypes, setTreatmentTypes] = useState<{value: string}[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<{value: string}[]>([]);
   const [cardCompanies, setCardCompanies] = useState<{value: string}[]>([]);
+
+  // 오늘 날짜와 비교하는 함수
+  const isToday = useCallback((transactionDate: Date) => {
+    const today = new Date();
+    const txDate = new Date(transactionDate);
+    
+    return today.getFullYear() === txDate.getFullYear() &&
+           today.getMonth() === txDate.getMonth() &&
+           today.getDate() === txDate.getDate();
+  }, []);
+
+  // 수정/삭제 버튼 비활성화 여부 확인 함수
+  const isEditDeleteDisabled = useCallback((transaction: ExtendedTransaction) => {
+    // STAFF 권한 사용자만 제한 적용
+    if (userWithRole?.role !== 'STAFF') {
+      return false;
+    }
+    
+    // 오늘 날짜가 아닌 경우 비활성화
+    return !isToday(transaction.date);
+  }, [userWithRole?.role, isToday]);
   
   // 설정 데이터 불러오기 함수들
   const fetchSettings = useCallback(async () => {
@@ -790,16 +813,36 @@ export default function DoctorPatientList({ date }: Props) {
                                 <Button 
                                   variant="ghost" 
                                   size="icon" 
-                                  className="hover:bg-blue-100 hover:text-blue-700 transition-colors"
-                                  onClick={() => openEditDialog(transaction)}
+                                  className={`transition-colors ${
+                                    isEditDeleteDisabled(transaction) 
+                                      ? 'text-gray-400 cursor-not-allowed opacity-50' 
+                                      : 'hover:bg-blue-100 hover:text-blue-700'
+                                  }`}
+                                  disabled={isEditDeleteDisabled(transaction)}
+                                  onClick={() => !isEditDeleteDisabled(transaction) && openEditDialog(transaction)}
+                                  title={
+                                    isEditDeleteDisabled(transaction)
+                                      ? '일반직원은 오늘 날짜의 데이터만 수정할 수 있습니다.'
+                                      : '수정'
+                                  }
                                 >
                                   <Edit className="h-4 w-4" />
                                 </Button>
                                 <Button 
                                   variant="ghost" 
                                   size="icon" 
-                                  className="hover:bg-red-100 hover:text-red-700 transition-colors"
-                                  onClick={() => openDeleteDialog(transaction)}
+                                  className={`transition-colors ${
+                                    isEditDeleteDisabled(transaction) 
+                                      ? 'text-gray-400 cursor-not-allowed opacity-50' 
+                                      : 'hover:bg-red-100 hover:text-red-700'
+                                  }`}
+                                  disabled={isEditDeleteDisabled(transaction)}
+                                  onClick={() => !isEditDeleteDisabled(transaction) && openDeleteDialog(transaction)}
+                                  title={
+                                    isEditDeleteDisabled(transaction)
+                                      ? '일반직원은 오늘 날짜의 데이터만 삭제할 수 있습니다.'
+                                      : '삭제'
+                                  }
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
