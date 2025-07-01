@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +12,7 @@ import ExpenseModal from './ExpenseModal';
 import { Expense } from '@/lib/types';
 import { toISODateString } from '@/lib/utils';
 import { useDateContext } from '@/lib/context/dateContext';
+import { useUserRole } from '@/components/UserRoleProvider';
 
 type ExpenseListProps = {
   date: Date;
@@ -19,11 +20,33 @@ type ExpenseListProps = {
 
 export default function ExpenseList({ date }: ExpenseListProps) {
   const { expenseRefreshTrigger, triggerStatsRefresh, triggerCashRefresh } = useDateContext();
+  const { userWithRole } = useUserRole();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editItem, setEditItem] = useState<Expense | null>(null);
   const [totalAmount, setTotalAmount] = useState(0);
+
+  // 오늘 날짜와 비교하는 함수
+  const isToday = useCallback((expenseDate: Date) => {
+    const today = new Date();
+    const txDate = new Date(expenseDate);
+    
+    return today.getFullYear() === txDate.getFullYear() &&
+           today.getMonth() === txDate.getMonth() &&
+           today.getDate() === txDate.getDate();
+  }, []);
+
+  // 수정/삭제 버튼 비활성화 여부 확인 함수
+  const isEditDeleteDisabled = useCallback((expense: Expense) => {
+    // STAFF 권한 사용자만 제한 적용
+    if (userWithRole?.role !== 'STAFF') {
+      return false;
+    }
+    
+    // 오늘 날짜가 아닌 경우 비활성화
+    return !isToday(expense.date);
+  }, [userWithRole?.role, isToday]);
 
   // 지출 내역 가져오기
   const fetchExpenses = async () => {
@@ -165,16 +188,36 @@ export default function ExpenseList({ date }: ExpenseListProps) {
                         <Button 
                           variant="ghost" 
                           size="icon" 
-                          className="hover:bg-blue-100 hover:text-blue-700 transition-colors"
-                          onClick={() => handleEditExpense(expense)}
+                          className={`transition-colors ${
+                            isEditDeleteDisabled(expense) 
+                              ? 'text-gray-400 cursor-not-allowed opacity-50' 
+                              : 'hover:bg-blue-100 hover:text-blue-700'
+                          }`}
+                          disabled={isEditDeleteDisabled(expense)}
+                          onClick={() => !isEditDeleteDisabled(expense) && handleEditExpense(expense)}
+                          title={
+                            isEditDeleteDisabled(expense)
+                              ? '일반직원은 오늘 날짜의 데이터만 수정할 수 있습니다.'
+                              : '수정'
+                          }
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
                         <Button 
                           variant="ghost" 
                           size="icon" 
-                          className="hover:bg-red-100 hover:text-red-700 transition-colors"
-                          onClick={() => handleDeleteExpense(expense._id || '')}
+                          className={`transition-colors ${
+                            isEditDeleteDisabled(expense) 
+                              ? 'text-gray-400 cursor-not-allowed opacity-50' 
+                              : 'hover:bg-red-100 hover:text-red-700'
+                          }`}
+                          disabled={isEditDeleteDisabled(expense)}
+                          onClick={() => !isEditDeleteDisabled(expense) && handleDeleteExpense(expense._id || '')}
+                          title={
+                            isEditDeleteDisabled(expense)
+                              ? '일반직원은 오늘 날짜의 데이터만 삭제할 수 있습니다.'
+                              : '삭제'
+                          }
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Trash2, Edit } from 'lucide-react';
@@ -29,6 +29,7 @@ import {
 import { ExtraIncome } from '@/lib/types';
 import { toISODateString } from '@/lib/utils';
 import ExtraIncomeModal from './ExtraIncomeModal';
+import { useUserRole } from '@/components/UserRoleProvider';
 
 type Props = {
   date: Date;
@@ -36,6 +37,7 @@ type Props = {
 
 export default function ExtraIncomeList({ date }: Props) {
   const { userId } = useAuth();
+  const { userWithRole } = useUserRole();
   const [isLoading, setIsLoading] = useState(false);
   const [extraincomes, setextraincomes] = useState<ExtraIncome[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -45,6 +47,27 @@ export default function ExtraIncomeList({ date }: Props) {
   
   // 날짜를 문자열로 변환하여 메모이제이션
   const dateStr = useMemo(() => toISODateString(date), [date]);
+
+  // 오늘 날짜와 비교하는 함수
+  const isToday = useCallback((extraIncomeDate: Date) => {
+    const today = new Date();
+    const txDate = new Date(extraIncomeDate);
+    
+    return today.getFullYear() === txDate.getFullYear() &&
+           today.getMonth() === txDate.getMonth() &&
+           today.getDate() === txDate.getDate();
+  }, []);
+
+  // 수정/삭제 버튼 비활성화 여부 확인 함수
+  const isEditDeleteDisabled = useCallback((extraIncome: ExtraIncome) => {
+    // STAFF 권한 사용자만 제한 적용
+    if (userWithRole?.role !== 'STAFF') {
+      return false;
+    }
+    
+    // 오늘 날짜가 아닌 경우 비활성화
+    return !isToday(extraIncome.date);
+  }, [userWithRole?.role, isToday]);
 
   // 진료외수입 목록 조회
   const fetchextraincomes = async () => {
@@ -186,16 +209,36 @@ export default function ExtraIncomeList({ date }: Props) {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="hover:bg-blue-100 hover:text-blue-700 transition-colors"
-                            onClick={() => handleOpenEditModal(item)}
+                            className={`transition-colors ${
+                              isEditDeleteDisabled(item) 
+                                ? 'text-gray-400 cursor-not-allowed opacity-50' 
+                                : 'hover:bg-blue-100 hover:text-blue-700'
+                            }`}
+                            disabled={isEditDeleteDisabled(item)}
+                            onClick={() => !isEditDeleteDisabled(item) && handleOpenEditModal(item)}
+                            title={
+                              isEditDeleteDisabled(item)
+                                ? '일반직원은 오늘 날짜의 데이터만 수정할 수 있습니다.'
+                                : '수정'
+                            }
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="hover:bg-red-100 hover:text-red-700 transition-colors"
-                            onClick={() => handleOpenDeleteDialog(item._id || '')}
+                            className={`transition-colors ${
+                              isEditDeleteDisabled(item) 
+                                ? 'text-gray-400 cursor-not-allowed opacity-50' 
+                                : 'hover:bg-red-100 hover:text-red-700'
+                            }`}
+                            disabled={isEditDeleteDisabled(item)}
+                            onClick={() => !isEditDeleteDisabled(item) && handleOpenDeleteDialog(item._id || '')}
+                            title={
+                              isEditDeleteDisabled(item)
+                                ? '일반직원은 오늘 날짜의 데이터만 삭제할 수 있습니다.'
+                                : '삭제'
+                            }
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>

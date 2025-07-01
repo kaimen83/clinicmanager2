@@ -23,6 +23,7 @@ import { cn, getCurrentKstDate } from "@/lib/utils";
 import { format, addDays, subDays } from "date-fns";
 import { ko } from "date-fns/locale";
 import { useDateContext } from "@/lib/context/dateContext";
+import { useUserRole } from "./UserRoleProvider";
 import SystemSettingsModal from "./SystemSettingsModal";
 import PatientTransactionForm from "./PatientTransactionForm";
 import ExtraIncomeModal from "./ExtraIncomeModal";
@@ -36,6 +37,7 @@ import { toast } from "sonner";
 
 export default function ClinicNavigation() {
   const { selectedDate, setSelectedDate, triggerRefresh, triggerCashRefresh, triggerExpenseRefresh, triggerStatsRefresh } = useDateContext();
+  const { userWithRole } = useUserRole();
   const [isPatientFormOpen, setIsPatientFormOpen] = useState(false);
   const [isExtraIncomeModalOpen, setIsExtraIncomeModalOpen] = useState(false);
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
@@ -216,7 +218,8 @@ export default function ClinicNavigation() {
             <span>병원리뷰</span>
           </Button>
           
-          <SystemSettingsModal />
+          {/* 일반직원은 시스템설정 버튼 숨김 */}
+          {userWithRole?.role !== 'STAFF' && <SystemSettingsModal />}
         </div>
         
         <div className="flex items-center gap-3">

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -14,6 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { toISODateString } from '@/lib/utils';
 import { useUser } from '@clerk/nextjs';
+import { useUserRole } from './UserRoleProvider';
 import { 
   CreditCard, 
   Banknote, 
@@ -106,11 +107,29 @@ type Props = {
 
 export default function DailySettlementModal({ isOpen, onClose, date, onDateChange }: Props) {
   const { user } = useUser();
+  const { userWithRole } = useUserRole();
   const [data, setData] = useState<SettlementData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [checkStates, setCheckStates] = useState<any>({});
+
+  // 오늘 날짜와 비교하는 함수
+  const isToday = useCallback((targetDate: Date) => {
+    const today = new Date();
+    const target = new Date(targetDate);
+    return (
+      today.getFullYear() === target.getFullYear() &&
+      today.getMonth() === target.getMonth() &&
+      today.getDate() === target.getDate()
+    );
+  }, []);
+
+  // 체크 버튼 비활성화 여부 확인 함수
+  const isCheckDisabled = useCallback(() => {
+    if (userWithRole?.role !== 'STAFF') return false;
+    return !isToday(date);
+  }, [userWithRole?.role, isToday, date]);
 
   const fetchSettlementData = async () => {
     try {
@@ -248,19 +267,33 @@ export default function DailySettlementModal({ isOpen, onClose, date, onDateChan
     const isChecked = checkStates[section]?.checked || false;
     const checkedBy = checkStates[section]?.checkedBy;
     const checkedAt = checkStates[section]?.checkedAt;
+    const disabled = isCheckDisabled();
+
+    const getTooltipTitle = () => {
+      if (disabled) {
+        return "일반직원은 오늘 날짜의 데이터만 확인할 수 있습니다.";
+      }
+      return isChecked 
+        ? `${checkedBy}가 ${checkedAt ? new Date(checkedAt).toLocaleString('ko-KR') : ''}에 확인함` 
+        : '클릭하여 확인 완료 표시';
+    };
 
     return (
       <div 
-        className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 rounded p-1 transition-colors"
-        onClick={() => handleSectionCheck(section, !isChecked)}
-        title={isChecked ? `${checkedBy}가 ${checkedAt ? new Date(checkedAt).toLocaleString('ko-KR') : ''}에 확인함` : '클릭하여 확인 완료 표시'}
+        className={`flex items-center gap-2 rounded p-1 transition-colors ${
+          disabled 
+            ? 'cursor-not-allowed opacity-50' 
+            : 'cursor-pointer hover:bg-gray-50'
+        }`}
+        onClick={disabled ? undefined : () => handleSectionCheck(section, !isChecked)}
+        title={getTooltipTitle()}
       >
         {isChecked ? (
-          <CheckCircle className="h-4 w-4 text-green-600" />
+          <CheckCircle className={`h-4 w-4 ${disabled ? 'text-gray-400' : 'text-green-600'}`} />
         ) : (
           <Circle className="h-4 w-4 text-gray-400" />
         )}
-        <span className="text-xs text-gray-600 select-none">
+        <span className={`text-xs select-none ${disabled ? 'text-gray-400' : 'text-gray-600'}`}>
           {isChecked ? (checkedBy ? `${checkedBy} 확인` : '확인완료') : '미확인'}
         </span>
       </div>
