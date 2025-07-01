@@ -103,10 +103,31 @@ module.exports = {
   		},
   		fontFamily: {
   			sans: [
-  				'var(--font-sans)'
+  				'var(--font-sans)',
+  				'-apple-system',
+  				'BlinkMacSystemFont',
+  				'Apple SD Gothic Neo',
+  				'Pretendard Variable',
+  				'Pretendard',
+  				'Roboto',
+  				'Noto Sans KR',
+  				'Segoe UI',
+  				'Malgun Gothic',
+  				'Apple Color Emoji',
+  				'Segoe UI Emoji',
+  				'Segoe UI Symbol',
+  				'sans-serif'
   			],
   			mono: [
-  				'var(--font-mono)'
+  				'var(--font-mono)',
+  				'SF Mono',
+  				'Monaco',
+  				'Inconsolata',
+  				'Roboto Mono',
+  				'Noto Sans Mono KR',
+  				'source-code-pro',
+  				'Menlo',
+  				'monospace'
   			]
   		},
   		borderRadius: {

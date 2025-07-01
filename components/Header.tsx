@@ -43,7 +43,7 @@ export default function Header() {
   const showAccountingButton = userWithRole?.role !== 'STAFF';
   
   return (
-    <header className="w-full bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 shadow-lg">
+    <header className="w-full bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 shadow-lg font-sans">
       <div className="container mx-auto flex justify-between items-center py-5">
         <div className="flex items-center gap-6">
           <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">
@@ -93,8 +93,20 @@ export default function Header() {
               </Link>
             )}
             
-            <div className="bg-white/10 backdrop-blur-md rounded-lg p-1 border border-white/20">
-              <UserButton afterSignOutUrl="/" />
+            <div className="flex items-center gap-2">
+              {userWithRole?.role && (
+                <div className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 backdrop-blur-md rounded-lg px-3 py-1 border border-blue-300/30">
+                  <span className="text-xs font-medium text-blue-100">
+                    {userWithRole.role === 'SUPER_ADMIN' && '최고관리자'}
+                    {userWithRole.role === 'ADMIN' && '관리자'}
+                    {userWithRole.role === 'STAFF' && '직원'}
+                    {userWithRole.role === 'READ_ONLY' && '읽기전용'}
+                  </span>
+                </div>
+              )}
+              <div className="bg-white/10 backdrop-blur-md rounded-lg p-1 border border-white/20">
+                <UserButton afterSignOutUrl="/" />
+              </div>
             </div>
             
             <Link href="/sign-out">
