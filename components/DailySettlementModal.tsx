@@ -261,7 +261,7 @@ export default function DailySettlementModal({ isOpen, onClose, date, onDateChan
           <Circle className="h-4 w-4 text-gray-400" />
         )}
         <span className="text-xs text-gray-600 select-none">
-          {isChecked ? '확인완료' : '미확인'}
+          {isChecked ? (checkedBy ? `${checkedBy} 확인` : '확인완료') : '미확인'}
         </span>
       </div>
     );
