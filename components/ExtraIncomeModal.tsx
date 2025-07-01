@@ -11,10 +11,11 @@ import { toast } from 'sonner';
 import { CalendarIcon, CreditCard } from 'lucide-react';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
-import { cn, createNewDate, toISODateString } from '@/lib/utils';
+import { cn, createNewDate, toISODateString, getCurrentKstDate } from '@/lib/utils';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ExtraIncome } from '@/lib/types';
+import { useUserRole } from './UserRoleProvider';
 
 type Props = {
   isOpen: boolean;
@@ -25,6 +26,7 @@ type Props = {
 };
 
 export default function ExtraIncomeModal({ isOpen, onClose, onSuccess, defaultDate, editItem }: Props) {
+  const { userWithRole } = useUserRole();
   const [isLoading, setIsLoading] = useState(false);
   const [incomeTypes, setIncomeTypes] = useState<{ _id: string; value: string }[]>([]);
   const [formData, setFormData] = useState({
@@ -74,8 +76,13 @@ export default function ExtraIncomeModal({ isOpen, onClose, onSuccess, defaultDa
           notes: editItem.notes || ''
         });
       } else {
+        // STAFF 권한일 때는 오늘 날짜로 고정
+        const dateToUse = userWithRole?.role === 'STAFF' 
+          ? getCurrentKstDate()
+          : (defaultDate || createNewDate());
+          
         setFormData({
-          date: defaultDate || createNewDate(),
+          date: dateToUse,
           type: '',  // 유형은 fetchIncomeTypes에서 설정
           amount: '',
           notes: ''
@@ -207,10 +214,15 @@ export default function ExtraIncomeModal({ isOpen, onClose, onSuccess, defaultDa
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
+                  disabled={userWithRole?.role === 'STAFF'}
                   className={cn(
-                    "w-full justify-start text-left font-normal border-gray-200 hover:bg-gray-50",
+                    "w-full justify-start text-left font-normal border-gray-200",
+                    userWithRole?.role === 'STAFF' 
+                      ? "bg-gray-100 text-gray-600 cursor-not-allowed"
+                      : "hover:bg-gray-50",
                     !formData.date && "text-gray-400"
                   )}
+                  title={userWithRole?.role === 'STAFF' ? "일반직원은 오늘 날짜로만 등록 가능합니다" : ""}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4 text-blue-600" />
                   {formData.date ? (
@@ -220,13 +232,15 @@ export default function ExtraIncomeModal({ isOpen, onClose, onSuccess, defaultDa
                   )}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 border-0 shadow-lg">
-                <Calendar
-                  mode="single"
-                  selected={formData.date}
-                  onSelect={handleDateChange}
-                />
-              </PopoverContent>
+              {userWithRole?.role !== 'STAFF' && (
+                <PopoverContent className="w-auto p-0 border-0 shadow-lg">
+                  <Calendar
+                    mode="single"
+                    selected={formData.date}
+                    onSelect={handleDateChange}
+                  />
+                </PopoverContent>
+              )}
             </Popover>
           </div>
           

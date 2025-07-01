@@ -16,6 +16,7 @@ export default function PatientInfoStep({
   patientNotFound,
   isNewPatientPrompt,
   chartNumberRef,
+  isStaff = false,
   handleInputChange,
   handleChartNumberBlur,
   handleSwitchChange
@@ -41,7 +42,6 @@ export default function PatientInfoStep({
           <Label htmlFor="date" className="text-sm font-medium text-gray-700 flex items-center gap-1">
             <Calendar className="w-3 h-3" />
             내원 날짜
-            <span className="text-red-500">*</span>
           </Label>
           <Input
             id="date"
@@ -49,13 +49,17 @@ export default function PatientInfoStep({
             type="date"
             value={formData.date}
             onChange={handleInputChange}
+            disabled={isStaff}
             className={`transition-all duration-200 ${
-              errors.date 
-                ? "border-red-300 focus:border-red-500 focus:ring-red-200" 
-                : "border-gray-300 focus:border-purple-500 focus:ring-purple-200"
+              isStaff 
+                ? "bg-gray-100 border-gray-200 text-gray-600 cursor-not-allowed"
+                : errors.date 
+                  ? "border-red-300 focus:border-red-500 focus:ring-red-200" 
+                  : "border-gray-300 focus:border-purple-500 focus:ring-purple-200"
             }`}
-            tabIndex={1}
+            tabIndex={isStaff ? -1 : 1}
             onKeyDown={(e) => handleKeyDown(e, 'chartNumber')}
+            title={isStaff ? "일반직원은 오늘 날짜로만 등록 가능합니다" : ""}
           />
           {errors.date && (
             <p className="text-red-500 text-xs flex items-center gap-1">

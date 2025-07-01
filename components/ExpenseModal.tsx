@@ -12,11 +12,12 @@ import { toast } from 'sonner';
 import { CalendarIcon, DollarSign } from 'lucide-react';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
-import { cn, createNewDate, toISODateString } from '@/lib/utils';
+import { cn, createNewDate, toISODateString, getCurrentKstDate } from '@/lib/utils';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Expense } from '@/lib/types';
 import { useDateContextSafe } from '@/lib/context/dateContext';
+import { useUserRole } from './UserRoleProvider';
 
 type Props = {
   isOpen: boolean;
@@ -28,6 +29,7 @@ type Props = {
 
 export default function ExpenseModal({ isOpen, onClose, onSuccess, defaultDate, editItem }: Props) {
   const { triggerExpenseRefresh, triggerCashRefresh, triggerStatsRefresh } = useDateContextSafe();
+  const { userWithRole } = useUserRole();
   const [isLoading, setIsLoading] = useState(false);
   const [vendors, setVendors] = useState<Array<{_id: string; name: string}>>([]);
   const [accountTypes, setAccountTypes] = useState<Array<{_id: string; value: string}>>([]);
@@ -99,8 +101,13 @@ export default function ExpenseModal({ isOpen, onClose, onSuccess, defaultDate, 
           notes: editItem.notes || ''
         });
       } else {
+        // STAFF 권한일 때는 오늘 날짜로 고정
+        const dateToUse = userWithRole?.role === 'STAFF' 
+          ? getCurrentKstDate()
+          : (defaultDate || createNewDate());
+          
         setFormData({
-          date: defaultDate || createNewDate(),
+          date: dateToUse,
           details: '',
           amount: '',
           method: '현금',
@@ -260,16 +267,21 @@ export default function ExpenseModal({ isOpen, onClose, onSuccess, defaultDate, 
               {/* 날짜 선택 */}
               <div className="space-y-2">
                 <Label htmlFor="date" className="text-sm font-medium text-gray-700">
-                  날짜 <span className="text-red-500">*</span>
+                  날짜
                 </Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
+                      disabled={userWithRole?.role === 'STAFF'}
                       className={cn(
-                        "w-full justify-start text-left font-normal border-gray-200 hover:bg-gray-50",
+                        "w-full justify-start text-left font-normal border-gray-200",
+                        userWithRole?.role === 'STAFF' 
+                          ? "bg-gray-100 text-gray-600 cursor-not-allowed"
+                          : "hover:bg-gray-50",
                         !formData.date && "text-gray-400"
                       )}
+                      title={userWithRole?.role === 'STAFF' ? "일반직원은 오늘 날짜로만 등록 가능합니다" : ""}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4 text-blue-600" />
                       {formData.date ? (
@@ -279,13 +291,15 @@ export default function ExpenseModal({ isOpen, onClose, onSuccess, defaultDate, 
                       )}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0 border-0 shadow-lg">
-                    <Calendar
-                      mode="single"
-                      selected={formData.date}
-                      onSelect={handleDateChange}
-                    />
-                  </PopoverContent>
+                  {userWithRole?.role !== 'STAFF' && (
+                    <PopoverContent className="w-auto p-0 border-0 shadow-lg">
+                      <Calendar
+                        mode="single"
+                        selected={formData.date}
+                        onSelect={handleDateChange}
+                      />
+                    </PopoverContent>
+                  )}
                 </Popover>
               </div>
               

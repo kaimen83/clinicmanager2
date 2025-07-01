@@ -17,8 +17,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from 'sonner';
-import { toISODateString, cn } from '@/lib/utils';
+import { toISODateString, cn, getCurrentKstDate } from '@/lib/utils';
 import { useDateContext } from '@/lib/context/dateContext';
+import { useUserRole } from './UserRoleProvider';
 import { 
   Trash2, 
   Edit, 
@@ -52,6 +53,7 @@ interface Props {
 
 export default function CashManagementModal({ isOpen, onClose, date: initialDate }: Props) {
   const { cashRefreshTrigger } = useDateContext();
+  const { userWithRole } = useUserRole();
   const [selectedDate, setSelectedDate] = useState<Date>(initialDate);
   const [records, setRecords] = useState<CashRecord[]>([]);
   const [loading, setLoading] = useState(false);
@@ -76,6 +78,13 @@ export default function CashManagementModal({ isOpen, onClose, date: initialDate
   // 삭제 관련 상태
   const [deleteRecordId, setDeleteRecordId] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // 오늘 날짜인지 확인하는 함수
+  const isTodayDate = (): boolean => {
+    const todayString = toISODateString(getCurrentKstDate());
+    const selectedString = toISODateString(selectedDate);
+    return todayString === selectedString;
+  };
 
   // 날짜 변경 핸들러
   const handleDateSelect = (date: Date | undefined) => {
@@ -493,7 +502,12 @@ export default function CashManagementModal({ isOpen, onClose, date: initialDate
               <Button 
                 onClick={() => setShowAddForm(true)}
                 className="shadow-sm"
-                disabled={showAddForm}
+                disabled={showAddForm || (userWithRole?.role === 'STAFF' && !isTodayDate())}
+                title={
+                  userWithRole?.role === 'STAFF' && !isTodayDate() 
+                    ? "오늘 날짜에서만 통장입금을 추가할 수 있습니다." 
+                    : ""
+                }
               >
                 <Plus className="w-4 h-4 mr-2" />
                 통장입금 추가

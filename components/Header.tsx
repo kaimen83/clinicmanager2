@@ -39,6 +39,9 @@ export default function Header() {
   // 현재 페이지에 따라 버튼 설정 결정
   const isAccountingPage = pathname === '/accounting';
   
+  // STAFF 권한일 때 회계관리 버튼 숨기기
+  const showAccountingButton = userWithRole?.role !== 'STAFF';
+  
   return (
     <header className="w-full bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 shadow-lg">
       <div className="container mx-auto flex justify-between items-center py-5">
@@ -47,25 +50,27 @@ export default function Header() {
             🦷 인천센터치과 경영프로그램
           </h1>
           
-          <Link href={isAccountingPage ? "/dashboard" : "/accounting"}>
-            <Button 
-              variant="outline" 
-              size="sm"
-              className="flex items-center gap-2 bg-white/10 backdrop-blur-md border-white/20 hover:bg-white/20 hover:border-white/30 text-white hover:text-white transition-all duration-300 shadow-lg hover:shadow-xl font-medium"
-            >
-              {isAccountingPage ? (
-                <>
-                  <Home className="w-4 h-4" />
-                  <span>메인화면</span>
-                </>
-              ) : (
-                <>
-                  <Calculator className="w-4 h-4" />
-                  <span>회계관리</span>
-                </>
-              )}
-            </Button>
-          </Link>
+          {showAccountingButton && (
+            <Link href={isAccountingPage ? "/dashboard" : "/accounting"}>
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="flex items-center gap-2 bg-white/10 backdrop-blur-md border-white/20 hover:bg-white/20 hover:border-white/30 text-white hover:text-white transition-all duration-300 shadow-lg hover:shadow-xl font-medium"
+              >
+                {isAccountingPage ? (
+                  <>
+                    <Home className="w-4 h-4" />
+                    <span>메인화면</span>
+                  </>
+                ) : (
+                  <>
+                    <Calculator className="w-4 h-4" />
+                    <span>회계관리</span>
+                  </>
+                )}
+              </Button>
+            </Link>
+          )}
         </div>
         
         <div className="flex items-center gap-6">

@@ -1,12 +1,16 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TrendingUp, CheckCircle, XCircle, DollarSign, Users, Edit, Trash2, Calendar } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '@/hooks/use-toast';
+import { useUserRole } from './UserRoleProvider';
+import { toISODateString, getCurrentKstDate } from '@/lib/utils';
 
 interface ConsultationStatsModalProps {
   isOpen: boolean;
@@ -144,7 +148,11 @@ export default function ConsultationStatsModal({
       }
     } catch (error) {
       console.error('상담내역 조회 중 에러:', error);
-      toast.error('상담내역을 불러오는데 실패했습니다.');
+      toast({
+        title: "오류",
+        description: "상담내역을 불러오는데 실패했습니다.",
+        variant: "destructive"
+      });
     } finally {
       setConsultationsLoading(false);
     }
@@ -180,14 +188,58 @@ export default function ConsultationStatsModal({
     });
   };
 
+  // 사용자 권한 정보 가져오기
+  const { userWithRole } = useUserRole();
+
+  // 오늘 날짜 확인 함수
+  const isToday = (dateString: string): boolean => {
+    const today = toISODateString(getCurrentKstDate());
+    const itemDate = toISODateString(new Date(dateString));
+    return today === itemDate;
+  };
+
+  // 수정/삭제 권한 확인 함수
+  const canEditOrDelete = (consultation: Consultation): boolean => {
+    if (!userWithRole) return false;
+    
+    // STAFF 권한인 경우 오늘 날짜가 아니면 수정/삭제 불가
+    if (userWithRole.role === 'STAFF') {
+      return isToday(consultation.date);
+    }
+    
+    // ADMIN, SUPER_ADMIN은 모든 날짜 수정/삭제 가능
+    return userWithRole.role === 'ADMIN' || userWithRole.role === 'SUPER_ADMIN';
+  };
+
   // 상담 수정
   const handleEdit = (consultation: Consultation) => {
+    if (!canEditOrDelete(consultation)) {
+      toast({
+        title: "권한 없음",
+        description: "오늘 날짜가 아닌 상담내역은 수정할 수 없습니다.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     // TODO: 상담 수정 모달 열기
-    toast.info('상담 수정 기능은 추후 구현 예정입니다.');
+    toast({
+      title: "알림",
+      description: "상담 수정 기능은 추후 구현 예정입니다."
+    });
   };
 
   // 상담 삭제
   const handleDelete = async (consultation: Consultation) => {
+    if (!canEditOrDelete(consultation)) {
+      toast({
+        title: "권한 없음",
+        description: "오늘 날짜가 아닌 상담내역은 삭제할 수 없습니다.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (!confirm(`${consultation.patientName}님의 상담내역을 삭제하시겠습니까?`)) {
       return;
     }
@@ -198,7 +250,10 @@ export default function ConsultationStatsModal({
       });
 
       if (response.ok) {
-        toast.success('상담내역이 삭제되었습니다.');
+        toast({
+          title: "성공",
+          description: "상담내역이 삭제되었습니다."
+        });
         fetchConsultations(); // 목록 새로고침
         fetchStats(); // 통계 새로고침
       } else {
@@ -206,7 +261,11 @@ export default function ConsultationStatsModal({
       }
     } catch (error) {
       console.error('상담내역 삭제 중 에러:', error);
-      toast.error('상담내역 삭제에 실패했습니다.');
+      toast({
+        title: "오류",
+        description: "상담내역 삭제에 실패했습니다.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -412,7 +471,17 @@ export default function ConsultationStatsModal({
                                       variant="ghost"
                                       size="sm"
                                       onClick={() => handleEdit(consultation)}
-                                      className="h-8 w-8 p-0"
+                                      disabled={!canEditOrDelete(consultation)}
+                                      className={`h-8 w-8 p-0 ${
+                                        !canEditOrDelete(consultation) 
+                                          ? 'opacity-50 cursor-not-allowed' 
+                                          : ''
+                                      }`}
+                                      title={
+                                        !canEditOrDelete(consultation) 
+                                          ? '오늘 날짜가 아닌 상담내역은 수정할 수 없습니다.'
+                                          : '상담내역 수정'
+                                      }
                                     >
                                       <Edit className="w-4 h-4" />
                                     </Button>
@@ -420,7 +489,17 @@ export default function ConsultationStatsModal({
                                       variant="ghost"
                                       size="sm"
                                       onClick={() => handleDelete(consultation)}
-                                      className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                                      disabled={!canEditOrDelete(consultation)}
+                                      className={`h-8 w-8 p-0 text-red-600 hover:text-red-700 ${
+                                        !canEditOrDelete(consultation) 
+                                          ? 'opacity-50 cursor-not-allowed text-gray-400 hover:text-gray-400' 
+                                          : ''
+                                      }`}
+                                      title={
+                                        !canEditOrDelete(consultation) 
+                                          ? '오늘 날짜가 아닌 상담내역은 삭제할 수 없습니다.'
+                                          : '상담내역 삭제'
+                                      }
                                     >
                                       <Trash2 className="w-4 h-4" />
                                     </Button>
@@ -478,7 +557,17 @@ export default function ConsultationStatsModal({
                                       variant="ghost"
                                       size="sm"
                                       onClick={() => handleEdit(consultation)}
-                                      className="h-8 w-8 p-0"
+                                      disabled={!canEditOrDelete(consultation)}
+                                      className={`h-8 w-8 p-0 ${
+                                        !canEditOrDelete(consultation) 
+                                          ? 'opacity-50 cursor-not-allowed' 
+                                          : ''
+                                      }`}
+                                      title={
+                                        !canEditOrDelete(consultation) 
+                                          ? '오늘 날짜가 아닌 상담내역은 수정할 수 없습니다.'
+                                          : '상담내역 수정'
+                                      }
                                     >
                                       <Edit className="w-4 h-4" />
                                     </Button>
@@ -486,7 +575,17 @@ export default function ConsultationStatsModal({
                                       variant="ghost"
                                       size="sm"
                                       onClick={() => handleDelete(consultation)}
-                                      className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                                      disabled={!canEditOrDelete(consultation)}
+                                      className={`h-8 w-8 p-0 text-red-600 hover:text-red-700 ${
+                                        !canEditOrDelete(consultation) 
+                                          ? 'opacity-50 cursor-not-allowed text-gray-400 hover:text-gray-400' 
+                                          : ''
+                                      }`}
+                                      title={
+                                        !canEditOrDelete(consultation) 
+                                          ? '오늘 날짜가 아닌 상담내역은 삭제할 수 없습니다.'
+                                          : '상담내역 삭제'
+                                      }
                                     >
                                       <Trash2 className="w-4 h-4" />
                                     </Button>

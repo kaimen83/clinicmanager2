@@ -46,6 +46,7 @@ export type PatientInfoStepProps = {
   patientNotFound: boolean;
   isNewPatientPrompt: boolean;
   chartNumberRef: React.RefObject<HTMLInputElement | null>;
+  isStaff?: boolean;
   handleInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleChartNumberBlur: (e: React.FocusEvent<HTMLInputElement>) => void;
   handleSwitchChange: (name: string, checked: boolean) => void;

@@ -13,6 +13,7 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { toISODateString, getCurrentKstDate } from '@/lib/utils';
+import { useUserRole } from './UserRoleProvider';
 import { 
   Loader2, 
   MessageSquare, 
@@ -47,6 +48,7 @@ export default function ConsultationAddModal({
   onSuccess
 }: ConsultationAddModalProps) {
   const { toast } = useToast();
+  const { userWithRole } = useUserRole();
   const [formData, setFormData] = useState({
     date: toISODateString(getCurrentKstDate()),
     chartNumber: chartNumber,
@@ -66,9 +68,13 @@ export default function ConsultationAddModal({
   useEffect(() => {
     if (isOpen) {
       loadSettings();
-      // 폼 초기화
+      // 폼 초기화 - STAFF 권한일 때는 오늘 날짜로 고정
+      const dateToUse = userWithRole?.role === 'STAFF' 
+        ? toISODateString(getCurrentKstDate())
+        : toISODateString(getCurrentKstDate());
+        
       setFormData({
-        date: toISODateString(getCurrentKstDate()),
+        date: dateToUse,
         chartNumber,
         patientName,
         doctor: '',
@@ -79,7 +85,7 @@ export default function ConsultationAddModal({
       });
       setErrors({});
     }
-  }, [isOpen, chartNumber, patientName]);
+  }, [isOpen, chartNumber, patientName, userWithRole]);
 
   const loadSettings = async () => {
     try {
@@ -285,8 +291,14 @@ export default function ConsultationAddModal({
                         name="date"
                         value={formData.date}
                         onChange={handleInputChange}
+                        disabled={userWithRole?.role === 'STAFF'}
                         required
-                        className="border-gray-300 focus:border-green-500 focus:ring-green-200"
+                        className={`${
+                          userWithRole?.role === 'STAFF' 
+                            ? "bg-gray-100 border-gray-200 text-gray-600 cursor-not-allowed"
+                            : "border-gray-300 focus:border-green-500 focus:ring-green-200"
+                        }`}
+                        title={userWithRole?.role === 'STAFF' ? "일반직원은 오늘 날짜로만 등록 가능합니다" : ""}
                       />
                     </div>
 

@@ -11,7 +11,8 @@ import { toast } from '@/hooks/use-toast';
 import { useDateContext } from '@/lib/context/dateContext';
 import { PatientData } from '@/lib/types';
 import { Check, ChevronLeft, ChevronRight, Loader2, Plus, Trash2, UserPlus } from 'lucide-react';
-import { toISODateString } from '@/lib/utils';
+import { toISODateString, getCurrentKstDate } from '@/lib/utils';
+import { useUserRole } from './UserRoleProvider';
 
 // 타입 및 컴포넌트 임포트
 import { 
@@ -30,6 +31,7 @@ import DentalProductSaleModal from './DentalProductSaleModal';
 
 export default function PatientTransactionForm({ isOpen, onClose, onTransactionAdded }: PatientTransactionFormProps) {
   const { selectedDate, triggerCashRefresh, triggerStatsRefresh } = useDateContext();
+  const { userWithRole } = useUserRole();
   const chartNumberRef = useRef<HTMLInputElement>(null);
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 2;
@@ -46,12 +48,17 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
   // 내원날짜 기본값 설정 - 모달이 열릴 때마다 날짜 업데이트
   useEffect(() => {
     if (isOpen) {
+      // STAFF 권한일 때는 오늘 날짜로 고정, 그 외에는 선택된 날짜 사용
+      const dateToUse = userWithRole?.role === 'STAFF' 
+        ? toISODateString(getCurrentKstDate())
+        : toISODateString(selectedDate);
+        
       setFormData(prev => ({
         ...prev,
-        date: toISODateString(selectedDate),
+        date: dateToUse,
       }));
     }
-  }, [isOpen, selectedDate]);
+  }, [isOpen, selectedDate, userWithRole]);
   
   // 추가 상태 변수
   const [isLoading, setIsLoading] = useState(false);
@@ -772,6 +779,7 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
             patientNotFound={patientNotFound}
             isNewPatientPrompt={isNewPatientPrompt}
             chartNumberRef={chartNumberRef}
+            isStaff={userWithRole?.role === 'STAFF'}
             handleInputChange={handleInputChange}
             handleChartNumberBlur={handleChartNumberBlur}
             handleSwitchChange={handleSwitchChange}
