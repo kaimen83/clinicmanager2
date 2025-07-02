@@ -300,13 +300,13 @@ export default function PaymentListModal({ isOpen, onClose, title, date, payment
               <Table>
                 <TableHeader className="bg-gradient-to-r from-gray-50 to-gray-100">
                   <TableRow className="border-b border-gray-200">
-                    <TableHead className="w-24 font-semibold text-gray-700 py-4 text-sm">날짜</TableHead>
-                    <TableHead className="w-20 font-semibold text-gray-700 py-4 text-sm">차트번호</TableHead>
-                    <TableHead className="w-24 font-semibold text-gray-700 py-4 text-sm">환자명</TableHead>
-                    <TableHead className="w-20 font-semibold text-gray-700 py-4 text-sm">결제방법</TableHead>
-                    <TableHead className="w-20 font-semibold text-gray-700 py-4 text-sm text-center">현금영수증</TableHead>
-                    <TableHead className="w-20 font-semibold text-gray-700 py-4 text-sm text-center">홈텍스</TableHead>
-                    <TableHead className="text-right font-semibold text-gray-700 py-4 text-sm">금액</TableHead>
+                    <TableHead className="w-[100px] font-semibold text-gray-700 py-4 text-sm">날짜</TableHead>
+                    <TableHead className="w-[80px] font-semibold text-gray-700 py-4 text-sm">차트번호</TableHead>
+                    <TableHead className="w-[120px] font-semibold text-gray-700 py-4 text-sm">환자명</TableHead>
+                    <TableHead className="w-[90px] font-semibold text-gray-700 py-4 text-sm">결제방법</TableHead>
+                    <TableHead className="w-[90px] font-semibold text-gray-700 py-4 text-sm text-center">현금영수증</TableHead>
+                    <TableHead className="w-[80px] font-semibold text-gray-700 py-4 text-sm text-center">홈텍스</TableHead>
+                    <TableHead className="w-[120px] text-right font-semibold text-gray-700 py-4 text-sm pr-6">금액</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
