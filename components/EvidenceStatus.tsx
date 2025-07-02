@@ -6,11 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { Pencil, Trash2, Download } from 'lucide-react';
+import { Pencil, Trash2, Download, X, RotateCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { Expense } from '@/lib/types';
 import { toISODateString, getCurrentKstDate } from '@/lib/utils';
 import ExpenseModal from './ExpenseModal';
+import ManualMatchingModal from './ManualMatchingModal';
 
 export default function EvidenceStatus() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -133,9 +134,111 @@ export default function EvidenceStatus() {
     handleCloseModal(); // 모달 닫기
   };
 
-  // 자동 크롤링 기능 (추후 구현)
+  // 자동 크롤링 상태 관리
+  const [isCrawling, setIsCrawling] = useState(false);
+  const [crawlingStatus, setCrawlingStatus] = useState({ progress: 0, message: '' });
+  const [showCrawlingModal, setShowCrawlingModal] = useState(false);
+  const [crawlingComplete, setCrawlingComplete] = useState(false);
+  const [matchingResults, setMatchingResults] = useState<any>(null);
+  const [showManualMatchingModal, setShowManualMatchingModal] = useState(false);
+
+  // 자동 크롤링 시작
   const handleAutoCrawling = () => {
-    toast.info('자동 크롤링 기능은 추후 구현 예정입니다.');
+    setShowCrawlingModal(true);
+    setCrawlingComplete(false);
+    setMatchingResults(null);
+    setCrawlingStatus({ progress: 0, message: '자동 크롤링을 시작하려면 시작 버튼을 클릭하세요.' });
+  };
+
+  // 크롤링 실행
+  const startCrawling = async () => {
+    setIsCrawling(true);
+    
+    try {
+      setCrawlingStatus({ progress: 10, message: '홈택스 로그인 중...' });
+
+      const response = await fetch('/api/hometax/crawl', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('크롤링 요청 실패');
+      }
+
+      // 크롤링 진행 상태 모니터링 (폴링 방식)
+      const pollStatus = async () => {
+        try {
+          const statusResponse = await fetch('/api/hometax/status');
+          if (!statusResponse.ok) {
+            throw new Error('상태 확인 실패');
+          }
+          
+          const data = await statusResponse.json();
+          setCrawlingStatus({ progress: data.progress, message: data.message });
+
+          if (data.progress >= 100) {
+            setIsCrawling(false);
+            
+            setCrawlingStatus({ progress: 100, message: '영수증 매칭 중...' });
+            try {
+              const matchResponse = await fetch('/api/hometax/match-receipts');
+              
+              if (!matchResponse.ok) {
+                throw new Error('영수증 매칭 요청 실패');
+              }
+              
+              const matchResults = await matchResponse.json();
+              
+              // 자동 매칭 리스트 처리
+              for (const match of matchResults.automatic) {
+                await fetch('/api/hometax/confirm-match', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({ expenseId: match.expense._id })
+                });
+              }
+              
+              // 결과를 상태에 저장하고 완료 화면 표시
+              setMatchingResults(matchResults);
+              setCrawlingComplete(true);
+              setCrawlingStatus({ 
+                progress: 100, 
+                message: `크롤링 완료! 자동 매칭: ${matchResults.automatic.length}건, 수동 확인 필요: ${matchResults.needConfirmation.length}건` 
+              });
+              
+              // 데이터 새로고침
+              loadExpenses();
+              
+            } catch (error) {
+              console.error('영수증 매칭 중 오류:', error);
+              setCrawlingStatus({ progress: 100, message: '영수증 매칭 중 오류가 발생했습니다.' });
+            }
+            return; // 완료되면 폴링 중단
+          }
+
+          // 아직 진행 중이면 1초 후 다시 확인
+          setTimeout(pollStatus, 1000);
+          
+        } catch (error) {
+          console.error('상태 확인 오류:', error);
+          setTimeout(pollStatus, 2000); // 오류 시 2초 후 재시도
+        }
+      };
+
+      // 폴링 시작
+      pollStatus();
+
+    } catch (error) {
+      console.error('크롤링 실패:', error);
+      setCrawlingStatus({ progress: 0, message: '크롤링 중 오류가 발생했습니다.' });
+      setIsCrawling(false);
+      toast.error('크롤링 중 오류가 발생했습니다.');
+    }
   };
 
   return (
@@ -273,6 +376,174 @@ export default function EvidenceStatus() {
         onSuccess={handleSuccess}
         defaultDate={new Date()}
         editItem={editItem}
+      />
+
+      {/* 크롤링 모달 */}
+      {showCrawlingModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-[480px] max-w-[90vw] mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">홈택스 자동 크롤링</h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  if (!isCrawling) {
+                    setShowCrawlingModal(false);
+                  }
+                }}
+                disabled={isCrawling}
+                className="h-8 w-8 p-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="flex items-center justify-center">
+                {isCrawling && (
+                  <RotateCw className="h-8 w-8 animate-spin text-blue-500" />
+                )}
+                {crawlingComplete && (
+                  <div className="h-8 w-8 bg-green-500 rounded-full flex items-center justify-center">
+                    <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                )}
+              </div>
+              
+              <p className="text-center text-sm text-gray-600">
+                {crawlingStatus.message}
+              </p>
+              
+              {!crawlingComplete && (
+                <>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${crawlingStatus.progress}%` }}
+                    />
+                  </div>
+                  
+                  <div className="text-center text-xs text-gray-500">
+                    {crawlingStatus.progress}%
+                  </div>
+                </>
+              )}
+              
+              {crawlingComplete && matchingResults && (
+                <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                  <h4 className="font-medium text-sm">매칭 결과</h4>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="bg-green-100 p-3 rounded">
+                      <div className="font-medium text-green-800">자동 매칭</div>
+                      <div className="text-lg font-bold text-green-600">
+                        {matchingResults.automatic.length}건
+                      </div>
+                    </div>
+                    <div className="bg-yellow-100 p-3 rounded">
+                      <div className="font-medium text-yellow-800">수동 확인 필요</div>
+                      <div className="text-lg font-bold text-yellow-600">
+                        {matchingResults.needConfirmation.length}건
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* 자동 매칭된 내역 표시 */}
+                  {matchingResults.automatic.length > 0 && (
+                    <div className="mt-4">
+                      <h5 className="font-medium text-sm mb-2 text-green-800">자동 매칭 완료 내역</h5>
+                      <div className="max-h-60 overflow-y-auto space-y-2 pr-1">
+                        {matchingResults.automatic.map((match: any, index: number) => (
+                          <div key={index} className="bg-white p-3 rounded border border-green-200">
+                            <div className="flex justify-between items-start gap-2">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="font-medium">{match.expense.vendor}</span>
+                                  <span className="text-gray-400">→</span>
+                                  <span className="text-green-700">
+                                    {match.type === 'tax' ? match.receipt.상호 : match.receipt.상호명}
+                                  </span>
+                                </div>
+                                <div className="text-xs text-gray-600 space-y-0.5">
+                                  <div>지출: {new Date(match.expense.date).toLocaleDateString('ko-KR')} · {match.expense.amount.toLocaleString()}원</div>
+                                  <div>
+                                    영수증: {new Date(match.type === 'tax' ? match.receipt.작성일자 : match.receipt.매입일시).toLocaleDateString('ko-KR')} · 
+                                    {(match.type === 'tax' ? match.receipt.합계금액 : match.receipt.매입금액).toLocaleString()}원
+                                  </div>
+                                  <div className="text-gray-500">{match.expense.details}</div>
+                                </div>
+                              </div>
+                              <div className="text-green-600 font-medium text-xs whitespace-nowrap">
+                                ✓ {match.type === 'tax' ? '세금계산서' : '현금영수증'}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            
+            <div className="flex justify-end gap-2 mt-6">
+              {crawlingComplete ? (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowCrawlingModal(false)}
+                  >
+                    닫기
+                  </Button>
+                  {matchingResults && matchingResults.needConfirmation.length > 0 && (
+                    <Button
+                      onClick={() => {
+                        setShowCrawlingModal(false);
+                        setShowManualMatchingModal(true);
+                      }}
+                    >
+                      수동 확인 ({matchingResults.needConfirmation.length}건)
+                    </Button>
+                  )}
+                </>
+              ) : (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      if (!isCrawling) {
+                        setShowCrawlingModal(false);
+                      }
+                    }}
+                    disabled={isCrawling}
+                  >
+                    취소
+                  </Button>
+                  <Button
+                    onClick={startCrawling}
+                    disabled={isCrawling}
+                  >
+                    {isCrawling ? '진행 중...' : '시작'}
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 수동 매칭 확인 모달 */}
+      <ManualMatchingModal
+        isOpen={showManualMatchingModal}
+        onClose={() => setShowManualMatchingModal(false)}
+        matchingResults={matchingResults}
+        onComplete={() => {
+          // 매칭 완료 후 데이터 새로고침
+          loadExpenses();
+          setMatchingResults(null);
+        }}
       />
     </div>
   );
