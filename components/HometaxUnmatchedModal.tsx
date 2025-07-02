@@ -28,8 +28,6 @@ interface UnmatchedRecord {
   _id: string;
   거래일자: string;
   공급가액: number;
-  부가세: number;
-  봉사료: number;
   매입금액: number;
   승인번호: string;
   발급수단: string;
@@ -152,7 +150,7 @@ export default function HometaxUnmatchedModal({ isOpen, onClose, date, type }: P
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[1200px] max-h-[85vh] overflow-hidden flex flex-col bg-white rounded-2xl shadow-2xl border-0">
+      <DialogContent className="sm:max-w-[900px] max-h-[85vh] overflow-hidden flex flex-col bg-white rounded-2xl shadow-2xl border-0">
         <DialogHeader className="pb-4 border-b border-gray-100 bg-gradient-to-r from-orange-50 to-red-50">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl shadow-lg">
@@ -250,13 +248,11 @@ export default function HometaxUnmatchedModal({ isOpen, onClose, date, type }: P
                     <TableHeader className="bg-gray-50">
                       <TableRow>
                         <TableHead className="w-[50px] text-center">선택</TableHead>
-                        <TableHead className="w-[120px]">승인번호</TableHead>
-                        <TableHead className="w-[100px]">발급수단</TableHead>
-                        <TableHead className="w-[100px] text-right">공급가액</TableHead>
-                        <TableHead className="w-[80px] text-right">부가세</TableHead>
-                        <TableHead className="w-[80px] text-right">봉사료</TableHead>
+                        <TableHead className="w-[140px]">승인번호</TableHead>
+                        <TableHead className="w-[110px]">발급수단</TableHead>
+                        <TableHead className="w-[120px] text-right">공급가액</TableHead>
                         <TableHead className="w-[120px] text-right">총금액</TableHead>
-                        <TableHead className="w-[100px]">거래구분</TableHead>
+                        <TableHead className="w-[110px]">거래구분</TableHead>
                         <TableHead>비고</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -281,12 +277,6 @@ export default function HometaxUnmatchedModal({ isOpen, onClose, date, type }: P
                           <TableCell className="py-3 text-sm">{record.발급수단}</TableCell>
                           <TableCell className="py-3 text-sm text-right font-semibold">
                             ₩{formatAmount(record.공급가액)}
-                          </TableCell>
-                          <TableCell className="py-3 text-sm text-right">
-                            ₩{formatAmount(record.부가세)}
-                          </TableCell>
-                          <TableCell className="py-3 text-sm text-right">
-                            ₩{formatAmount(record.봉사료)}
                           </TableCell>
                           <TableCell className="py-3 text-sm text-right font-bold text-orange-700">
                             ₩{formatAmount(record.매입금액)}
