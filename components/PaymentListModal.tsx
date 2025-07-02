@@ -388,7 +388,7 @@ export default function PaymentListModal({ isOpen, onClose, title, date, payment
                               className={`inline-flex items-center justify-center px-2 py-1 rounded-lg text-xs font-semibold transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed ${
                                 tx.hometaxVerified 
                                   ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' 
-                                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                                  : 'bg-red-100 text-red-700 hover:bg-red-200'
                               }`}
                             >
                               {updatingTransactionId === tx._id ? (
@@ -402,7 +402,7 @@ export default function PaymentListModal({ isOpen, onClose, title, date, payment
                             <span className={`inline-flex items-center justify-center px-2 py-1 rounded-lg text-xs font-semibold ${
                               tx.hometaxVerified 
                                 ? 'bg-blue-100 text-blue-700' 
-                                : 'bg-gray-100 text-gray-500'
+                                : 'bg-red-100 text-red-700'
                             }`}>
                               <CheckCircle2 className="w-3 h-3 mr-1" />
                               {tx.hometaxVerified ? '확인' : '미확인'}

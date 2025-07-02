@@ -49,7 +49,7 @@ export default function DashboardContent({ children: _ }: Props) {
                     onClick={() => setIsDailySettlementModalOpen(true)}
                     variant="outline"
                     size="sm"
-                    className="flex items-center gap-2 hover:bg-blue-50 hover:border-blue-300"
+                    className="flex items-center gap-2 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-500 text-blue-700 font-semibold hover:bg-gradient-to-r hover:from-blue-100 hover:to-indigo-100 hover:border-blue-600 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
                   >
                     <Calculator className="h-4 w-4" />
                     일일결산

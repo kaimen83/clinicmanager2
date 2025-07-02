@@ -152,7 +152,7 @@ export default function ClinicNavigation() {
         <div className="flex flex-wrap gap-3">
           <Button 
             variant="outline" 
-            className="flex items-center gap-2 bg-white border-blue-200 hover:bg-blue-50 hover:border-blue-300 text-gray-700 hover:text-blue-700 transition-all duration-200 font-medium"
+            className="flex items-center gap-2 bg-white border-2 border-blue-200 hover:bg-blue-50 hover:border-blue-300 text-gray-700 hover:text-blue-700 transition-all duration-200 font-medium"
             onClick={handlePatientFormOpen}
           >
             <UserPlus className="w-4 h-4" />
@@ -161,7 +161,7 @@ export default function ClinicNavigation() {
           
           <Button 
             variant="outline" 
-            className="flex items-center gap-2 bg-white border-green-200 hover:bg-green-50 hover:border-green-300 text-gray-700 hover:text-green-700 transition-all duration-200 font-medium"
+            className="flex items-center gap-2 bg-white border-2 border-green-200 hover:bg-green-50 hover:border-green-300 text-gray-700 hover:text-green-700 transition-all duration-200 font-medium"
             onClick={handleExtraIncomeModalOpen}
           >
             <CreditCard className="w-4 h-4" />
@@ -170,7 +170,7 @@ export default function ClinicNavigation() {
           
           <Button 
             variant="outline" 
-            className="flex items-center gap-2 bg-white border-amber-200 hover:bg-amber-50 hover:border-amber-300 text-gray-700 hover:text-amber-700 transition-all duration-200 font-medium"
+            className="flex items-center gap-2 bg-white border-2 border-amber-200 hover:bg-amber-50 hover:border-amber-300 text-gray-700 hover:text-amber-700 transition-all duration-200 font-medium"
             onClick={handleExpenseModalOpen}
           >
             <DollarSign className="w-4 h-4" />
@@ -179,7 +179,7 @@ export default function ClinicNavigation() {
           
           <Button 
             variant="outline" 
-            className="flex items-center gap-2 bg-white border-purple-200 hover:bg-purple-50 hover:border-purple-300 text-gray-700 hover:text-purple-700 transition-all duration-200 font-medium"
+            className="flex items-center gap-2 bg-white border-2 border-purple-200 hover:bg-purple-50 hover:border-purple-300 text-gray-700 hover:text-purple-700 transition-all duration-200 font-medium"
             onClick={handleCashManagementModalOpen}
           >
             <Calculator className="w-4 h-4" />
@@ -188,7 +188,7 @@ export default function ClinicNavigation() {
           
           <Button 
             variant="outline" 
-            className="flex items-center gap-2 bg-white border-cyan-200 hover:bg-cyan-50 hover:border-cyan-300 text-gray-700 hover:text-cyan-700 transition-all duration-200 font-medium"
+            className="flex items-center gap-2 bg-white border-2 border-cyan-200 hover:bg-cyan-50 hover:border-cyan-300 text-gray-700 hover:text-cyan-700 transition-all duration-200 font-medium"
             onClick={handleSupplyModalOpen}
           >
             <ShoppingCart className="w-4 h-4" />
@@ -197,7 +197,7 @@ export default function ClinicNavigation() {
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="flex items-center gap-2 bg-white border-indigo-200 hover:bg-indigo-50 hover:border-indigo-300 text-gray-700 hover:text-indigo-700 transition-all duration-200 font-medium">
+              <Button variant="outline" className="flex items-center gap-2 bg-white border-2 border-indigo-200 hover:bg-indigo-50 hover:border-indigo-300 text-gray-700 hover:text-indigo-700 transition-all duration-200 font-medium">
                 <ClipboardList className="w-4 h-4" />
                 <span>수불부</span>
                 <ChevronDown className="w-4 h-4" />
@@ -213,7 +213,7 @@ export default function ClinicNavigation() {
             </DropdownMenuContent>
           </DropdownMenu>
           
-          <Button variant="outline" className="flex items-center gap-2 bg-white border-rose-200 hover:bg-rose-50 hover:border-rose-300 text-gray-700 hover:text-rose-700 transition-all duration-200 font-medium">
+          <Button variant="outline" className="flex items-center gap-2 bg-white border-2 border-rose-200 hover:bg-rose-50 hover:border-rose-300 text-gray-700 hover:text-rose-700 transition-all duration-200 font-medium">
             <Star className="w-4 h-4" />
             <span>병원리뷰</span>
           </Button>
