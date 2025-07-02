@@ -158,10 +158,10 @@ export default function HometaxUnmatchedModal({ isOpen, onClose, date, type }: P
             </div>
             <div>
               <DialogTitle className="text-xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-                매칭되지 않은 홈택스 데이터
+                홈택스 데이터
               </DialogTitle>
               <p className="text-sm text-gray-600 mt-1">
-                시스템 수납 내역과 매칭되지 않은 홈택스 현금영수증 데이터입니다
+                홈택스의 현금영수증 데이터입니다
               </p>
             </div>
           </div>

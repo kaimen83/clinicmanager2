@@ -305,7 +305,7 @@ export default function PaymentListModal({ isOpen, onClose, title, date, payment
                   className="flex items-center gap-2 border-orange-300 text-orange-700 hover:bg-orange-50 rounded-xl px-4 py-2 transition-all"
                 >
                   <AlertCircle className="h-4 w-4" />
-                  매칭 안된 데이터
+                  모든 홈텍스 데이터
                 </Button>
               </div>
             )}
