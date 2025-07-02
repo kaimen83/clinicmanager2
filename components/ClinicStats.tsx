@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Calculator } from 'lucide-react';
 import { DailyStats, MonthlyStats, ExtraIncome } from '@/lib/types';
 import { toISODateString } from '@/lib/utils';
 import PaymentListModal from './PaymentListModal';
@@ -13,9 +15,11 @@ import { useDateContext } from '@/lib/context/dateContext';
 
 type Props = {
   date: Date;
+  onDailySettlement: () => void;
+  onMonthlySettlement: () => void;
 };
 
-export default function ClinicStats({ date }: Props) {
+export default function ClinicStats({ date, onDailySettlement, onMonthlySettlement }: Props) {
   const { statsRefreshTrigger } = useDateContext();
   const [activeTab, setActiveTab] = useState('daily');
   const [loading, setLoading] = useState(false);
@@ -295,18 +299,43 @@ export default function ClinicStats({ date }: Props) {
     <>
       <div className="w-full">
         <Tabs defaultValue="daily" onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2 mb-4 h-10 bg-white/70 backdrop-blur-sm border border-indigo-200">
-            <TabsTrigger value="daily" className="text-sm font-medium data-[state=active]:bg-indigo-500 data-[state=active]:text-white">일간 통계</TabsTrigger>
-            <TabsTrigger value="monthly" className="text-sm font-medium data-[state=active]:bg-indigo-500 data-[state=active]:text-white">월간 통계</TabsTrigger>
-          </TabsList>
+          <div className="flex items-center justify-between mb-4">
+            <TabsList className="grid grid-cols-2 h-10 bg-white/70 backdrop-blur-sm border border-indigo-200">
+              <TabsTrigger value="daily" className="text-sm font-medium data-[state=active]:bg-indigo-500 data-[state=active]:text-white">일간 통계</TabsTrigger>
+              <TabsTrigger value="monthly" className="text-sm font-medium data-[state=active]:bg-indigo-500 data-[state=active]:text-white">월간 통계</TabsTrigger>
+            </TabsList>
             
-            <TabsContent value="daily" className="pt-2">
-              {renderCompactDailyStats()}
-            </TabsContent>
+            {/* 탭에 따른 결산 버튼 */}
+            {activeTab === 'daily' ? (
+              <Button
+                onClick={onDailySettlement}
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-2 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-500 text-blue-700 font-semibold hover:bg-gradient-to-r hover:from-blue-100 hover:to-indigo-100 hover:border-blue-600 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
+              >
+                <Calculator className="h-4 w-4" />
+                일일결산
+              </Button>
+            ) : (
+              <Button
+                onClick={onMonthlySettlement}
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-2 bg-gradient-to-r from-emerald-50 to-green-50 border-2 border-emerald-500 text-emerald-700 font-semibold hover:bg-gradient-to-r hover:from-emerald-100 hover:to-green-100 hover:border-emerald-600 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
+              >
+                <Calculator className="h-4 w-4" />
+                월간결산
+              </Button>
+            )}
+          </div>
             
-            <TabsContent value="monthly" className="pt-2">
-              {renderCompactMonthlyStats()}
-            </TabsContent>
+          <TabsContent value="daily" className="pt-2">
+            {renderCompactDailyStats()}
+          </TabsContent>
+          
+          <TabsContent value="monthly" className="pt-2">
+            {renderCompactMonthlyStats()}
+          </TabsContent>
         </Tabs>
       </div>
       

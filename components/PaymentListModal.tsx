@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Switch } from '@/components/ui/switch';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import {
@@ -382,48 +383,56 @@ export default function PaymentListModal({ isOpen, onClose, title, date, payment
                       <TableCell className="py-3.5 text-center">
                         <div className="flex items-center justify-center gap-2">
                           {isSuperAdmin ? (
-                            <button
-                              onClick={() => toggleHometaxStatus(tx._id, tx.hometaxVerified || false)}
-                              disabled={updatingTransactionId === tx._id}
-                              className={`inline-flex items-center justify-center px-2 py-1 rounded-lg text-xs font-semibold transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed ${
-                                tx.hometaxVerified 
-                                  ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' 
-                                  : 'bg-red-100 text-red-700 hover:bg-red-200'
-                              }`}
-                            >
-                              {updatingTransactionId === tx._id ? (
-                                <div className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin mr-1"></div>
-                              ) : (
-                                <CheckCircle2 className="w-3 h-3 mr-1" />
+                            <div className="flex items-center gap-2">
+                              <Switch
+                                checked={tx.hometaxVerified || false}
+                                onCheckedChange={() => toggleHometaxStatus(tx._id, tx.hometaxVerified || false)}
+                                disabled={updatingTransactionId === tx._id}
+                                className="data-[state=checked]:bg-blue-600"
+                              />
+                              {tx.hometaxManuallyEdited && (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger>
+                                      <Edit2 className="w-3.5 h-3.5 text-orange-500" />
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p className="text-xs">수동으로 편집됨</p>
+                                      {tx.hometaxEditedAt && (
+                                        <p className="text-xs text-gray-400">
+                                          {new Date(tx.hometaxEditedAt).toLocaleDateString('ko-KR')}
+                                        </p>
+                                      )}
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
                               )}
-                              {tx.hometaxVerified ? '확인' : '미확인'}
-                            </button>
+                            </div>
                           ) : (
-                            <span className={`inline-flex items-center justify-center px-2 py-1 rounded-lg text-xs font-semibold ${
-                              tx.hometaxVerified 
-                                ? 'bg-blue-100 text-blue-700' 
-                                : 'bg-red-100 text-red-700'
-                            }`}>
-                              <CheckCircle2 className="w-3 h-3 mr-1" />
-                              {tx.hometaxVerified ? '확인' : '미확인'}
-                            </span>
-                          )}
-                          {tx.hometaxManuallyEdited && (
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger>
-                                  <Edit2 className="w-3.5 h-3.5 text-orange-500" />
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p className="text-xs">수동으로 편집됨</p>
-                                  {tx.hometaxEditedAt && (
-                                    <p className="text-xs text-gray-400">
-                                      {new Date(tx.hometaxEditedAt).toLocaleDateString('ko-KR')}
-                                    </p>
-                                  )}
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
+                            <div className="flex items-center gap-1">
+                              {tx.hometaxVerified ? (
+                                <span className="inline-flex items-center justify-center px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold">
+                                  <CheckCircle2 className="w-3 h-3 mr-1" />
+                                  확인
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center justify-center px-2 py-1 bg-gray-100 text-gray-500 rounded-lg text-xs font-medium">
+                                  미확인
+                                </span>
+                              )}
+                              {tx.hometaxManuallyEdited && (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger>
+                                      <Edit2 className="w-3.5 h-3.5 text-orange-500" />
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p className="text-xs">수동으로 편집됨</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
+                            </div>
                           )}
                         </div>
                       </TableCell>

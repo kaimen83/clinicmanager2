@@ -8,6 +8,7 @@ import ClinicStats from '@/components/ClinicStats';
 import ExtraIncomeList from '@/components/ExtraIncomeList';
 import ExpenseList from '@/components/ExpenseList';
 import DailySettlementModal from '@/components/DailySettlementModal';
+import MonthlySettlementModal from '@/components/MonthlySettlementModal';
 
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,6 +21,7 @@ type Props = {
 export default function DashboardContent({ children: _ }: Props) {
   const { selectedDate, setSelectedDate } = useDateContext();
   const [isDailySettlementModalOpen, setIsDailySettlementModalOpen] = useState(false);
+  const [isMonthlySettlementModalOpen, setIsMonthlySettlementModalOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -38,24 +40,17 @@ export default function DashboardContent({ children: _ }: Props) {
             {/* Stats Card */}
             <Card className="border-0 shadow-sm bg-white">
               <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-blue-50 rounded-lg">
-                      <TrendingUp className="h-5 w-5 text-blue-600" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-900">진료 통계</h3>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-blue-50 rounded-lg">
+                    <TrendingUp className="h-5 w-5 text-blue-600" />
                   </div>
-                  <Button
-                    onClick={() => setIsDailySettlementModalOpen(true)}
-                    variant="outline"
-                    size="sm"
-                    className="flex items-center gap-2 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-500 text-blue-700 font-semibold hover:bg-gradient-to-r hover:from-blue-100 hover:to-indigo-100 hover:border-blue-600 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
-                  >
-                    <Calculator className="h-4 w-4" />
-                    일일결산
-                  </Button>
+                  <h3 className="text-lg font-semibold text-gray-900">진료 통계</h3>
                 </div>
-                <ClinicStats date={selectedDate} />
+                <ClinicStats 
+                  date={selectedDate} 
+                  onDailySettlement={() => setIsDailySettlementModalOpen(true)}
+                  onMonthlySettlement={() => setIsMonthlySettlementModalOpen(true)}
+                />
               </div>
             </Card>
             
@@ -79,6 +74,16 @@ export default function DashboardContent({ children: _ }: Props) {
       <DailySettlementModal
         isOpen={isDailySettlementModalOpen}
         onClose={() => setIsDailySettlementModalOpen(false)}
+        date={selectedDate}
+        onDateChange={(newDate) => {
+          setSelectedDate(newDate);
+        }}
+      />
+
+      {/* Monthly Settlement Modal */}
+      <MonthlySettlementModal
+        isOpen={isMonthlySettlementModalOpen}
+        onClose={() => setIsMonthlySettlementModalOpen(false)}
         date={selectedDate}
         onDateChange={(newDate) => {
           setSelectedDate(newDate);
