@@ -17,7 +17,8 @@ import { toISODateString } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Search, RefreshCw, CheckCircle2, XCircle } from 'lucide-react';
+import { Search, RefreshCw, CheckCircle2, XCircle, Edit2 } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 type Props = {
   isOpen: boolean;
@@ -40,6 +41,8 @@ export default function PaymentListModal({ isOpen, onClose, title, date, payment
     error: string | null;
   } | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [updatingTransactionId, setUpdatingTransactionId] = useState<string | null>(null);
 
   // 트랜잭션 목록 조회
   const fetchTransactions = async () => {
@@ -80,13 +83,26 @@ export default function PaymentListModal({ isOpen, onClose, title, date, payment
     }
   };
 
-  // 모달이 열릴 때 트랜잭션 목록 조회
+  // 모달이 열릴 때 트랜잭션 목록 조회 및 권한 확인
   useEffect(() => {
     if (isOpen) {
       fetchTransactions();
       setSearchTerm('');
+      checkSuperAdminPermission();
     }
   }, [isOpen, date, paymentMethod, type]);
+
+  // Super Admin 권한 확인
+  const checkSuperAdminPermission = async () => {
+    try {
+      const response = await fetch('/api/auth/check-permission?role=SUPER_ADMIN');
+      const data = await response.json();
+      setIsSuperAdmin(data.hasPermission || false);
+    } catch (error) {
+      console.error('권한 확인 오류:', error);
+      setIsSuperAdmin(false);
+    }
+  };
 
   // 트랜잭션 정렬 함수
   const sortTransactionsByDate = (transactions: Transaction[]) => {
@@ -194,6 +210,36 @@ export default function PaymentListModal({ isOpen, onClose, title, date, payment
     } finally {
       setIsVerifying(false);
       setCrawlingStatus(null);
+    }
+  };
+
+  // 홈텍스 상태 수동 토글
+  const toggleHometaxStatus = async (transactionId: string, currentStatus: boolean) => {
+    if (!isSuperAdmin) return;
+    
+    setUpdatingTransactionId(transactionId);
+    try {
+      const response = await fetch('/api/transactions/toggle-hometax', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          transactionId,
+          verified: !currentStatus
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        // 트랜잭션 목록 새로고침
+        fetchTransactions();
+      } else {
+        alert(data.error || '상태 변경에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('홈텍스 상태 토글 오류:', error);
+      alert('상태 변경 중 오류가 발생했습니다.');
+    } finally {
+      setUpdatingTransactionId(null);
     }
   };
 
@@ -334,16 +380,52 @@ export default function PaymentListModal({ isOpen, onClose, title, date, payment
                         )}
                       </TableCell>
                       <TableCell className="py-3.5 text-center">
-                        {tx.hometaxVerified ? (
-                          <span className="inline-flex items-center justify-center px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold">
-                            <CheckCircle2 className="w-3 h-3 mr-1" />
-                            확인
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center justify-center px-2 py-1 bg-gray-100 text-gray-500 rounded-lg text-xs font-medium">
-                            미확인
-                          </span>
-                        )}
+                        <div className="flex items-center justify-center gap-2">
+                          {isSuperAdmin ? (
+                            <button
+                              onClick={() => toggleHometaxStatus(tx._id, tx.hometaxVerified || false)}
+                              disabled={updatingTransactionId === tx._id}
+                              className={`inline-flex items-center justify-center px-2 py-1 rounded-lg text-xs font-semibold transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed ${
+                                tx.hometaxVerified 
+                                  ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' 
+                                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                              }`}
+                            >
+                              {updatingTransactionId === tx._id ? (
+                                <div className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin mr-1"></div>
+                              ) : (
+                                <CheckCircle2 className="w-3 h-3 mr-1" />
+                              )}
+                              {tx.hometaxVerified ? '확인' : '미확인'}
+                            </button>
+                          ) : (
+                            <span className={`inline-flex items-center justify-center px-2 py-1 rounded-lg text-xs font-semibold ${
+                              tx.hometaxVerified 
+                                ? 'bg-blue-100 text-blue-700' 
+                                : 'bg-gray-100 text-gray-500'
+                            }`}>
+                              <CheckCircle2 className="w-3 h-3 mr-1" />
+                              {tx.hometaxVerified ? '확인' : '미확인'}
+                            </span>
+                          )}
+                          {tx.hometaxManuallyEdited && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <Edit2 className="w-3.5 h-3.5 text-orange-500" />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p className="text-xs">수동으로 편집됨</p>
+                                  {tx.hometaxEditedAt && (
+                                    <p className="text-xs text-gray-400">
+                                      {new Date(tx.hometaxEditedAt).toLocaleDateString('ko-KR')}
+                                    </p>
+                                  )}
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="text-right py-3.5 font-bold text-gray-900 pr-6 text-sm">
                         ₩{formatAmount(tx.paymentAmount)}
