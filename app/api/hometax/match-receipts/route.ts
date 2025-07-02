@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
         const dateDiff = Math.abs(expenseDate.getTime() - receiptDate.getTime());
         const daysDiff = dateDiff / (1000 * 60 * 60 * 24);
         
-        const isMatch = receipt.합계금액 === expenseAmount && daysDiff <= 15;
+        const isMatch = receipt.합계금액 === expenseAmount && daysDiff <= 10;
         
         if (isMatch) {
           console.log(`[자동 매칭] 세금계산서 - 지출: ${expense.vendor} ${expenseAmount}원 (${expense.date}) <-> 영수증: ${receipt.상호} ${receipt.합계금액}원 (${receipt.작성일자})`);
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
         const dateDiff = Math.abs(expenseDate.getTime() - receiptDate.getTime());
         const daysDiff = dateDiff / (1000 * 60 * 60 * 24);
         
-        const isMatch = receipt.매입금액 === expenseAmount && daysDiff <= 15;
+        const isMatch = receipt.매입금액 === expenseAmount && daysDiff <= 10;
         
         if (isMatch) {
           console.log(`[자동 매칭] 현금영수증 - 지출: ${expense.vendor} ${expenseAmount}원 (${expense.date}) <-> 영수증: ${receipt.상호명} ${receipt.매입금액}원 (${receipt.매입일시})`);
@@ -92,7 +92,7 @@ export async function GET(request: NextRequest) {
         const amountDiff = Math.abs(receipt.합계금액 - expenseAmount);
         const amountRatio = amountDiff / Math.max(receipt.합계금액, expenseAmount);
         
-        return (daysDiff <= 7 && amountRatio <= 0.1) || (daysDiff <= 3 && amountRatio <= 0.3);
+        return daysDiff <= 7 && amountRatio <= 0.1;
       });
 
       const similarCashMatches = cashReceipts.filter(receipt => {
@@ -102,7 +102,7 @@ export async function GET(request: NextRequest) {
         const amountDiff = Math.abs(receipt.매입금액 - expenseAmount);
         const amountRatio = amountDiff / Math.max(receipt.매입금액, expenseAmount);
         
-        return (daysDiff <= 7 && amountRatio <= 0.1) || (daysDiff <= 3 && amountRatio <= 0.3);
+        return daysDiff <= 7 && amountRatio <= 0.1;
       });
 
       // 유사한 매칭이 하나만 있으면 확인 필요 목록에 추가

@@ -122,6 +122,32 @@ export default function EvidenceStatus() {
     }
   };
 
+  // 영수증 상태 토글
+  const handleToggleReceipt = async (expense: Expense) => {
+    try {
+      const response = await fetch(`/api/expenses/${expense._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...expense,
+          hasReceipt: !expense.hasReceipt,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('영수증 상태 업데이트에 실패했습니다.');
+      }
+      
+      toast.success(`영수증 상태가 "${!expense.hasReceipt ? '있음' : '없음'}"으로 변경되었습니다.`);
+      loadExpenses(); // 목록 새로고침
+    } catch (error) {
+      console.error('영수증 상태 업데이트 중 에러:', error);
+      toast.error('영수증 상태 변경에 실패했습니다.');
+    }
+  };
+
   // 모달 닫기
   const handleCloseModal = () => {
     setIsModalOpen(false);
@@ -334,13 +360,16 @@ export default function EvidenceStatus() {
                       {expense.amount.toLocaleString()}원
                     </div>
                     <div className="text-sm">
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        expense.hasReceipt 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
-                      }`}>
+                      <button
+                        onClick={() => handleToggleReceipt(expense)}
+                        className={`px-2 py-1 rounded-full text-xs transition-colors hover:opacity-80 ${
+                          expense.hasReceipt 
+                            ? 'bg-green-100 text-green-800 hover:bg-green-200' 
+                            : 'bg-red-100 text-red-800 hover:bg-red-200'
+                        }`}
+                      >
                         {expense.hasReceipt ? '있음' : '없음'}
-                      </span>
+                      </button>
                     </div>
                     <div className="text-sm truncate">{expense.notes || ''}</div>
                     <div className="flex justify-center gap-1">
