@@ -48,12 +48,19 @@ export async function POST(request: NextRequest) {
       cashReceipt: true
     }).toArray();
 
-    // 홈텍스 현금영수증 데이터 조회 (전체 기간)
-    const hometaxReceipts = await db.collection('hometaxcashreceipts').find({}).toArray();
+    // 홈텍스 현금영수증 데이터 조회 (최근 2개월 데이터만)
+    const hometaxStartDate = new Date(queryStartDate);
+    const hometaxReceipts = await db.collection('hometaxcashreceipts').find({
+      거래일자: { 
+        $gte: format(hometaxStartDate, 'yyyy-MM-dd'), 
+        $lte: format(queryEndDate, 'yyyy-MM-dd') 
+      }
+    }).toArray();
 
     // 매칭 로직
     let matchedCount = 0;
     const updatePromises = [];
+    const matchedHometaxIds = new Set(); // 매칭된 홈택스 데이터 ID 추적
 
     for (const transaction of transactions) {
       // 이미 확인된 거래는 스킵
@@ -61,6 +68,9 @@ export async function POST(request: NextRequest) {
 
       // 홈텍스 데이터와 매칭 시도
       const matched = hometaxReceipts.find(receipt => {
+        // 이미 매칭된 홈택스 데이터는 스킵
+        if (matchedHometaxIds.has(receipt._id.toString())) return false;
+        
         // 날짜 매칭
         const transactionDateStr = format(new Date(transaction.date), 'yyyy-MM-dd');
         if (receipt.거래일자 !== transactionDateStr) return false;
@@ -79,6 +89,35 @@ export async function POST(request: NextRequest) {
           )
         );
         matchedCount++;
+        matchedHometaxIds.add(matched._id.toString());
+      }
+    }
+
+    // 매칭되지 않은 홈택스 데이터 찾기
+    const unmatchedReceipts = hometaxReceipts.filter(receipt => 
+      !matchedHometaxIds.has(receipt._id.toString())
+    );
+
+    // 매칭되지 않은 데이터를 hometax_unmatched 컬렉션에 저장
+    const unmatchedCollection = db.collection('hometax_unmatched');
+    let savedUnmatchedCount = 0;
+
+    for (const receipt of unmatchedReceipts) {
+      // 중복 체크 (승인번호와 거래일자로)
+      const exists = await unmatchedCollection.findOne({
+        승인번호: receipt.승인번호,
+        거래일자: receipt.거래일자
+      });
+
+      if (!exists) {
+        await unmatchedCollection.insertOne({
+          ...receipt,
+          originalId: receipt._id, // 원본 홈택스 데이터 ID 참조
+          verifiedAt: new Date(), // 검증 실행 시점
+          status: 'unmatched', // 상태: unmatched, reviewed, ignored
+          createdBy: userId
+        });
+        savedUnmatchedCount++;
       }
     }
 
@@ -89,7 +128,9 @@ export async function POST(request: NextRequest) {
       success: true,
       totalTransactions: transactions.length,
       matchedCount,
-      hometaxReceiptsCount: hometaxReceipts.length
+      hometaxReceiptsCount: hometaxReceipts.length,
+      unmatchedCount: unmatchedReceipts.length,
+      savedUnmatchedCount
     });
 
   } catch (error) {

@@ -17,8 +17,9 @@ import { toISODateString } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Search, RefreshCw, CheckCircle2, XCircle, Edit2 } from 'lucide-react';
+import { Search, RefreshCw, CheckCircle2, XCircle, Edit2, AlertCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import HometaxUnmatchedModal from './HometaxUnmatchedModal';
 
 type Props = {
   isOpen: boolean;
@@ -43,6 +44,7 @@ export default function PaymentListModal({ isOpen, onClose, title, date, payment
   const [isVerifying, setIsVerifying] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [updatingTransactionId, setUpdatingTransactionId] = useState<string | null>(null);
+  const [showUnmatchedModal, setShowUnmatchedModal] = useState(false);
 
   // 트랜잭션 목록 조회
   const fetchTransactions = async () => {
@@ -198,7 +200,14 @@ export default function PaymentListModal({ isOpen, onClose, title, date, payment
 
       const data = await response.json();
       if (data.success) {
-        alert(`검증 완료: ${data.matchedCount}건이 확인되었습니다.`);
+        const message = `검증 완료: ${data.matchedCount}건이 확인되었습니다.`;
+        if (data.unmatchedCount > 0) {
+          if (confirm(`${message}\n매칭되지 않은 데이터 ${data.unmatchedCount}건이 있습니다.\n매칭되지 않은 데이터를 확인하시겠습니까?`)) {
+            setShowUnmatchedModal(true);
+          }
+        } else {
+          alert(message);
+        }
         // 트랜잭션 목록 새로고침
         fetchTransactions();
       } else {
@@ -281,14 +290,24 @@ export default function PaymentListModal({ isOpen, onClose, title, date, payment
               />
             </div>
             {paymentMethod === '현금' && (
-              <Button
-                onClick={startHometaxCrawling}
-                disabled={crawlingStatus?.isRunning || isVerifying}
-                className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl px-4 py-2 transition-all shadow-md hover:shadow-lg disabled:opacity-50"
-              >
-                <RefreshCw className={`h-4 w-4 ${crawlingStatus?.isRunning ? 'animate-spin' : ''}`} />
-                홈텍스 확인
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  onClick={startHometaxCrawling}
+                  disabled={crawlingStatus?.isRunning || isVerifying}
+                  className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl px-4 py-2 transition-all shadow-md hover:shadow-lg disabled:opacity-50"
+                >
+                  <RefreshCw className={`h-4 w-4 ${crawlingStatus?.isRunning ? 'animate-spin' : ''}`} />
+                  홈텍스 확인
+                </Button>
+                <Button
+                  onClick={() => setShowUnmatchedModal(true)}
+                  variant="outline"
+                  className="flex items-center gap-2 border-orange-300 text-orange-700 hover:bg-orange-50 rounded-xl px-4 py-2 transition-all"
+                >
+                  <AlertCircle className="h-4 w-4" />
+                  매칭 안된 데이터
+                </Button>
+              </div>
             )}
           </div>
           
@@ -459,6 +478,13 @@ export default function PaymentListModal({ isOpen, onClose, title, date, payment
           </div>
         )}
       </DialogContent>
+      
+      <HometaxUnmatchedModal 
+        isOpen={showUnmatchedModal}
+        onClose={() => setShowUnmatchedModal(false)}
+        date={date}
+        type={type}
+      />
     </Dialog>
   );
 } 
