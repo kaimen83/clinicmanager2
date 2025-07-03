@@ -178,6 +178,22 @@ export async function GET(request: NextRequest) {
       })
       .toArray();
     
+    // 8. 카드매출 입금 데이터 (선택된 날짜에 입금예정인 데이터)
+    const cardDeposits = await db.collection('carddeposits')
+      .find({
+        expectedDepositDate: { $gte: startDate, $lte: endDate }
+      })
+      .toArray();
+    
+    const cardDepositSummary = cardDeposits.length > 0 ? {
+      pending: cardDeposits,
+      totalPendingAmount: cardDeposits
+        .filter(deposit => deposit.status === '미입금')
+        .reduce((sum, deposit) => sum + (Number(deposit.saleAmount) || 0), 0),
+      totalExpectedDeposits: cardDeposits
+        .reduce((sum, deposit) => sum + (Number(deposit.saleAmount) || 0), 0)
+    } : null;
+    
     // 응답 데이터 구성
     const settlementData = {
       date,
@@ -240,7 +256,10 @@ export async function GET(request: NextRequest) {
         nonAgreedAmount: consultations.filter(c => c.agreed === false).reduce((sum, c) => sum + (Number(c.amount) || 0), 0)
       },
       
-      // 8. 신환수
+      // 8. 카드매출 입금
+      cardDeposits: cardDepositSummary,
+      
+      // 9. 신환수
       newPatientCount: newPatients.length
     };
     
