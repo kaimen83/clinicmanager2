@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { chromium } from 'playwright';
-import mongoose from 'mongoose';
+import { MongoClient } from 'mongodb';
 
 // 입금예정일 계산 함수
 const calculateExpectedDepositDate = (saleDate: Date) => {
@@ -34,13 +34,9 @@ export async function POST(req: NextRequest) {
     }
 
     // MongoDB 연결
-    if (!mongoose.connections[0].readyState) {
-      await mongoose.connect(process.env.MONGODB_URI || '');
-    }
-    
-    // 모델 import (연결 후에 import)
-    const CardDeposit = (await import('@/lib/models/CardDeposit')).default;
-    const DailyActualCardDeposit = (await import('@/lib/models/DailyActualCardDeposit')).default;
+    const client = new MongoClient(process.env.MONGODB_URI || '');
+    await client.connect();
+    const db = client.db(process.env.MONGODB_DATABASE || 'hospital_accounting');
 
     // 크롤링 실행
     const crawler = new CardSalesCrawler();
@@ -65,7 +61,9 @@ export async function POST(req: NextRequest) {
       }
       
       // 데이터 처리
-      const result = await crawler.processPaymentData(data, userId, CardDeposit, DailyActualCardDeposit);
+      const result = await crawler.processPaymentData(data, userId, db);
+      
+      await client.close();
       
       return NextResponse.json({
         success: true,
@@ -246,7 +244,7 @@ class CardSalesCrawler {
     }
   }
 
-  async processPaymentData(data: any[], userId: string, CardDeposit: any, DailyActualCardDeposit: any) {
+  async processPaymentData(data: any[], userId: string, db: any) {
     try {
       const processedResults = [];
       const errors = [];
@@ -258,9 +256,9 @@ class CardSalesCrawler {
       };
 
       // 전체 미입금 데이터 조회
-      const allUnpaidDeposits = await CardDeposit.find({
+      const allUnpaidDeposits = await db.collection('carddeposits').find({
         status: '미입금'
-      });
+      }).toArray();
 
       for (const deposit of data) {
         try {
@@ -271,7 +269,7 @@ class CardSalesCrawler {
           const cardCompany = cardCompanyMapping[deposit.카드사] || deposit.카드사;
 
           // 미입금 상태인 데이터 찾기
-          const existingDeposit = await CardDeposit.findOne({
+          const existingDeposit = await db.collection('carddeposits').findOne({
             cardCompany: cardCompany,
             saleAmount: saleAmount,
             status: '미입금',
@@ -292,7 +290,7 @@ class CardSalesCrawler {
               depositDate.setHours(0, 0, 0, 0); // 시간을 00:00:00으로 설정
 
               // 해당 날짜에 이미 처리된 입금이 있는지 확인
-              const existingDailyDeposit = await DailyActualCardDeposit.findOne({
+              const existingDailyDeposit = await db.collection('dailyactualcarddeposits').findOne({
                 'deposits.cardDepositId': existingDeposit._id
               });
 
@@ -301,17 +299,18 @@ class CardSalesCrawler {
               }
 
               // 입금 처리
-              existingDeposit.status = '입금완료';
-              existingDeposit.actualDepositAmount = actualAmount;
-              existingDeposit.actualDepositDate = depositDate;
-              existingDeposit.fee = fee;
-              
-              // createdBy가 없는 경우 현재 사용자 ID 설정
-              if (!existingDeposit.createdBy) {
-                existingDeposit.createdBy = userId;
-              }
-              
-              await existingDeposit.save();
+              await db.collection('carddeposits').updateOne(
+                { _id: existingDeposit._id },
+                {
+                  $set: {
+                    status: '입금완료',
+                    actualDepositAmount: actualAmount,
+                    actualDepositDate: depositDate,
+                    fee: fee,
+                    createdBy: existingDeposit.createdBy || userId
+                  }
+                }
+              );
               
               // DailyActualCardDeposit 처리
               const startOfDay = new Date(depositDate);
@@ -319,7 +318,7 @@ class CardSalesCrawler {
               const endOfDay = new Date(depositDate);
               endOfDay.setHours(23, 59, 59, 999);
 
-              let dailyDeposit = await DailyActualCardDeposit.findOne({
+              let dailyDeposit = await db.collection('dailyactualcarddeposits').findOne({
                 depositDate: {
                   $gte: startOfDay,
                   $lte: endOfDay
@@ -327,31 +326,49 @@ class CardSalesCrawler {
               });
 
               if (!dailyDeposit) {
-                dailyDeposit = new DailyActualCardDeposit({
+                // 새로운 daily deposit 생성
+                await db.collection('dailyactualcarddeposits').insertOne({
                   depositDate: startOfDay,
-                  totalAmount: 0,
-                  deposits: []
+                  totalAmount: actualAmount,
+                  deposits: [{
+                    cardDepositId: existingDeposit._id,
+                    amount: actualAmount,
+                    cardCompany: existingDeposit.cardCompany
+                  }],
+                  createdAt: new Date(),
+                  updatedAt: new Date()
                 });
+              } else {
+                // 기존 daily deposit 업데이트
+                const updatedDeposits = [...dailyDeposit.deposits];
+                const existingIndex = updatedDeposits.findIndex(
+                  (d: any) => d.cardDepositId.toString() === existingDeposit._id.toString()
+                );
+                
+                if (existingIndex === -1) {
+                  updatedDeposits.push({
+                    cardDepositId: existingDeposit._id,
+                    amount: actualAmount,
+                    cardCompany: existingDeposit.cardCompany
+                  });
+                }
+
+                const newTotalAmount = updatedDeposits.reduce(
+                  (sum: number, deposit: any) => sum + deposit.amount,
+                  0
+                );
+
+                await db.collection('dailyactualcarddeposits').updateOne(
+                  { _id: dailyDeposit._id },
+                  {
+                    $set: {
+                      deposits: updatedDeposits,
+                      totalAmount: newTotalAmount,
+                      updatedAt: new Date()
+                    }
+                  }
+                );
               }
-
-              // 중복 제거
-              const uniqueDeposits = dailyDeposit.deposits.filter(
-                (d: any) => d.cardDepositId.toString() !== existingDeposit._id.toString()
-              );
-
-              uniqueDeposits.push({
-                cardDepositId: existingDeposit._id,
-                amount: actualAmount,
-                cardCompany: existingDeposit.cardCompany
-              });
-
-              dailyDeposit.deposits = uniqueDeposits;
-              dailyDeposit.totalAmount = uniqueDeposits.reduce(
-                (sum: number, deposit: any) => sum + deposit.amount,
-                0
-              );
-
-              await dailyDeposit.save();
               
               processedResults.push({
                 id: existingDeposit._id,
