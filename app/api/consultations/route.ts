@@ -45,64 +45,77 @@ export async function GET(request: NextRequest) {
       searchQuery['agreed'] = agreed === 'true';
     }
     
-    // 날짜 필터 추가 (consultation.js 방식: 동의한 상담은 confirmedDate, 미동의 상담은 date 기준)
+    // 날짜 필터 추가 (동의한 상담은 confirmedDate, 미동의 상담은 date 기준)
     if (dateStart && dateEnd) {
-      // 시작 날짜: 해당 날짜의 00:00:00 (한국 시간)
-      const startParts = dateStart.split('-').map(Number);
-      const startDateObj = new Date(startParts[0], startParts[1] - 1, startParts[2], 0, 0, 0, 0);
+      // 시작 날짜와 종료 날짜를 한국 시간 기준으로 UTC 변환
+      const startDate = new Date(`${dateStart}T00:00:00+09:00`);
+      const endDate = new Date(`${dateEnd}T23:59:59+09:00`);
       
-      // 종료 날짜: 해당 날짜의 23:59:59.999 (한국 시간)
-      const endParts = dateEnd.split('-').map(Number);
-      const endDateObj = new Date(endParts[0], endParts[1] - 1, endParts[2], 23, 59, 59, 999);
-      
-      // 한국 시간과 UTC 간의 시차 조정 (9시간)
-      const kstOffset = 9 * 60 * 60 * 1000;
-      const startUtc = new Date(startDateObj.getTime() - kstOffset);
-      const endUtc = new Date(endDateObj.getTime() - kstOffset);
-      
-      // consultation.js 방식: 동의한 상담은 confirmedDate, 미동의 상담은 date 기준
-      dateConditions = [
-        // 미동의 상담: date 기준
-        {
-          agreed: false,
-          date: {
-            $gte: startUtc,
-            $lte: endUtc
+      // agreed 파라미터에 따라 날짜 필터 적용
+      if (agreed === 'true') {
+        // 동의한 상담만: confirmedDate 기준
+        searchQuery['confirmedDate'] = {
+          $gte: startDate,
+          $lte: endDate,
+          $ne: null
+        };
+      } else if (agreed === 'false') {
+        // 미동의한 상담만: date 기준
+        searchQuery['date'] = {
+          $gte: startDate,
+          $lte: endDate
+        };
+      } else {
+        // agreed 파라미터가 없으면 두 조건 모두 포함
+        dateConditions = [
+          // 미동의 상담: date 기준
+          {
+            agreed: false,
+            date: {
+              $gte: startDate,
+              $lte: endDate
+            }
+          },
+          // 동의한 상담: confirmedDate 기준
+          {
+            agreed: true,
+            confirmedDate: {
+              $gte: startDate,
+              $lte: endDate,
+              $ne: null
+            }
           }
-        },
-        // 동의한 상담: confirmedDate 기준
-        {
-          agreed: true,
-          confirmedDate: {
-            $gte: startUtc,
-            $lte: endUtc,
-            $ne: null
-          }
-        }
-      ];
+        ];
+      }
     } else if (dateStart) {
-      const startParts = dateStart.split('-').map(Number);
-      const startDateObj = new Date(startParts[0], startParts[1] - 1, startParts[2], 0, 0, 0, 0);
-      const kstOffset = 9 * 60 * 60 * 1000;
-      const startUtc = new Date(startDateObj.getTime() - kstOffset);
+      const startDate = new Date(`${dateStart}T00:00:00+09:00`);
       
-      dateConditions = [
-        { agreed: false, date: { $gte: startUtc } },
-        { agreed: true, confirmedDate: { $gte: startUtc, $ne: null } }
-      ];
+      if (agreed === 'true') {
+        searchQuery['confirmedDate'] = { $gte: startDate, $ne: null };
+      } else if (agreed === 'false') {
+        searchQuery['date'] = { $gte: startDate };
+      } else {
+        dateConditions = [
+          { agreed: false, date: { $gte: startDate } },
+          { agreed: true, confirmedDate: { $gte: startDate, $ne: null } }
+        ];
+      }
     } else if (dateEnd) {
-      const endParts = dateEnd.split('-').map(Number);
-      const endDateObj = new Date(endParts[0], endParts[1] - 1, endParts[2], 23, 59, 59, 999);
-      const kstOffset = 9 * 60 * 60 * 1000;
-      const endUtc = new Date(endDateObj.getTime() - kstOffset);
+      const endDate = new Date(`${dateEnd}T23:59:59+09:00`);
       
-      dateConditions = [
-        { agreed: false, date: { $lte: endUtc } },
-        { agreed: true, confirmedDate: { $lte: endUtc, $ne: null } }
-      ];
+      if (agreed === 'true') {
+        searchQuery['confirmedDate'] = { $lte: endDate, $ne: null };
+      } else if (agreed === 'false') {
+        searchQuery['date'] = { $lte: endDate };
+      } else {
+        dateConditions = [
+          { agreed: false, date: { $lte: endDate } },
+          { agreed: true, confirmedDate: { $lte: endDate, $ne: null } }
+        ];
+      }
     }
     
-    // 날짜 조건과 기존 조건을 결합
+    // 날짜 조건과 기존 조건을 결합 (agreed 파라미터가 없을 때만)
     if (dateConditions.length > 0) {
       if (searchQuery['$or']) {
         // 기존 $or 조건이 있으면 $and로 결합
