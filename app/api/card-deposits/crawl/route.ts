@@ -69,7 +69,8 @@ export async function POST(req: NextRequest) {
         success: true,
         message: '크롤링이 완료되었습니다.',
         processed: result.processed.length,
-        errors: result.errors.length
+        errors: result.errors.length,
+        errorDetails: result.errors
       });
       
     } finally {
@@ -382,16 +383,63 @@ class CardSalesCrawler {
                   fee: fee
                 }
               });
+            } else {
+              // 실입금액이 0이거나 유효하지 않은 경우
+              errors.push({
+                data: {
+                  originalCardCompany: deposit.카드사,
+                  mappedCardCompany: cardCompany,
+                  saleAmount: saleAmount,
+                  date: deposit.날짜,
+                  actualAmount: deposit.실입금액
+                },
+                error: `실입금액이 유효하지 않습니다. (${deposit.실입금액})`
+              });
             }
           } else {
+            // 매칭 실패 원인을 더 자세히 분석
+            const sameCardCompany = await db.collection('carddeposits').find({
+              cardCompany: cardCompany
+            }).limit(5).toArray();
+            
+            const sameAmount = await db.collection('carddeposits').find({
+              saleAmount: saleAmount
+            }).limit(5).toArray();
+            
+            let detailedError = '매칭되는 미입금 데이터를 찾을 수 없습니다.';
+            
+            if (sameCardCompany.length === 0) {
+              detailedError += ` (${cardCompany} 카드사 데이터 없음)`;
+            } else if (sameAmount.length === 0) {
+              detailedError += ` (${saleAmount.toLocaleString()}원 매출액 데이터 없음)`;
+            } else {
+              const unpaidSameCard = await db.collection('carddeposits').countDocuments({
+                cardCompany: cardCompany,
+                status: '미입금'
+              });
+              const unpaidSameAmount = await db.collection('carddeposits').countDocuments({
+                saleAmount: saleAmount,
+                status: '미입금'
+              });
+              
+              if (unpaidSameCard === 0) {
+                detailedError += ` (${cardCompany}의 미입금 데이터 없음)`;
+              } else if (unpaidSameAmount === 0) {
+                detailedError += ` (${saleAmount.toLocaleString()}원의 미입금 데이터 없음)`;
+              } else {
+                detailedError += ' (이미 처리되었거나 다른 조건 불일치)';
+              }
+            }
+            
             errors.push({
               data: {
                 originalCardCompany: deposit.카드사,
                 mappedCardCompany: cardCompany,
                 saleAmount: saleAmount,
-                date: deposit.날짜
+                date: deposit.날짜,
+                actualAmount: deposit.실입금액
               },
-              error: '매칭되는 미입금 데이터를 찾을 수 없습니다.'
+              error: detailedError
             });
           }
         } catch (error: any) {

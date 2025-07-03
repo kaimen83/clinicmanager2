@@ -61,6 +61,7 @@ export default function CardDeposits() {
       errors?: number;
       total?: number;
     };
+    errorDetails?: any[];
   }>({
     step: 'ready',
     progress: 0,
@@ -319,7 +320,8 @@ export default function CardDeposits() {
             processed: result.processed || 0,
             errors: result.errors || 0,
             total: (result.processed || 0) + (result.errors || 0)
-          }
+          },
+          errorDetails: result.errorDetails || []
         });
         await loadData(); // 데이터 새로고침
       } else {
@@ -787,6 +789,29 @@ export default function CardDeposits() {
                       <div className="text-gray-600">실패</div>
                       <div className="font-bold text-red-600">{crawlingStatus.details.errors}건</div>
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {crawlingStatus.errorDetails && crawlingStatus.errorDetails.length > 0 && (
+                <div className="space-y-2 bg-red-50 p-4 rounded-lg max-h-60 overflow-y-auto">
+                  <h4 className="font-medium text-sm text-red-800">실패 상세 정보</h4>
+                  <div className="space-y-2">
+                    {crawlingStatus.errorDetails.map((error, index) => (
+                      <div key={index} className="border-l-2 border-red-300 pl-3 text-xs bg-white p-2 rounded">
+                        <div className="font-medium text-red-700">
+                          {error.data?.originalCardCompany} - {error.data?.saleAmount?.toLocaleString()}원
+                        </div>
+                        <div className="text-red-600 mt-1">{error.error}</div>
+                        <div className="text-gray-600 text-xs mt-1 space-y-1">
+                          {error.data?.date && <div>매출일: {error.data.date}</div>}
+                          {error.data?.actualAmount && <div>실입금액: {error.data.actualAmount}</div>}
+                          {error.data?.mappedCardCompany !== error.data?.originalCardCompany && (
+                            <div>매핑: {error.data?.originalCardCompany} → {error.data?.mappedCardCompany}</div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}

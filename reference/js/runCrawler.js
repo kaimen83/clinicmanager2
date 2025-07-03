@@ -10,8 +10,8 @@ async function runCrawler() {
         
         // 로그인 시도
         const loginSuccess = await crawler.login(
-            process.env.CARDSALES_ID || 'kaimen83',
-            process.env.CARDSALES_PASSWORD || 'pswd2371'
+            process.env.CARDSALES_ID,
+            process.env.CARDSALES_PASSWORD
         );
         
         if (loginSuccess) {
