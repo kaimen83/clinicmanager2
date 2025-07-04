@@ -545,7 +545,7 @@ const ImplantStats = () => {
     return (
       <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl shadow-lg border border-gray-200/50 overflow-hidden">
         {/* 헤더 */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+        <div className="bg-gradient-to-r from-blue-400 to-blue-500 px-6 py-4">
           <h3 className="text-white font-semibold text-lg">
             {selectedDate.getFullYear()}년 {selectedDate.getMonth() + 1}월 캘린더
           </h3>
@@ -720,7 +720,7 @@ const ImplantStats = () => {
     return (
       <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl shadow-lg border border-gray-200/50 overflow-hidden">
         {/* 헤더 */}
-        <div className="bg-gradient-to-r from-indigo-600 to-purple-700 px-6 py-4">
+        <div className="bg-gradient-to-r from-indigo-400 to-indigo-500 px-6 py-4">
           <h3 className="text-white font-semibold text-lg">
             {selectedDate.getFullYear()}년 연간 개요
           </h3>
@@ -964,14 +964,14 @@ const ImplantStats = () => {
             renderComparisonTable()
           ) : (
             // 기본 달력 뷰
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
               {/* 왼쪽: 통계 요약 */}
               <div className="lg:col-span-1">
                 {renderStatsSummary()}
               </div>
 
               {/* 오른쪽: 달력 */}
-              <div className="lg:col-span-2">
+              <div className="lg:col-span-3">
                 {currentPeriod === 'monthly' ? renderDailyCalendar() : renderMonthlyCalendar()}
               </div>
             </div>
