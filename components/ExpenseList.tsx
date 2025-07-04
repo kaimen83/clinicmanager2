@@ -6,7 +6,7 @@ import { ko } from 'date-fns/locale';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Pencil, Trash2 } from 'lucide-react';
+import { Edit, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import ExpenseModal from './ExpenseModal';
 import { Expense } from '@/lib/types';
@@ -191,7 +191,7 @@ export default function ExpenseList({ date }: ExpenseListProps) {
                           className={`transition-colors ${
                             isEditDeleteDisabled(expense) 
                               ? 'text-gray-400 cursor-not-allowed opacity-50' 
-                              : 'hover:bg-blue-100 hover:text-blue-700'
+                              : 'text-blue-600 hover:bg-blue-100 hover:text-blue-700'
                           }`}
                           disabled={isEditDeleteDisabled(expense)}
                           onClick={() => !isEditDeleteDisabled(expense) && handleEditExpense(expense)}
@@ -201,7 +201,7 @@ export default function ExpenseList({ date }: ExpenseListProps) {
                               : '수정'
                           }
                         >
-                          <Pencil className="h-4 w-4" />
+                          <Edit className="h-4 w-4" />
                         </Button>
                         <Button 
                           variant="ghost" 
@@ -209,7 +209,7 @@ export default function ExpenseList({ date }: ExpenseListProps) {
                           className={`transition-colors ${
                             isEditDeleteDisabled(expense) 
                               ? 'text-gray-400 cursor-not-allowed opacity-50' 
-                              : 'hover:bg-red-100 hover:text-red-700'
+                              : 'text-red-600 hover:bg-red-100 hover:text-red-700'
                           }`}
                           disabled={isEditDeleteDisabled(expense)}
                           onClick={() => !isEditDeleteDisabled(expense) && handleDeleteExpense(expense._id || '')}

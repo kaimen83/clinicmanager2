@@ -760,7 +760,7 @@ export default function DoctorPatientList({ date }: Props) {
                         return (
                           <>
                             <div className="bg-white/60 px-3 py-1 rounded-md border border-blue-200/50 text-blue-700 text-xs font-medium">
-                              환자/신환 : <span className="font-bold">{stats.patientCount}명/{stats.newPatientCount}명</span>
+                              환자 / 신환 : <span className="font-bold">{stats.patientCount}명 / {stats.newPatientCount}명</span>
                             </div>
                             <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-1.5 rounded-md shadow-sm">
                               <div className="text-white text-sm font-bold">
@@ -830,7 +830,7 @@ export default function DoctorPatientList({ date }: Props) {
                                   className={`transition-colors ${
                                     isEditDeleteDisabled(transaction) 
                                       ? 'text-gray-400 cursor-not-allowed opacity-50' 
-                                      : 'hover:bg-blue-100 hover:text-blue-700'
+                                      : 'text-blue-600 hover:bg-blue-100 hover:text-blue-700'
                                   }`}
                                   disabled={isEditDeleteDisabled(transaction)}
                                   onClick={() => !isEditDeleteDisabled(transaction) && openEditDialog(transaction)}
@@ -848,7 +848,7 @@ export default function DoctorPatientList({ date }: Props) {
                                   className={`transition-colors ${
                                     isEditDeleteDisabled(transaction) 
                                       ? 'text-gray-400 cursor-not-allowed opacity-50' 
-                                      : 'hover:bg-red-100 hover:text-red-700'
+                                      : 'text-red-600 hover:bg-red-100 hover:text-red-700'
                                   }`}
                                   disabled={isEditDeleteDisabled(transaction)}
                                   onClick={() => !isEditDeleteDisabled(transaction) && openDeleteDialog(transaction)}

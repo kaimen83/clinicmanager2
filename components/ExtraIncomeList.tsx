@@ -212,7 +212,7 @@ export default function ExtraIncomeList({ date }: Props) {
                             className={`transition-colors ${
                               isEditDeleteDisabled(item) 
                                 ? 'text-gray-400 cursor-not-allowed opacity-50' 
-                                : 'hover:bg-blue-100 hover:text-blue-700'
+                                : 'text-blue-600 hover:bg-blue-100 hover:text-blue-700'
                             }`}
                             disabled={isEditDeleteDisabled(item)}
                             onClick={() => !isEditDeleteDisabled(item) && handleOpenEditModal(item)}
@@ -230,7 +230,7 @@ export default function ExtraIncomeList({ date }: Props) {
                             className={`transition-colors ${
                               isEditDeleteDisabled(item) 
                                 ? 'text-gray-400 cursor-not-allowed opacity-50' 
-                                : 'hover:bg-red-100 hover:text-red-700'
+                                : 'text-red-600 hover:bg-red-100 hover:text-red-700'
                             }`}
                             disabled={isEditDeleteDisabled(item)}
                             onClick={() => !isEditDeleteDisabled(item) && handleOpenDeleteDialog(item._id || '')}
