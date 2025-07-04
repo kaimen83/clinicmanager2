@@ -499,6 +499,7 @@ const ImplantStats = () => {
     const lastDay = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0);
     const startPadding = firstDay.getDay();
     const totalDays = lastDay.getDate();
+    const today = new Date();
 
     const days = [];
 
@@ -517,10 +518,17 @@ const ImplantStats = () => {
       const currentDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), day);
       const formattedDate = toISODateString(currentDate);
       const dayData = mainData.data.find(d => d.date === formattedDate);
+      const isToday = today.getDate() === day && 
+                     today.getMonth() === selectedDate.getMonth() && 
+                     today.getFullYear() === selectedDate.getFullYear();
+      const isWeekend = currentDate.getDay() === 0 || currentDate.getDay() === 6;
+      
       days.push({
         day,
         isOtherMonth: false,
-        data: dayData
+        data: dayData,
+        isToday,
+        isWeekend
       });
     }
 
@@ -535,61 +543,132 @@ const ImplantStats = () => {
     }
 
     return (
-      <div className="bg-white p-6 rounded-lg shadow-sm border">
-        {/* 요일 헤더 */}
-        <div className="grid grid-cols-7 gap-1 mb-2">
-          {weekdays.map(weekday => (
-            <div key={weekday} className="text-center py-2 font-medium text-gray-600 text-sm">
-              {weekday}
-            </div>
-          ))}
+      <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl shadow-lg border border-gray-200/50 overflow-hidden">
+        {/* 헤더 */}
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+          <h3 className="text-white font-semibold text-lg">
+            {selectedDate.getFullYear()}년 {selectedDate.getMonth() + 1}월 캘린더
+          </h3>
         </div>
 
-        {/* 달력 그리드 */}
-        <div className="grid grid-cols-7 gap-1">
-          {days.map((dayInfo, index) => (
-            <div
-              key={index}
-              className={`
-                min-h-[80px] border border-gray-200 p-2 cursor-pointer hover:bg-gray-50 text-xs
-                ${dayInfo.isOtherMonth ? 'text-gray-300 bg-gray-50' : ''}
-                ${dayInfo.data ? 'bg-blue-50 border-blue-200' : ''}
-              `}
-              onClick={() => dayInfo.data && handleDayClick(dayInfo.data)}
-            >
-              <div className="flex justify-between items-start mb-1">
-                <span className="text-sm font-medium">{dayInfo.day}</span>
-                {dayInfo.data && (
-                  <Badge variant="secondary" className="text-xs px-1 py-0 h-4">
-                    {dayInfo.data.totalImplants}개
-                  </Badge>
-                )}
+        <div className="p-6">
+          {/* 요일 헤더 */}
+          <div className="grid grid-cols-7 gap-2 mb-4">
+            {weekdays.map((weekday, index) => (
+              <div 
+                key={weekday} 
+                className={`text-center py-3 font-semibold text-sm rounded-lg ${
+                  index === 0 ? 'text-red-600 bg-red-50' : 
+                  index === 6 ? 'text-blue-600 bg-blue-50' : 
+                  'text-gray-700 bg-gray-50'
+                }`}
+              >
+                {weekday}
               </div>
+            ))}
+          </div>
+
+          {/* 달력 그리드 */}
+          <div className="grid grid-cols-7 gap-2">
+            {days.map((dayInfo, index) => {
+              const hasData = dayInfo.data && dayInfo.data.totalImplants > 0;
               
-              {dayInfo.data && (
-                <div className="space-y-1">
-                  <div className="text-xs text-blue-700 font-medium">Fixture</div>
-                  {Object.entries(dayInfo.data.implants).map(([manufacturer, count]) => (
-                    <div key={manufacturer} className="flex justify-between text-xs">
-                      <span className="truncate">{manufacturer}</span>
-                      <span>{count}개</span>
-                    </div>
-                  ))}
-                  {Object.keys(dayInfo.data.fixtures).length > 0 && (
-                    <>
-                      <div className="text-xs text-green-700 font-medium">이식재</div>
-                      {Object.entries(dayInfo.data.fixtures).map(([type, count]) => (
-                        <div key={type} className="flex justify-between text-xs text-green-600">
-                          <span className="truncate">{type}</span>
-                          <span>{count}개</span>
+              return (
+                <div
+                  key={index}
+                  className={`
+                    relative min-h-[100px] rounded-xl border-2 transition-all duration-200 ease-in-out
+                    ${dayInfo.isOtherMonth 
+                      ? 'text-gray-300 bg-gray-50/50 border-gray-100 cursor-default' 
+                      : hasData 
+                        ? 'bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 hover:from-blue-100 hover:to-blue-150 cursor-pointer transform hover:scale-[1.02] hover:shadow-md' 
+                        : dayInfo.isToday
+                          ? 'bg-gradient-to-br from-amber-50 to-amber-100 border-amber-300 hover:border-amber-400'
+                          : dayInfo.isWeekend
+                            ? 'bg-gradient-to-br from-gray-50 to-gray-100 border-gray-200 hover:border-gray-300 hover:bg-gray-100'
+                            : 'bg-white border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                    }
+                    ${hasData ? 'shadow-sm' : ''}
+                  `}
+                  onClick={() => dayInfo.data && handleDayClick(dayInfo.data)}
+                >
+                  {/* 날짜 헤더 */}
+                  <div className="flex justify-between items-center p-3 pb-2">
+                    <span className={`font-semibold ${
+                      dayInfo.isToday 
+                        ? 'text-amber-700 bg-amber-200 px-2 py-1 rounded-full text-xs' 
+                        : dayInfo.isOtherMonth 
+                          ? 'text-gray-300' 
+                          : dayInfo.isWeekend 
+                            ? 'text-gray-600' 
+                            : 'text-gray-800'
+                    }`}>
+                      {dayInfo.day}
+                    </span>
+                    {hasData && (
+                      <div className="bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded-full shadow-sm">
+                        {dayInfo.data.totalImplants}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* 데이터 내용 */}
+                  {hasData && (
+                    <div className="px-3 pb-3 space-y-2">
+                      {/* 임플란트 데이터 */}
+                      {Object.keys(dayInfo.data.implants).length > 0 && (
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-1">
+                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                            <span className="text-xs font-medium text-blue-700">Fixture</span>
+                          </div>
+                          {Object.entries(dayInfo.data.implants).slice(0, 2).map(([manufacturer, count]) => (
+                            <div key={manufacturer} className="flex justify-between text-xs bg-white/70 rounded px-2 py-1">
+                              <span className="truncate font-medium text-gray-700">{manufacturer}</span>
+                              <span className="text-blue-600 font-semibold">{count}</span>
+                            </div>
+                          ))}
+                          {Object.keys(dayInfo.data.implants).length > 2 && (
+                            <div className="text-xs text-blue-600 font-medium text-center">
+                              +{Object.keys(dayInfo.data.implants).length - 2}개 더
+                            </div>
+                          )}
                         </div>
-                      ))}
-                    </>
+                      )}
+
+                      {/* 이식재 데이터 */}
+                      {Object.keys(dayInfo.data.fixtures).length > 0 && (
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-1">
+                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                            <span className="text-xs font-medium text-green-700">이식재</span>
+                          </div>
+                          {Object.entries(dayInfo.data.fixtures).slice(0, 1).map(([type, count]) => (
+                            <div key={type} className="flex justify-between text-xs bg-white/70 rounded px-2 py-1">
+                              <span className="truncate font-medium text-gray-700">{type}</span>
+                              <span className="text-green-600 font-semibold">{count}</span>
+                            </div>
+                          ))}
+                          {Object.keys(dayInfo.data.fixtures).length > 1 && (
+                            <div className="text-xs text-green-600 font-medium text-center">
+                              +{Object.keys(dayInfo.data.fixtures).length - 1}개 더
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* 오늘 표시자 */}
+                  {dayInfo.isToday && !dayInfo.isOtherMonth && (
+                    <div className="absolute top-1 right-1">
+                      <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></div>
+                    </div>
                   )}
                 </div>
-              )}
-            </div>
-          ))}
+              );
+            })}
+          </div>
         </div>
       </div>
     );
@@ -597,6 +676,11 @@ const ImplantStats = () => {
 
   const renderMonthlyCalendar = () => {
     if (!mainData || currentPeriod !== 'yearly') return null;
+
+    const monthNames = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
 
     const months = Array.from({length: 12}, (_, i) => {
       const monthData = mainData.data.filter(d => {
@@ -634,68 +718,150 @@ const ImplantStats = () => {
     const today = new Date();
 
     return (
-      <div className="bg-white p-6 rounded-lg shadow-sm border">
-        <div className="grid grid-cols-3 md:grid-cols-4 gap-4">
-          {months.map(({ month, data, stats }) => {
-            const isCurrentMonth = month === today.getMonth() && selectedDate.getFullYear() === today.getFullYear();
-            
-            return (
-              <div
-                key={month}
-                className={`
-                  p-4 border rounded-lg cursor-pointer hover:bg-gray-50
-                  ${isCurrentMonth ? 'bg-blue-50 border-blue-200' : 'border-gray-200'}
-                  ${stats.totalImplants > 0 ? 'bg-blue-50 border-blue-200' : ''}
-                `}
-                onClick={() => {
-                  if (data.length > 0) {
-                    // 월별 데이터를 하나의 DayData로 합침
-                    const monthSummary: DayData = {
-                      date: `${selectedDate.getFullYear()}-${String(month + 1).padStart(2, '0')}`,
-                      implants: stats.implants,
-                      fixtures: stats.fixtures,
-                      totalImplants: stats.totalImplants,
-                      patients: data.flatMap(d => d.patients)
-                    };
-                    handleDayClick(monthSummary);
-                  }
-                }}
-              >
-                <div className="flex justify-between items-start mb-2">
-                  <span className="font-medium">{month + 1}월</span>
-                  {stats.totalImplants > 0 && (
-                    <Badge variant="secondary" className="text-xs px-1 py-0 h-4">
-                      {stats.totalImplants}개
-                    </Badge>
-                  )}
-                </div>
+      <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl shadow-lg border border-gray-200/50 overflow-hidden">
+        {/* 헤더 */}
+        <div className="bg-gradient-to-r from-indigo-600 to-purple-700 px-6 py-4">
+          <h3 className="text-white font-semibold text-lg">
+            {selectedDate.getFullYear()}년 연간 개요
+          </h3>
+        </div>
 
-                {stats.totalImplants > 0 && (
-                  <div className="space-y-1">
-                    <div className="text-xs text-blue-700 font-medium">제조사별</div>
-                    {Object.entries(stats.implants).map(([manufacturer, count]) => (
-                      <div key={manufacturer} className="flex justify-between text-xs">
-                        <span className="truncate">{manufacturer}</span>
-                        <span>{count}개</span>
+        <div className="p-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {months.map(({ month, data, stats }) => {
+              const isCurrentMonth = month === today.getMonth() && selectedDate.getFullYear() === today.getFullYear();
+              const hasData = stats.totalImplants > 0;
+              const maxImplants = Math.max(...months.map(m => m.stats.totalImplants));
+              const intensity = hasData ? (stats.totalImplants / maxImplants) : 0;
+              
+              return (
+                <div
+                  key={month}
+                  className={`
+                    relative overflow-hidden rounded-xl border-2 transition-all duration-300 ease-in-out cursor-pointer group
+                    ${hasData 
+                      ? 'bg-gradient-to-br from-blue-50 to-indigo-100 border-blue-300 hover:from-blue-100 hover:to-indigo-200 hover:border-blue-400 transform hover:scale-105 shadow-lg hover:shadow-xl' 
+                      : isCurrentMonth
+                        ? 'bg-gradient-to-br from-amber-50 to-orange-100 border-amber-300 hover:border-amber-400'
+                        : 'bg-white border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                    }
+                  `}
+                  onClick={() => {
+                    if (data.length > 0) {
+                      // 월별 데이터를 하나의 DayData로 합침
+                      const monthSummary: DayData = {
+                        date: `${selectedDate.getFullYear()}-${String(month + 1).padStart(2, '0')}`,
+                        implants: stats.implants,
+                        fixtures: stats.fixtures,
+                        totalImplants: stats.totalImplants,
+                        patients: data.flatMap(d => d.patients)
+                      };
+                      handleDayClick(monthSummary);
+                    }
+                  }}
+                >
+                  {/* 강도 표시 바 */}
+                  {hasData && (
+                    <div 
+                      className="absolute top-0 left-0 h-1 bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-500"
+                      style={{ width: `${intensity * 100}%` }}
+                    />
+                  )}
+
+                  <div className="p-4">
+                    {/* 월 헤더 */}
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <div className={`font-bold text-lg ${
+                          hasData ? 'text-blue-800' : 
+                          isCurrentMonth ? 'text-amber-700' : 'text-gray-700'
+                        }`}>
+                          {month + 1}월
+                        </div>
+                        <div className="text-xs text-gray-500 font-medium">
+                          {monthNames[month]}
+                        </div>
                       </div>
-                    ))}
-                    
-                    {Object.keys(stats.fixtures).length > 0 && (
-                      <>
-                        <div className="text-xs text-green-700 font-medium">이식재</div>
-                        {Object.entries(stats.fixtures).map(([type, count]) => (
-                          <div key={type} className="flex justify-between text-xs text-green-600">
-                            <span className="truncate">{type}</span>
-                            <span>{count}개</span>
+                      {hasData && (
+                        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-bold px-3 py-1 rounded-full shadow-md">
+                          {stats.totalImplants}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 통계 데이터 */}
+                    {hasData ? (
+                      <div className="space-y-3">
+                        {/* 임플란트 데이터 */}
+                        {Object.keys(stats.implants).length > 0 && (
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <div className="w-3 h-3 bg-blue-500 rounded-full shadow-sm"></div>
+                              <span className="text-xs font-semibold text-blue-700">Fixture</span>
+                            </div>
+                            <div className="space-y-1">
+                              {Object.entries(stats.implants).slice(0, 3).map(([manufacturer, count]) => (
+                                <div key={manufacturer} className="flex justify-between items-center bg-white/80 backdrop-blur-sm rounded-lg px-3 py-2 shadow-sm">
+                                  <span className="text-xs font-medium text-gray-700 truncate">{manufacturer}</span>
+                                  <span className="text-xs font-bold text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
+                                    {count}
+                                  </span>
+                                </div>
+                              ))}
+                              {Object.keys(stats.implants).length > 3 && (
+                                <div className="text-xs text-blue-600 font-semibold text-center py-1">
+                                  +{Object.keys(stats.implants).length - 3}개 제조사 더
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        ))}
-                      </>
+                        )}
+
+                        {/* 이식재 데이터 */}
+                        {Object.keys(stats.fixtures).length > 0 && (
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <div className="w-3 h-3 bg-green-500 rounded-full shadow-sm"></div>
+                              <span className="text-xs font-semibold text-green-700">이식재</span>
+                            </div>
+                            <div className="space-y-1">
+                              {Object.entries(stats.fixtures).slice(0, 2).map(([type, count]) => (
+                                <div key={type} className="flex justify-between items-center bg-white/80 backdrop-blur-sm rounded-lg px-3 py-2 shadow-sm">
+                                  <span className="text-xs font-medium text-gray-700 truncate">{type}</span>
+                                  <span className="text-xs font-bold text-green-600 bg-green-100 px-2 py-1 rounded-full">
+                                    {count}
+                                  </span>
+                                </div>
+                              ))}
+                              {Object.keys(stats.fixtures).length > 2 && (
+                                <div className="text-xs text-green-600 font-semibold text-center py-1">
+                                  +{Object.keys(stats.fixtures).length - 2}개 더
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-center py-4">
+                        <div className="text-gray-400 text-xs">데이터 없음</div>
+                      </div>
+                    )}
+
+                    {/* 현재 월 표시 */}
+                    {isCurrentMonth && !hasData && (
+                      <div className="absolute top-2 right-2">
+                        <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse shadow-sm"></div>
+                      </div>
                     )}
                   </div>
-                )}
-              </div>
-            );
-          })}
+
+                  {/* 호버 효과 */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/0 to-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     );
