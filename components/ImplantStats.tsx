@@ -54,7 +54,9 @@ const ImplantStats = () => {
         const response = await fetch('/api/settings');
         if (response.ok) {
           const data = await response.json();
-          const doctorList = data.doctors || [];
+          const doctorList = Array.isArray(data.doctor) 
+            ? data.doctor.map((d: any) => d.value) 
+            : [];
           setDoctors(doctorList);
         }
       } catch (error) {
