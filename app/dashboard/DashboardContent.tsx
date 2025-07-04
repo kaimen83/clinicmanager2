@@ -9,6 +9,9 @@ import ExtraIncomeList from '@/components/ExtraIncomeList';
 import ExpenseList from '@/components/ExpenseList';
 import DailySettlementModal from '@/components/DailySettlementModal';
 import MonthlySettlementModal from '@/components/MonthlySettlementModal';
+import FloatingSearchButton from '@/components/FloatingSearchButton';
+import PatientSearchModal from '@/components/PatientSearchModal';
+import PatientInfoModal from '@/components/PatientInfoModal';
 
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,6 +25,16 @@ export default function DashboardContent({ children: _ }: Props) {
   const { selectedDate, setSelectedDate } = useDateContext();
   const [isDailySettlementModalOpen, setIsDailySettlementModalOpen] = useState(false);
   const [isMonthlySettlementModalOpen, setIsMonthlySettlementModalOpen] = useState(false);
+  const [isPatientSearchModalOpen, setIsPatientSearchModalOpen] = useState(false);
+  const [isPatientInfoModalOpen, setIsPatientInfoModalOpen] = useState(false);
+  const [selectedChartNumber, setSelectedChartNumber] = useState('');
+
+  // 환자 선택 핸들러
+  const handlePatientSelect = (chartNumber: string) => {
+    setSelectedChartNumber(chartNumber);
+    setIsPatientSearchModalOpen(false);
+    setIsPatientInfoModalOpen(true);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -88,6 +101,23 @@ export default function DashboardContent({ children: _ }: Props) {
         onDateChange={(newDate) => {
           setSelectedDate(newDate);
         }}
+      />
+
+      {/* 플로팅 검색 버튼 */}
+      <FloatingSearchButton onClick={() => setIsPatientSearchModalOpen(true)} />
+
+      {/* 환자 검색 모달 */}
+      <PatientSearchModal
+        isOpen={isPatientSearchModalOpen}
+        onClose={() => setIsPatientSearchModalOpen(false)}
+        onPatientSelect={handlePatientSelect}
+      />
+
+      {/* 환자 정보 모달 */}
+      <PatientInfoModal
+        isOpen={isPatientInfoModalOpen}
+        onClose={() => setIsPatientInfoModalOpen(false)}
+        chartNumber={selectedChartNumber}
       />
     </div>
   );
