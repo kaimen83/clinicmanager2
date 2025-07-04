@@ -276,70 +276,87 @@ const ImplantStats = () => {
     const stats = calculateStats(mainData.data);
     
     return (
-      <div className="bg-white p-6 rounded-lg shadow-sm border">
-        <div className="flex items-center justify-between mb-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigateCalendar('prev')}
-            className="h-8 w-8 p-0"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            <span className="sr-only">이전</span>
-          </Button>
-          <h3 className="text-lg font-semibold">
-            {currentPeriod === 'monthly' 
-              ? `${selectedDate.getFullYear()}년 ${selectedDate.getMonth() + 1}월`
-              : `${selectedDate.getFullYear()}년`
-            }
-          </h3>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigateCalendar('next')}
-            className="h-8 w-8 p-0"
-            disabled={
-              currentPeriod === 'monthly' 
-                ? new Date().getFullYear() * 12 + new Date().getMonth() <= selectedDate.getFullYear() * 12 + selectedDate.getMonth()
-                : selectedDate.getFullYear() >= new Date().getFullYear()
-            }
-          >
-            <ChevronRight className="h-4 w-4" />
-            <span className="sr-only">다음</span>
-          </Button>
+      <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+        {/* 헤더 */}
+        <div className="bg-gradient-to-r from-blue-500 to-indigo-500 px-4 py-3">
+          <div className="flex items-center justify-between">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigateCalendar('prev')}
+              className="h-8 w-8 p-0 rounded-full bg-white/20 hover:bg-white/30 text-white border-0"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <h3 className="text-lg font-bold text-white">
+              {currentPeriod === 'monthly' 
+                ? `${selectedDate.getFullYear()}.${selectedDate.getMonth() + 1}`
+                : `${selectedDate.getFullYear()}년`
+              }
+            </h3>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigateCalendar('next')}
+              className="h-8 w-8 p-0 rounded-full bg-white/20 hover:bg-white/30 text-white border-0"
+              disabled={
+                currentPeriod === 'monthly' 
+                  ? new Date().getFullYear() * 12 + new Date().getMonth() <= selectedDate.getFullYear() * 12 + selectedDate.getMonth()
+                  : selectedDate.getFullYear() >= new Date().getFullYear()
+              }
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
 
-        <div className="space-y-4">
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="font-semibold text-blue-900">임플란트 통계</h4>
-              <span className="text-sm text-blue-600">누적총계: {mainData.accumulatedTotal}개</span>
+        <div className="p-4 space-y-4">
+          {/* 메인 통계 */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-blue-50 rounded-lg p-3 text-center">
+              <div className="text-xl font-bold text-blue-600">{stats.totalImplants}</div>
+              <div className="text-xs text-blue-500">이번 기간</div>
             </div>
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="font-medium">총계</span>
-                <span className="font-bold">{stats.totalImplants}개</span>
-              </div>
-              {Object.entries(stats.implantsByManufacturer).map(([manufacturer, count]) => (
-                <div key={manufacturer} className="flex justify-between items-center text-sm">
-                  <span>{manufacturer}</span>
-                  <span>{count}개</span>
-                </div>
-              ))}
+            <div className="bg-amber-50 rounded-lg p-3 text-center">
+              <div className="text-xl font-bold text-amber-600">{mainData.accumulatedTotal}</div>
+              <div className="text-xs text-amber-500">누적 총계</div>
             </div>
           </div>
 
-          {stats.totalFixtures > 0 && (
-            <div className="bg-green-50 p-4 rounded-lg">
-              <h4 className="font-semibold text-green-900 mb-3">이식재 통계</h4>
-              <div className="space-y-2">
-                {Object.entries(stats.fixturesByType).map(([type, count]) => (
-                  <div key={type} className="flex justify-between items-center text-sm">
-                    <span>{type}</span>
-                    <span>{count}개</span>
+          {/* 제조사별 전체 */}
+          {Object.entries(stats.implantsByManufacturer).length > 0 && (
+            <div className="space-y-2">
+              <div className="text-sm font-medium text-gray-700">제조사별</div>
+              {Object.entries(stats.implantsByManufacturer)
+                .sort(([,a], [,b]) => b - a)
+                .map(([manufacturer, count]) => (
+                  <div key={manufacturer} className="flex justify-between items-center py-1">
+                    <span className="text-sm text-gray-600 truncate">{manufacturer}</span>
+                    <span className="text-sm font-semibold text-gray-800">{count}</span>
                   </div>
                 ))}
-              </div>
+            </div>
+          )}
+
+          {/* 이식재 종류별 */}
+          {stats.totalFixtures > 0 && (
+            <div className="space-y-2 pt-2 border-t border-gray-100">
+              <div className="text-sm font-medium text-gray-700">이식재별</div>
+              {Object.entries(stats.fixturesByType)
+                .sort(([,a], [,b]) => b - a)
+                .map(([type, count]) => (
+                  <div key={type} className="flex justify-between items-center py-1">
+                    <span className="text-sm text-gray-600 truncate">{type}</span>
+                    <span className="text-sm font-semibold text-emerald-600">{count}</span>
+                  </div>
+                ))}
+            </div>
+          )}
+
+          {/* 데이터 없음 */}
+          {stats.totalImplants === 0 && (
+            <div className="text-center py-4">
+              <div className="text-gray-400 text-sm">데이터 없음</div>
             </div>
           )}
         </div>
