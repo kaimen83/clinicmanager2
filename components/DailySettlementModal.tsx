@@ -582,18 +582,42 @@ export default function DailySettlementModal({ isOpen, onClose, date, onDateChan
                     <div className="space-y-2 max-h-32 overflow-y-auto">
                       {data.implant.placements.map((placement, index) => (
                         <div key={index} className="bg-blue-50 rounded-lg p-2">
-                          <div className="flex justify-between items-center text-sm">
+                          <div className="flex justify-between items-center text-sm mb-1">
                             <span className="font-medium">{placement.patientName}</span>
                             <span className="text-xs text-gray-600">{placement.doctor}</span>
                           </div>
+                          
+                          {/* 임플란트 상세 정보 */}
                           {placement.implants && placement.implants.length > 0 && (
-                            <div className="mt-1 text-xs text-gray-600">
-                              임플란트: {placement.implants.reduce((sum: number, implant: any) => sum + (implant.quantity || 0), 0)}개
+                            <div className="mb-1">
+                              <span className="text-xs font-medium text-blue-700 block mb-1">임플란트:</span>
+                              {placement.implants.map((implantGroup: any, idx: number) => (
+                                <div key={idx} className="ml-2 text-xs text-gray-600">
+                                  {implantGroup.products?.map((product: any, pIdx: number) => (
+                                    <div key={pIdx} className="flex justify-between items-center">
+                                      <span>{product.name} ({product.specification})</span>
+                                      <span className="font-medium text-blue-600">{product.quantity}개</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              ))}
                             </div>
                           )}
+                          
+                          {/* 이식재 상세 정보 */}
                           {placement.fixtures && placement.fixtures.length > 0 && (
-                            <div className="text-xs text-gray-600">
-                              이식재: {placement.fixtures.reduce((sum: number, fixture: any) => sum + (fixture.quantity || 0), 0)}개
+                            <div>
+                              <span className="text-xs font-medium text-green-700 block mb-1">이식재:</span>
+                              {placement.fixtures.map((fixtureGroup: any, idx: number) => (
+                                <div key={idx} className="ml-2 text-xs text-gray-600">
+                                  {fixtureGroup.products?.map((product: any, pIdx: number) => (
+                                    <div key={pIdx} className="flex justify-between items-center">
+                                      <span>{product.name} ({product.specification})</span>
+                                      <span className="font-medium text-green-600">{product.quantity}개</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              ))}
                             </div>
                           )}
                         </div>

@@ -115,23 +115,100 @@ export async function GET(request: NextRequest) {
       }
     });
     
-    // 4. 임플란트 식립 데이터 (FirstOp 컬렉션에서 조회)
+    // 4. 임플란트 식립 데이터 (FirstOp 컬렉션과 인벤토리 로그에서 조회)
     const firstOps = await db.collection('firstops')
       .find({
         date: { $gte: startDate, $lte: endDate }
       })
       .toArray();
     
+    // 임플란트 인벤토리 로그에서 환자별 사용 제품 조회 (규격 정보 포함)
+    const implantLogs = await db.collection('implantinventorylogs').aggregate([
+      {
+        $match: {
+          date: { $gte: startDate, $lte: endDate },
+          type: 'OUT',
+          outReason: '환자사용'
+        }
+      },
+      {
+        $lookup: {
+          from: 'implantproducts',
+          localField: 'productId',
+          foreignField: '_id',
+          as: 'product'
+        }
+      },
+      {
+        $unwind: '$product'
+      },
+      {
+        $group: {
+          _id: {
+            chartNumber: '$chartNumber',
+            patientName: '$patientName',
+            doctor: '$doctor',
+            category: '$product.category'
+          },
+          products: {
+            $push: {
+              name: '$product.name',
+              specification: '$product.specification',
+              category: '$product.category',
+              quantity: '$quantity'
+            }
+          },
+          totalQuantity: { $sum: '$quantity' }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            chartNumber: '$_id.chartNumber',
+            patientName: '$_id.patientName',
+            doctor: '$_id.doctor'
+          },
+          implants: {
+            $push: {
+              $cond: [
+                { $eq: ['$_id.category', 'implant'] },
+                { products: '$products', totalQuantity: '$totalQuantity' },
+                '$$REMOVE'
+              ]
+            }
+          },
+          fixtures: {
+            $push: {
+              $cond: [
+                { $eq: ['$_id.category', 'fixture'] },
+                { products: '$products', totalQuantity: '$totalQuantity' },
+                '$$REMOVE'
+              ]
+            }
+          }
+        }
+      },
+      {
+        $project: {
+          chartNumber: '$_id.chartNumber',
+          patientName: '$_id.patientName',
+          doctor: '$_id.doctor',
+          implants: { $filter: { input: '$implants', cond: { $ne: ['$$this', null] } } },
+          fixtures: { $filter: { input: '$fixtures', cond: { $ne: ['$$this', null] } } }
+        }
+      }
+    ]).toArray();
+    
     // 임플란트 및 이식재 총 개수 계산
     let totalImplantCount = 0;
     let totalFixtureCount = 0;
     
-    firstOps.forEach(op => {
-      if (op.implants && Array.isArray(op.implants)) {
-        totalImplantCount += op.implants.reduce((sum, implant) => sum + (implant.quantity || 0), 0);
+    implantLogs.forEach(log => {
+      if (log.implants && Array.isArray(log.implants)) {
+        totalImplantCount += log.implants.reduce((sum, implant) => sum + (implant.totalQuantity || 0), 0);
       }
-      if (op.fixtures && Array.isArray(op.fixtures)) {
-        totalFixtureCount += op.fixtures.reduce((sum, fixture) => sum + (fixture.quantity || 0), 0);
+      if (log.fixtures && Array.isArray(log.fixtures)) {
+        totalFixtureCount += log.fixtures.reduce((sum, fixture) => sum + (fixture.totalQuantity || 0), 0);
       }
     });
     
@@ -230,7 +307,7 @@ export async function GET(request: NextRequest) {
       implant: {
         implantCount: totalImplantCount,
         fixtureCount: totalFixtureCount,
-        placements: firstOps
+        placements: implantLogs
       },
       
       // 5. 구강용품 관련
