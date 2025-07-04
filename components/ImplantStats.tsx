@@ -622,7 +622,7 @@ const ImplantStats = () => {
                     }`}>
                       {dayInfo.day}
                     </span>
-                    {hasData && (
+                    {hasData && dayInfo.data && (
                       <div className="bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded-full shadow-sm">
                         {dayInfo.data.totalImplants}
                       </div>
@@ -630,7 +630,7 @@ const ImplantStats = () => {
                   </div>
                   
                   {/* 데이터 내용 */}
-                  {hasData && (
+                  {hasData && dayInfo.data && (
                     <div className="px-3 pb-3 space-y-2">
                       {/* 임플란트 데이터 */}
                       {Object.keys(dayInfo.data.implants).length > 0 && (

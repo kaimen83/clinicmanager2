@@ -11,7 +11,7 @@ import { toast } from '@/hooks/use-toast';
 import { useDateContext } from '@/lib/context/dateContext';
 import { PatientData } from '@/lib/types';
 import { Check, ChevronLeft, ChevronRight, Loader2, Plus, Trash2, UserPlus } from 'lucide-react';
-import { toISODateString, getCurrentKstDate } from '@/lib/utils';
+import { toISODateString, getCurrentKstDate, generateUUID } from '@/lib/utils';
 import { useUserRole } from './UserRoleProvider';
 
 // 타입 및 컴포넌트 임포트
@@ -85,7 +85,7 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
   // 진료 그룹 관리
   const [treatmentGroups, setTreatmentGroups] = useState<TreatmentGroup[]>([]);
   const [currentTreatmentGroup, setCurrentTreatmentGroup] = useState<TreatmentGroup>({
-    id: crypto.randomUUID(),
+    id: generateUUID(),
     doctor: '',
     treatmentType: '',
     paymentMethod: '현금',
@@ -320,7 +320,7 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
     const defaultPaymentMethod = paymentMethods.length > 0 ? paymentMethods[0].value : '현금';
     
     setCurrentTreatmentGroup({
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       doctor: '',
       treatmentType: '',
       paymentMethod: defaultPaymentMethod,
