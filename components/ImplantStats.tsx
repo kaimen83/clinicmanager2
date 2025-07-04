@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -246,135 +246,94 @@ const ImplantStats = () => {
     return stats;
   };
 
-  const getAllManufacturers = (dataSets: DayData[][]) => {
-    const manufacturers = new Set<string>();
-    dataSets.forEach(data => {
-      data.forEach(day => {
-        Object.keys(day.implants).forEach(manufacturer => manufacturers.add(manufacturer));
-      });
-    });
-    return Array.from(manufacturers);
-  };
-
-  const getAllFixtureTypes = (dataSets: DayData[][]) => {
-    const types = new Set<string>();
-    dataSets.forEach(data => {
-      data.forEach(day => {
-        Object.keys(day.fixtures).forEach(type => types.add(type));
-      });
-    });
-    return Array.from(types);
-  };
-
-  const renderComparisonTable = () => {
-    if (!mainData || compareData.length === 0) return null;
-
-    const allDataSets = [mainData.data, ...compareData.map(c => c.data.data)];
-    const manufacturers = getAllManufacturers(allDataSets);
-    const fixtureTypes = getAllFixtureTypes(allDataSets);
-    const stats = [mainData, ...compareData.map(c => c.data)].map(data => calculateStats(data.data));
-
-    // 헤더 생성
-    const headers = ['항목'];
+  const generateCompareButtons = () => {
     if (currentPeriod === 'monthly') {
-      headers.push(`${selectedDate.getFullYear()}년 ${selectedDate.getMonth() + 1}월`);
+      return [
+        { key: 'm1', label: '전월' },
+        { key: 'y1', label: '전년 동월' },
+        { key: 'y2', label: '2년전 동월' },
+        { key: 'y3', label: '3년전 동월' }
+      ];
     } else {
-      headers.push(`${selectedDate.getFullYear()}년`);
+      return [
+        { key: 'y1', label: '작년' },
+        { key: 'y2', label: '2년전' },
+        { key: 'y3', label: '3년전' }
+      ];
     }
-    compareData.forEach(({ label }) => headers.push(label));
-
-    return (
-      <div className="stats-table-container">
-        <table className="w-full border-collapse border border-gray-300">
-          <thead>
-            <tr className="bg-gray-100">
-              {headers.map((header, index) => (
-                <th key={index} className="border border-gray-300 p-2 text-left font-medium">
-                  {header}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {/* 임플란트 섹션 */}
-            <tr className="bg-blue-50">
-              <td colSpan={headers.length} className="border border-gray-300 p-2 font-semibold">
-                임플란트
-              </td>
-            </tr>
-            <tr className="bg-blue-100">
-              <td className="border border-gray-300 p-2 font-medium">합계</td>
-              {stats.map((stat, index) => (
-                <td key={index} className="border border-gray-300 p-2">
-                  {stat.totalImplants > 0 ? `${stat.totalImplants}개` : '-'}
-                </td>
-              ))}
-            </tr>
-            {manufacturers.map(manufacturer => (
-              <tr key={manufacturer}>
-                <td className="border border-gray-300 p-2 pl-4">{manufacturer}</td>
-                {stats.map((stat, index) => (
-                  <td key={index} className="border border-gray-300 p-2">
-                    {(stat.implantsByManufacturer[manufacturer] || 0) > 0 
-                      ? `${stat.implantsByManufacturer[manufacturer]}개` 
-                      : '-'}
-                  </td>
-                ))}
-              </tr>
-            ))}
-
-            {/* 이식재 섹션 */}
-            <tr className="bg-green-50">
-              <td colSpan={headers.length} className="border border-gray-300 p-2 font-semibold">
-                이식재
-              </td>
-            </tr>
-            <tr className="bg-green-100">
-              <td className="border border-gray-300 p-2 font-medium">합계</td>
-              {stats.map((stat, index) => (
-                <td key={index} className="border border-gray-300 p-2">
-                  {stat.totalFixtures > 0 ? `${stat.totalFixtures}개` : '-'}
-                </td>
-              ))}
-            </tr>
-            {fixtureTypes.map(type => (
-              <tr key={type}>
-                <td className="border border-gray-300 p-2 pl-4">{type}</td>
-                {stats.map((stat, index) => (
-                  <td key={index} className="border border-gray-300 p-2">
-                    {(stat.fixturesByType[type] || 0) > 0 
-                      ? `${stat.fixturesByType[type]}개` 
-                      : '-'}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    );
   };
 
-  const renderCalendar = () => {
+  const handleDayClick = (dayData: DayData) => {
+    setSelectedDayData(dayData);
+    setShowDetailModal(true);
+  };
+
+  const renderStatsSummary = () => {
     if (!mainData || compareData.length > 0) return null;
 
-    const calendarTitle = currentPeriod === 'monthly' 
-      ? `${selectedDate.getFullYear()}년 ${selectedDate.getMonth() + 1}월`
-      : `${selectedDate.getFullYear()}년`;
-
+    const stats = calculateStats(mainData.data);
+    
     return (
-      <div className="calendar-container">
-        <div className="calendar-header flex items-center justify-between mb-4">
-          <Button variant="outline" size="sm" onClick={() => navigateCalendar('prev')}>
+      <div className="bg-white p-6 rounded-lg shadow-sm border">
+        <div className="flex items-center justify-between mb-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigateCalendar('prev')}
+            className="h-8 w-8 p-0"
+          >
             <ChevronLeft className="h-4 w-4" />
+            <span className="sr-only">이전</span>
           </Button>
-          <h3 className="text-lg font-semibold">{calendarTitle}</h3>
-          <Button variant="outline" size="sm" onClick={() => navigateCalendar('next')}>
+          <h3 className="text-lg font-semibold">
+            {selectedDate.getFullYear()}년 {selectedDate.getMonth() + 1}월
+          </h3>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigateCalendar('next')}
+            className="h-8 w-8 p-0"
+            disabled={new Date() <= selectedDate}
+          >
             <ChevronRight className="h-4 w-4" />
+            <span className="sr-only">다음</span>
           </Button>
         </div>
-        
-        {currentPeriod === 'monthly' ? renderDailyCalendar() : renderMonthlyCalendar()}
+
+        <div className="space-y-4">
+          <div className="bg-blue-50 p-4 rounded-lg">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="font-semibold text-blue-900">임플란트 통계</h4>
+              <span className="text-sm text-blue-600">누적총계: {mainData.accumulatedTotal}개</span>
+            </div>
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="font-medium">총계</span>
+                <span className="font-bold">{stats.totalImplants}개</span>
+              </div>
+              {Object.entries(stats.implantsByManufacturer).map(([manufacturer, count]) => (
+                <div key={manufacturer} className="flex justify-between items-center text-sm">
+                  <span>{manufacturer}</span>
+                  <span>{count}개</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {stats.totalFixtures > 0 && (
+            <div className="bg-green-50 p-4 rounded-lg">
+              <h4 className="font-semibold text-green-900 mb-3">이식재 통계</h4>
+              <div className="space-y-2">
+                {Object.entries(stats.fixturesByType).map(([type, count]) => (
+                  <div key={type} className="flex justify-between items-center text-sm">
+                    <span>{type}</span>
+                    <span>{count}개</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     );
   };
@@ -423,11 +382,11 @@ const ImplantStats = () => {
     }
 
     return (
-      <div>
+      <div className="bg-white p-6 rounded-lg shadow-sm border">
         {/* 요일 헤더 */}
         <div className="grid grid-cols-7 gap-1 mb-2">
           {weekdays.map(weekday => (
-            <div key={weekday} className="text-center py-2 font-medium text-gray-600">
+            <div key={weekday} className="text-center py-2 font-medium text-gray-600 text-sm">
               {weekday}
             </div>
           ))}
@@ -439,35 +398,41 @@ const ImplantStats = () => {
             <div
               key={index}
               className={`
-                min-h-[100px] border border-gray-200 p-2 cursor-pointer hover:bg-gray-50
-                ${dayInfo.isOtherMonth ? 'text-gray-400 bg-gray-50' : ''}
-                ${dayInfo.data ? 'bg-blue-50' : ''}
+                min-h-[80px] border border-gray-200 p-2 cursor-pointer hover:bg-gray-50 text-xs
+                ${dayInfo.isOtherMonth ? 'text-gray-300 bg-gray-50' : ''}
+                ${dayInfo.data ? 'bg-blue-50 border-blue-200' : ''}
               `}
               onClick={() => dayInfo.data && handleDayClick(dayInfo.data)}
             >
               <div className="flex justify-between items-start mb-1">
                 <span className="text-sm font-medium">{dayInfo.day}</span>
                 {dayInfo.data && (
-                  <Badge variant="secondary" className="text-xs">
+                  <Badge variant="secondary" className="text-xs px-1 py-0 h-4">
                     {dayInfo.data.totalImplants}개
                   </Badge>
                 )}
               </div>
               
               {dayInfo.data && (
-                <div className="text-xs space-y-1">
+                <div className="space-y-1">
+                  <div className="text-xs text-blue-700 font-medium">Fixture</div>
                   {Object.entries(dayInfo.data.implants).map(([manufacturer, count]) => (
-                    <div key={manufacturer} className="flex justify-between">
+                    <div key={manufacturer} className="flex justify-between text-xs">
                       <span className="truncate">{manufacturer}</span>
                       <span>{count}개</span>
                     </div>
                   ))}
-                  {Object.entries(dayInfo.data.fixtures).map(([type, count]) => (
-                    <div key={type} className="flex justify-between text-green-600">
-                      <span className="truncate">{type}</span>
-                      <span>{count}개</span>
-                    </div>
-                  ))}
+                  {Object.keys(dayInfo.data.fixtures).length > 0 && (
+                    <>
+                      <div className="text-xs text-green-700 font-medium">이식재</div>
+                      {Object.entries(dayInfo.data.fixtures).map(([type, count]) => (
+                        <div key={type} className="flex justify-between text-xs text-green-600">
+                          <span className="truncate">{type}</span>
+                          <span>{count}개</span>
+                        </div>
+                      ))}
+                    </>
+                  )}
                 </div>
               )}
             </div>
@@ -477,114 +442,17 @@ const ImplantStats = () => {
     );
   };
 
-  const renderMonthlyCalendar = () => {
-    if (!mainData) return null;
-
-    const months = Array.from({length: 12}, (_, i) => {
-      const date = new Date(selectedDate.getFullYear(), i, 1);
-      const monthData = mainData.data.filter(d => {
-        const dataDate = new Date(d.date);
-        return dataDate.getMonth() === i && dataDate.getFullYear() === selectedDate.getFullYear();
-      });
-      return { date, data: monthData };
-    });
-
-    return (
-      <div className="grid grid-cols-4 gap-4">
-        {months.map(({date, data}, index) => {
-          const totalImplants = data.reduce((sum, day) => sum + day.totalImplants, 0);
-          const totalFixtures = data.reduce((sum, day) => sum + 
-            Object.values(day.fixtures).reduce((s, count) => s + count, 0), 0);
-
-          return (
-            <div
-              key={index}
-              className={`
-                border border-gray-200 p-4 cursor-pointer hover:bg-gray-50 rounded-lg
-                ${totalImplants > 0 ? 'bg-blue-50' : ''}
-              `}
-              onClick={() => data.length > 0 && handleMonthClick(date, data)}
-            >
-              <div className="text-center mb-2">
-                <h4 className="font-semibold">{date.getMonth() + 1}월</h4>
-                {totalImplants > 0 && (
-                  <Badge variant="secondary">{totalImplants}개</Badge>
-                )}
-              </div>
-              
-              {totalImplants > 0 && (
-                <div className="text-xs space-y-1">
-                  <div className="text-blue-600">임플란트: {totalImplants}개</div>
-                  {totalFixtures > 0 && (
-                    <div className="text-green-600">이식재: {totalFixtures}개</div>
-                  )}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
-
-  const handleDayClick = (dayData: DayData) => {
-    setSelectedDayData(dayData);
-    setShowDetailModal(true);
-  };
-
-  const handleMonthClick = (date: Date, monthData: DayData[]) => {
-    // 월 클릭 시 해당 월의 전체 데이터를 표시
-    const combinedData: DayData = {
-      date: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`,
-      implants: {},
-      fixtures: {},
-      totalImplants: 0,
-      patients: []
-    };
-
-    monthData.forEach(day => {
-      Object.entries(day.implants).forEach(([manufacturer, count]) => {
-        combinedData.implants[manufacturer] = (combinedData.implants[manufacturer] || 0) + count;
-        combinedData.totalImplants += count;
-      });
-      Object.entries(day.fixtures).forEach(([type, count]) => {
-        combinedData.fixtures[type] = (combinedData.fixtures[type] || 0) + count;
-      });
-      combinedData.patients.push(...day.patients);
-    });
-
-    setSelectedDayData(combinedData);
-    setShowDetailModal(true);
-  };
-
-  const generateCompareButtons = () => {
-    if (currentPeriod === 'monthly') {
-      return [
-        { key: 'm1', label: '전월' },
-        { key: 'y1', label: '전년 동월' },
-        { key: 'y2', label: '2년전 동월' },
-        { key: 'y3', label: '3년전 동월' }
-      ];
-    } else {
-      return [
-        { key: 'y1', label: '작년' },
-        { key: 'y2', label: '2년전' },
-        { key: 'y3', label: '3년전' }
-      ];
-    }
-  };
-
   return (
-    <div className="implant-stats-container space-y-4">
+    <div className="space-y-6">
       {/* 필터 섹션 */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="filter-section flex flex-wrap items-center gap-4">
+      <Card className="border-0 shadow-sm">
+        <CardContent className="p-6">
+          <div className="flex flex-wrap items-center gap-6">
             {/* 조회기간 선택 */}
-            <div className="filter-group flex items-center gap-2">
-              <span className="filter-label font-medium">조회기간</span>
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-gray-700 whitespace-nowrap">조회기간</span>
               <Select value={currentPeriod} onValueChange={handlePeriodChange}>
-                <SelectTrigger className="w-24">
+                <SelectTrigger className="w-20">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -594,17 +462,15 @@ const ImplantStats = () => {
               </Select>
             </div>
 
-            <div className="filter-divider w-px h-6 bg-gray-300" />
-
             {/* 기준기간 선택 */}
-            <div className="filter-group flex items-center gap-2">
-              <span className="filter-label font-medium">기준기간</span>
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-gray-700 whitespace-nowrap">기준기간</span>
               {currentPeriod === 'monthly' ? (
                 <Input
                   type="month"
                   value={`${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}`}
                   onChange={(e) => handleDateChange(e.target.value)}
-                  className="w-40"
+                  className="w-36"
                 />
               ) : (
                 <Input
@@ -613,23 +479,22 @@ const ImplantStats = () => {
                   onChange={(e) => handleDateChange(e.target.value)}
                   min="2000"
                   max={new Date().getFullYear()}
-                  className="w-24"
+                  className="w-20"
                 />
               )}
             </div>
 
-            <div className="filter-divider w-px h-6 bg-gray-300" />
-
             {/* 비교기간 선택 */}
-            <div className="filter-group flex items-center gap-2">
-              <span className="filter-label font-medium">비교기간</span>
-              <div className="compare-buttons flex gap-1">
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-gray-700 whitespace-nowrap">비교기간</span>
+              <div className="flex gap-1">
                 {generateCompareButtons().map(({ key, label }) => (
                   <Button
                     key={key}
                     variant={compareYears.has(key) ? "default" : "outline"}
                     size="sm"
                     onClick={() => handleCompareToggle(key)}
+                    className="h-8 px-3"
                   >
                     {label}
                   </Button>
@@ -637,13 +502,11 @@ const ImplantStats = () => {
               </div>
             </div>
 
-            <div className="filter-divider w-px h-6 bg-gray-300" />
-
             {/* 의사 선택 */}
-            <div className="filter-group flex items-center gap-2">
-              <span className="filter-label font-medium">의사</span>
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-gray-700 whitespace-nowrap">의사</span>
               <Select value={currentDoctor} onValueChange={setCurrentDoctor}>
-                <SelectTrigger className="w-32">
+                <SelectTrigger className="w-28">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -660,7 +523,7 @@ const ImplantStats = () => {
 
       {/* 로딩 상태 */}
       {loading && (
-        <Card>
+        <Card className="border-0 shadow-sm">
           <CardContent className="p-8 text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
             <p className="mt-2 text-gray-600">데이터를 불러오는 중...</p>
@@ -668,13 +531,19 @@ const ImplantStats = () => {
         </Card>
       )}
 
-      {/* 비교 테이블 또는 달력 */}
+      {/* 메인 컨텐츠 */}
       {!loading && mainData && (
-        <Card>
-          <CardContent className="p-4">
-            {compareData.length > 0 ? renderComparisonTable() : renderCalendar()}
-          </CardContent>
-        </Card>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* 왼쪽: 통계 요약 */}
+          <div className="lg:col-span-1">
+            {renderStatsSummary()}
+          </div>
+
+          {/* 오른쪽: 달력 */}
+          <div className="lg:col-span-2">
+            {renderDailyCalendar()}
+          </div>
+        </div>
       )}
 
       {/* 상세 모달 */}
@@ -692,32 +561,34 @@ const ImplantStats = () => {
               {/* 통계 요약 */}
               <div className="grid grid-cols-2 gap-4">
                 <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm">임플란트</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-blue-600">
+                  <CardContent className="p-4">
+                    <div className="text-sm text-gray-600 mb-1">Fixture</div>
+                    <div className="text-2xl font-bold text-blue-600 mb-2">
                       {selectedDayData.totalImplants}개
                     </div>
-                    <div className="text-xs text-gray-600 mt-1">
+                    <div className="text-xs text-gray-600 space-y-1">
                       {Object.entries(selectedDayData.implants).map(([manufacturer, count]) => (
-                        <div key={manufacturer}>{manufacturer}: {count}개</div>
+                        <div key={manufacturer} className="flex justify-between">
+                          <span>{manufacturer}</span>
+                          <span>{count}개</span>
+                        </div>
                       ))}
                     </div>
                   </CardContent>
                 </Card>
 
                 <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm">이식재</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-green-600">
+                  <CardContent className="p-4">
+                    <div className="text-sm text-gray-600 mb-1">이식재</div>
+                    <div className="text-2xl font-bold text-green-600 mb-2">
                       {Object.values(selectedDayData.fixtures).reduce((sum, count) => sum + count, 0)}개
                     </div>
-                    <div className="text-xs text-gray-600 mt-1">
+                    <div className="text-xs text-gray-600 space-y-1">
                       {Object.entries(selectedDayData.fixtures).map(([type, count]) => (
-                        <div key={type}>{type}: {count}개</div>
+                        <div key={type} className="flex justify-between">
+                          <span>{type}</span>
+                          <span>{count}개</span>
+                        </div>
                       ))}
                     </div>
                   </CardContent>
@@ -748,7 +619,7 @@ const ImplantStats = () => {
                             <div>
                               <h5 className="text-sm font-medium text-blue-600 mb-1 flex items-center gap-1">
                                 <Package className="h-3 w-3" />
-                                임플란트
+                                Fixture
                               </h5>
                               {patient.implants.map((implant, idx) => (
                                 <div key={idx} className="text-xs bg-blue-50 p-2 rounded">
@@ -785,4 +656,4 @@ const ImplantStats = () => {
   );
 };
 
-export default ImplantStats; 
+export default ImplantStats;
