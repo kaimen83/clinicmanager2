@@ -16,6 +16,7 @@ import { toast } from '@/hooks/use-toast';
 import { toISODateString } from '@/lib/utils';
 import { useDateContext } from '@/lib/context/dateContext';
 import { useUserRole } from '@/components/UserRoleProvider';
+import PatientInfoModal from '@/components/PatientInfoModal';
 
 // Transaction 타입 확장 (기존 Transaction 타입에 treatments 추가)
 interface ExtendedTransaction extends Transaction {
@@ -117,6 +118,8 @@ export default function DoctorPatientList({ date }: Props) {
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [isEditDialogOpen, setIsEditDialogOpen] = useState<boolean>(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState<boolean>(false);
+  const [isPatientInfoModalOpen, setIsPatientInfoModalOpen] = useState<boolean>(false);
+  const [selectedChartNumber, setSelectedChartNumber] = useState<string>('');
   const [currentTransaction, setCurrentTransaction] = useState<ExtendedTransaction | null>(null);
   const [editFormData, setEditFormData] = useState<Partial<ExtendedTransaction>>({});
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
@@ -344,6 +347,12 @@ export default function DoctorPatientList({ date }: Props) {
   const openDeleteDialog = (transaction: ExtendedTransaction) => {
     setCurrentTransaction(transaction);
     setIsDeleteDialogOpen(true);
+  };
+
+  // 환자 정보 모달 열기
+  const openPatientInfoModal = (chartNumber: string) => {
+    setSelectedChartNumber(chartNumber);
+    setIsPatientInfoModalOpen(true);
   };
   
   // 폼 유효성 검사
@@ -789,7 +798,12 @@ export default function DoctorPatientList({ date }: Props) {
                             <TableCell className="py-1.5 w-24">{transaction.chartNumber}</TableCell>
                             <TableCell className="py-1.5 w-32">
                               <div className="flex items-center gap-1">
-                                {transaction.patientName}
+                                <button
+                                  onClick={() => openPatientInfoModal(transaction.chartNumber)}
+                                  className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer font-medium"
+                                >
+                                  {transaction.patientName}
+                                </button>
                                 {transaction.isNew && (
                                   <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300 text-xs">신환</Badge>
                                 )}
@@ -1115,6 +1129,13 @@ export default function DoctorPatientList({ date }: Props) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* 환자 정보 모달 */}
+      <PatientInfoModal
+        isOpen={isPatientInfoModalOpen}
+        onClose={() => setIsPatientInfoModalOpen(false)}
+        chartNumber={selectedChartNumber}
+      />
     </>
   );
 } 

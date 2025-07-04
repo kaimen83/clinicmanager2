@@ -2,195 +2,226 @@
 
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2 } from 'lucide-react';
-import { Switch } from '@/components/ui/switch';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Loader2, User, Calendar, CreditCard, FileText, UserCheck } from 'lucide-react';
+import { format } from 'date-fns';
+import { ko } from 'date-fns/locale';
 
-type PatientInfo = {
-  chartNumber: string;
-  name: string;
-  birthDate?: string;
-  gender?: string;
-  phoneNumber?: string;
-  address?: string;
-  memo?: string;
-  lastVisitDate?: string;
-  visitCount?: number;
-  registrationDate?: string;
-  isNew?: boolean;
-};
+interface PatientData {
+  patient: {
+    chartNumber: string;
+    name: string;
+    visitPath: string;
+    createdAt: string;
+  };
+  consultations: Array<{
+    _id: string;
+    date: string;
+    doctor: string;
+    staff: string;
+    amount: number;
+    agreed: boolean;
+    notes: string;
+    confirmedDate?: string;
+  }>;
+  transactions: Array<{
+    _id: string;
+    date: string;
+    doctor: string;
+    treatmentType: string;
+    isNew: boolean;
+    isConsultation: boolean;
+    paymentMethod: string;
+    cardCompany?: string;
+    paymentAmount: number;
+    cashReceipt: boolean;
+    notes: string;
+  }>;
+}
 
-type Props = {
+interface PatientInfoModalProps {
   isOpen: boolean;
-  chartNumber: string;
-  patientName: string;
   onClose: () => void;
-};
+  chartNumber: string;
+}
 
-export default function PatientInfoModal({
-  isOpen,
-  chartNumber,
-  patientName,
-  onClose
-}: Props) {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [patientInfo, setPatientInfo] = useState<PatientInfo | null>(null);
-  const [isNew, setIsNew] = useState(false);
-  
+export default function PatientInfoModal({ isOpen, onClose, chartNumber }: PatientInfoModalProps) {
+  const [loading, setLoading] = useState(false);
+  const [patientData, setPatientData] = useState<PatientData | null>(null);
+
   useEffect(() => {
     if (isOpen && chartNumber) {
-      setLoading(true);
-      setError(null);
-      
-      // 환자 정보 조회 API 호출
-      fetch(`/api/patients/${chartNumber}`)
-        .then(response => {
-          if (!response.ok) {
-            throw new Error('환자 정보를 조회할 수 없습니다.');
-          }
-          return response.json();
-        })
-        .then(data => {
-          setPatientInfo(data);
-          setIsNew(data.isNew || false);
-        })
-        .catch(err => {
-          console.error('환자 정보 조회 오류:', err);
-          setError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.');
-        })
-        .finally(() => {
-          setLoading(false);
-        });
+      fetchPatientData();
     }
   }, [isOpen, chartNumber]);
 
-  // 신환 여부 변경 처리
-  const handleIsNewChange = (checked: boolean) => {
-    setIsNew(checked);
-    
-    // API를 통해 신환 여부 업데이트
-    if (chartNumber) {
-      fetch(`/api/patients/${chartNumber}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ isNew: checked }),
-      })
-        .then(response => {
-          if (!response.ok) {
-            throw new Error('환자 정보를 업데이트할 수 없습니다.');
-          }
-          return response.json();
-        })
-        .then(data => {
-          setPatientInfo(prev => prev ? { ...prev, isNew: checked } : null);
-        })
-        .catch(err => {
-          console.error('환자 정보 업데이트 오류:', err);
-          // 실패 시 원래 값으로 복원
-          setIsNew(!checked);
-        });
+  const fetchPatientData = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/patients/${chartNumber}/info`);
+      if (response.ok) {
+        const data = await response.json();
+        setPatientData(data);
+      }
+    } catch (error) {
+      console.error('환자 정보를 불러오는데 실패했습니다:', error);
+    } finally {
+      setLoading(false);
     }
   };
-  
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(amount);
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
         <DialogHeader>
-          <DialogTitle>내원 정보 수정</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <User className="w-5 h-5" />
+            환자 정보
+          </DialogTitle>
         </DialogHeader>
-        
+
         {loading ? (
-          <div className="py-8 flex justify-center items-center">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <span className="ml-2">정보를 불러오는 중입니다...</span>
+          <div className="flex items-center justify-center h-96">
+            <Loader2 className="w-8 h-8 animate-spin" />
           </div>
-        ) : error ? (
-          <div className="py-4 text-center text-red-500">
-            <p>{error}</p>
-            <p className="mt-2">차트번호: {chartNumber}, 환자명: {patientName}</p>
+        ) : patientData ? (
+          <div className="space-y-4">
+            {/* 환자 기본 정보 */}
+            <div className="bg-gray-50 p-3 rounded-lg border">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+                <div>
+                  <span className="text-muted-foreground text-xs">차트번호</span>
+                  <p className="font-medium">{patientData.patient.chartNumber}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground text-xs">환자명</span>
+                  <p className="font-medium">{patientData.patient.name}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground text-xs">내원경로</span>
+                  <p className="font-medium text-xs">{patientData.patient.visitPath}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground text-xs">등록일</span>
+                  <p className="font-medium text-xs">
+                    {format(new Date(patientData.patient.createdAt), 'yyyy-MM-dd')}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* 상담내역 */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <FileText className="w-5 h-5" />
+                    상담내역 ({patientData.consultations.length})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                    {patientData.consultations.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        상담 내역이 없습니다.
+                      </div>
+                    ) : (
+                      patientData.consultations.map((consultation) => (
+                        <div key={consultation._id} className="border-l-4 border-l-blue-200 bg-blue-50/30 p-3 rounded-r-md hover:bg-blue-50/50 transition-colors">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-3">
+                              <span className="text-sm font-medium">
+                                {format(new Date(consultation.date), 'MM/dd')}
+                              </span>
+                              <span className="text-sm">{consultation.doctor}</span>
+                              <span className="text-xs text-muted-foreground">{consultation.staff}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge variant={consultation.agreed ? 'default' : 'secondary'} className="text-xs">
+                                {consultation.agreed ? '동의' : '비동의'}
+                              </Badge>
+                              <span className="font-semibold text-sm">{formatCurrency(consultation.amount)}</span>
+                            </div>
+                          </div>
+                          {consultation.confirmedDate && (
+                            <p className="text-xs text-muted-foreground mb-1">
+                              확정일: {format(new Date(consultation.confirmedDate), 'MM/dd')}
+                            </p>
+                          )}
+                          {consultation.notes && (
+                            <p className="text-xs text-muted-foreground">{consultation.notes}</p>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* 수납내역 */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <CreditCard className="w-5 h-5" />
+                    수납내역 ({patientData.transactions.length})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                    {patientData.transactions.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        수납 내역이 없습니다.
+                      </div>
+                    ) : (
+                      patientData.transactions.map((transaction) => (
+                        <div key={transaction._id} className="border-l-4 border-l-green-200 bg-green-50/30 p-3 rounded-r-md hover:bg-green-50/50 transition-colors">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-3">
+                              <span className="text-sm font-medium">
+                                {format(new Date(transaction.date), 'MM/dd')}
+                              </span>
+                              <span className="text-sm">{transaction.doctor}</span>
+                              <span className="text-xs text-muted-foreground">{transaction.treatmentType}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="flex gap-1">
+                                {transaction.isNew && (
+                                  <Badge variant="outline" className="text-xs">신환</Badge>
+                                )}
+                                {transaction.isConsultation && (
+                                  <Badge variant="outline" className="text-xs">상담</Badge>
+                                )}
+                                {transaction.cashReceipt && (
+                                  <Badge variant="outline" className="text-xs">영수증</Badge>
+                                )}
+                              </div>
+                              <span className="font-semibold text-sm">{formatCurrency(transaction.paymentAmount)}</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                            <span>{transaction.paymentMethod}</span>
+                            {transaction.cardCompany && <span>({transaction.cardCompany})</span>}
+                          </div>
+                          {transaction.notes && (
+                            <p className="text-xs text-muted-foreground mt-1">{transaction.notes}</p>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         ) : (
-          <Tabs defaultValue="basic" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="basic">기본 정보</TabsTrigger>
-              <TabsTrigger value="visit">내원 이력</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="basic" className="space-y-4 mt-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm font-medium text-gray-500">차트번호</p>
-                  <p>{patientInfo?.chartNumber || chartNumber}</p>
-                </div>
-                
-                <div>
-                  <p className="text-sm font-medium text-gray-500">환자명</p>
-                  <p>{patientInfo?.name || patientName}</p>
-                </div>
-                
-                <div>
-                  <p className="text-sm font-medium text-gray-500">생년월일</p>
-                  <p>{patientInfo?.birthDate || '-'}</p>
-                </div>
-                
-                <div>
-                  <p className="text-sm font-medium text-gray-500">성별</p>
-                  <p>{patientInfo?.gender || '-'}</p>
-                </div>
-                
-                <div>
-                  <p className="text-sm font-medium text-gray-500">연락처</p>
-                  <p>{patientInfo?.phoneNumber || '-'}</p>
-                </div>
-                
-                <div>
-                  <p className="text-sm font-medium text-gray-500">등록일</p>
-                  <p>{patientInfo?.registrationDate ? new Date(patientInfo.registrationDate).toLocaleDateString() : '-'}</p>
-                </div>
-                
-                <div className="flex items-center justify-between col-span-2 border-t pt-2">
-                  <p className="text-sm font-medium text-gray-500">신환 여부</p>
-                  <Switch 
-                    checked={isNew}
-                    onCheckedChange={handleIsNewChange}
-                  />
-                </div>
-              </div>
-              
-              <div className="pt-2">
-                <p className="text-sm font-medium text-gray-500">주소</p>
-                <p className="break-words">{patientInfo?.address || '-'}</p>
-              </div>
-              
-              <div className="pt-2">
-                <p className="text-sm font-medium text-gray-500">메모</p>
-                <p className="break-words whitespace-pre-wrap">{patientInfo?.memo || '-'}</p>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="visit" className="space-y-4 mt-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm font-medium text-gray-500">최근 방문일</p>
-                  <p>{patientInfo?.lastVisitDate ? new Date(patientInfo.lastVisitDate).toLocaleDateString() : '-'}</p>
-                </div>
-                
-                <div>
-                  <p className="text-sm font-medium text-gray-500">총 방문 횟수</p>
-                  <p>{patientInfo?.visitCount || '0'}회</p>
-                </div>
-              </div>
-              
-              <div className="pt-2">
-                <p className="text-sm font-medium text-gray-500">내원 이력</p>
-                <p className="text-gray-400 text-sm italic">상세 내원 이력은 로그 탭에서 확인 가능합니다.</p>
-              </div>
-            </TabsContent>
-          </Tabs>
+          <div className="text-center py-8 text-muted-foreground">
+            환자 정보를 찾을 수 없습니다.
+          </div>
         )}
       </DialogContent>
     </Dialog>
