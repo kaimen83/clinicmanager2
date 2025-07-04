@@ -571,7 +571,7 @@ export default function DailySettlementModal({ isOpen, onClose, date, onDateChan
                 <CardContent className="pt-0">
                   <div className="grid grid-cols-2 gap-2 mb-3">
                     <div className="bg-blue-50 rounded-lg p-2 text-center">
-                      <p className="text-xs text-gray-600">식립수</p>
+                      <p className="text-xs text-gray-600">임플란트</p>
                       <p className="text-lg font-bold text-blue-600">{data.implant.implantCount}</p>
                     </div>
                     <div className="bg-green-50 rounded-lg p-2 text-center">

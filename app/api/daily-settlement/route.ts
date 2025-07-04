@@ -171,7 +171,7 @@ export async function GET(request: NextRequest) {
           implants: {
             $push: {
               $cond: [
-                { $eq: ['$_id.category', 'implant'] },
+                { $eq: ['$_id.category', 'fixture'] },
                 { products: '$products', totalQuantity: '$totalQuantity' },
                 '$$REMOVE'
               ]
@@ -180,7 +180,7 @@ export async function GET(request: NextRequest) {
           fixtures: {
             $push: {
               $cond: [
-                { $eq: ['$_id.category', 'fixture'] },
+                { $eq: ['$_id.category', '이식재'] },
                 { products: '$products', totalQuantity: '$totalQuantity' },
                 '$$REMOVE'
               ]
