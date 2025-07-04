@@ -333,7 +333,9 @@ export default function DailySettlementModal({ isOpen, onClose, date, onDateChan
                       year: 'numeric',
                       month: 'long',
                       day: 'numeric',
-                    })}
+                    })} ({date.toLocaleDateString('ko-KR', {
+                      weekday: 'short',
+                    })})
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="center">
