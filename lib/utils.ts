@@ -65,4 +65,36 @@ export function formatCurrency(amount: number | null | undefined): string {
   return `${amount.toLocaleString('ko-KR')}원`;
 }
 
+/**
+ * 브라우저 호환성을 위한 UUID 생성 함수
+ * crypto.randomUUID()가 지원되지 않는 브라우저에서도 동작합니다.
+ */
+export function generateUUID(): string {
+  // 먼저 crypto.randomUUID()가 지원되는지 확인
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  
+  // 지원되지 않는 경우 폴리필 사용
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    // crypto.getRandomValues()를 사용한 UUID 생성
+    const array = new Uint8Array(16);
+    crypto.getRandomValues(array);
+    
+    // UUID 형식으로 변환
+    array[6] = (array[6] & 0x0f) | 0x40; // Version 4
+    array[8] = (array[8] & 0x3f) | 0x80; // Variant 10
+    
+    const hex = Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+  }
+  
+  // 마지막 대안: Math.random()을 사용한 UUID 생성
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
 
