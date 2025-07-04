@@ -191,7 +191,7 @@ const ImplantStats = () => {
 
   const handlePeriodChange = (period: 'monthly' | 'yearly') => {
     setCurrentPeriod(period);
-    setCompareYears(new Set()); // 비교 기간 초기화
+    setCompareYears(new Set()); // 비교 기간 초기화 (reference와 동일)
   };
 
   const handleDateChange = (value: string) => {
@@ -288,14 +288,21 @@ const ImplantStats = () => {
             <span className="sr-only">이전</span>
           </Button>
           <h3 className="text-lg font-semibold">
-            {selectedDate.getFullYear()}년 {selectedDate.getMonth() + 1}월
+            {currentPeriod === 'monthly' 
+              ? `${selectedDate.getFullYear()}년 ${selectedDate.getMonth() + 1}월`
+              : `${selectedDate.getFullYear()}년`
+            }
           </h3>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => navigateCalendar('next')}
             className="h-8 w-8 p-0"
-            disabled={new Date() <= selectedDate}
+            disabled={
+              currentPeriod === 'monthly' 
+                ? new Date().getFullYear() * 12 + new Date().getMonth() <= selectedDate.getFullYear() * 12 + selectedDate.getMonth()
+                : selectedDate.getFullYear() >= new Date().getFullYear()
+            }
           >
             <ChevronRight className="h-4 w-4" />
             <span className="sr-only">다음</span>
@@ -340,8 +347,152 @@ const ImplantStats = () => {
     );
   };
 
+  const renderComparisonTable = () => {
+    if (compareData.length === 0 || !mainData) return null;
+
+    // 비교 데이터 정렬 (참조 코드와 동일)
+    const sortedCompareData = [...compareData].sort((a, b) => {
+      const getMonthsAgo = (key: string) => {
+        if (key.startsWith('m')) {
+          return parseInt(key.substring(1));
+        } else {
+          return parseInt(key.substring(1)) * 12;
+        }
+      };
+      return getMonthsAgo(a.key) - getMonthsAgo(b.key);
+    });
+
+    // 헤더 생성
+    const headers = ['항목'];
+    
+    // 기준 기간 헤더
+    if (currentPeriod === 'monthly') {
+      headers.push(`${selectedDate.getFullYear()}년 ${selectedDate.getMonth() + 1}월`);
+    } else {
+      headers.push(`${selectedDate.getFullYear()}년`);
+    }
+
+    // 비교 기간 헤더
+    sortedCompareData.forEach(({ key }) => {
+      const compareDate = new Date(selectedDate);
+      if (key.startsWith('m')) {
+        const months = parseInt(key.substring(1));
+        compareDate.setMonth(compareDate.getMonth() - months);
+        headers.push(`${compareDate.getFullYear()}년 ${compareDate.getMonth() + 1}월`);
+      } else {
+        const years = parseInt(key.substring(1));
+        compareDate.setFullYear(compareDate.getFullYear() - years);
+        if (currentPeriod === 'monthly') {
+          headers.push(`${compareDate.getFullYear()}년 ${compareDate.getMonth() + 1}월`);
+        } else {
+          headers.push(`${compareDate.getFullYear()}년`);
+        }
+      }
+    });
+
+    // 모든 데이터셋 생성
+    const allDataSets = [mainData, ...sortedCompareData.map(c => c.data)];
+    
+    // 모든 제조사와 이식재 타입 수집
+    const allManufacturers = new Set<string>();
+    const allFixtureTypes = new Set<string>();
+    
+    allDataSets.forEach(dataSet => {
+      dataSet.data.forEach(day => {
+        Object.keys(day.implants).forEach(m => allManufacturers.add(m));
+        Object.keys(day.fixtures).forEach(t => allFixtureTypes.add(t));
+      });
+    });
+
+    const manufacturers = Array.from(allManufacturers).sort();
+    const fixtureTypes = Array.from(allFixtureTypes).sort();
+
+    // 각 데이터셋의 통계 계산
+    const stats = allDataSets.map(dataSet => calculateStats(dataSet.data));
+
+    return (
+      <div className="bg-white p-6 rounded-lg shadow-sm border">
+        <h3 className="text-lg font-semibold mb-4">기간별 비교 통계</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="border-b">
+                {headers.map((header, index) => (
+                  <th key={index} className="text-left p-3 font-semibold bg-gray-50">
+                    {header}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {/* 임플란트 섹션 */}
+              <tr className="bg-blue-50">
+                <td colSpan={headers.length} className="p-3 font-semibold text-blue-900">
+                  임플란트
+                </td>
+              </tr>
+              <tr className="border-b font-medium">
+                <td className="p-3">합계</td>
+                {stats.map((stat, index) => (
+                  <td key={index} className="p-3">
+                    {stat.totalImplants > 0 ? `${stat.totalImplants}개` : '-'}
+                  </td>
+                ))}
+              </tr>
+              {manufacturers.map(manufacturer => (
+                <tr key={manufacturer} className="border-b text-sm">
+                  <td className="p-3 pl-6">{manufacturer}</td>
+                  {stats.map((stat, index) => (
+                    <td key={index} className="p-3">
+                      {stat.implantsByManufacturer[manufacturer] || 0 > 0 
+                        ? `${stat.implantsByManufacturer[manufacturer] || 0}개` 
+                        : '-'
+                      }
+                    </td>
+                  ))}
+                </tr>
+              ))}
+
+              {/* 이식재 섹션 */}
+              {fixtureTypes.length > 0 && (
+                <>
+                  <tr className="bg-green-50">
+                    <td colSpan={headers.length} className="p-3 font-semibold text-green-900">
+                      이식재
+                    </td>
+                  </tr>
+                  <tr className="border-b font-medium">
+                    <td className="p-3">합계</td>
+                    {stats.map((stat, index) => (
+                      <td key={index} className="p-3">
+                        {stat.totalFixtures > 0 ? `${stat.totalFixtures}개` : '-'}
+                      </td>
+                    ))}
+                  </tr>
+                  {fixtureTypes.map(type => (
+                    <tr key={type} className="border-b text-sm">
+                      <td className="p-3 pl-6">{type}</td>
+                      {stats.map((stat, index) => (
+                        <td key={index} className="p-3">
+                          {stat.fixturesByType[type] || 0 > 0 
+                            ? `${stat.fixturesByType[type] || 0}개` 
+                            : '-'
+                          }
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  };
+
   const renderDailyCalendar = () => {
-    if (!mainData) return null;
+    if (!mainData || currentPeriod !== 'monthly') return null;
 
     const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
     const firstDay = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
@@ -444,6 +595,112 @@ const ImplantStats = () => {
     );
   };
 
+  const renderMonthlyCalendar = () => {
+    if (!mainData || currentPeriod !== 'yearly') return null;
+
+    const months = Array.from({length: 12}, (_, i) => {
+      const monthData = mainData.data.filter(d => {
+        const dataDate = new Date(d.date);
+        return dataDate.getMonth() === i && dataDate.getFullYear() === selectedDate.getFullYear();
+      });
+
+      // 월별 통계 계산
+      const stats = {
+        totalImplants: 0,
+        implants: {} as { [key: string]: number },
+        fixtures: {} as { [key: string]: number }
+      };
+
+      monthData.forEach(day => {
+        // 임플란트 통계
+        Object.entries(day.implants).forEach(([manufacturer, count]) => {
+          stats.implants[manufacturer] = (stats.implants[manufacturer] || 0) + count;
+          stats.totalImplants += count;
+        });
+
+        // 이식재 통계
+        Object.entries(day.fixtures).forEach(([type, count]) => {
+          stats.fixtures[type] = (stats.fixtures[type] || 0) + count;
+        });
+      });
+
+      return {
+        month: i,
+        data: monthData,
+        stats
+      };
+    });
+
+    const today = new Date();
+
+    return (
+      <div className="bg-white p-6 rounded-lg shadow-sm border">
+        <div className="grid grid-cols-3 md:grid-cols-4 gap-4">
+          {months.map(({ month, data, stats }) => {
+            const isCurrentMonth = month === today.getMonth() && selectedDate.getFullYear() === today.getFullYear();
+            
+            return (
+              <div
+                key={month}
+                className={`
+                  p-4 border rounded-lg cursor-pointer hover:bg-gray-50
+                  ${isCurrentMonth ? 'bg-blue-50 border-blue-200' : 'border-gray-200'}
+                  ${stats.totalImplants > 0 ? 'bg-blue-50 border-blue-200' : ''}
+                `}
+                onClick={() => {
+                  if (data.length > 0) {
+                    // 월별 데이터를 하나의 DayData로 합침
+                    const monthSummary: DayData = {
+                      date: `${selectedDate.getFullYear()}-${String(month + 1).padStart(2, '0')}`,
+                      implants: stats.implants,
+                      fixtures: stats.fixtures,
+                      totalImplants: stats.totalImplants,
+                      patients: data.flatMap(d => d.patients)
+                    };
+                    handleDayClick(monthSummary);
+                  }
+                }}
+              >
+                <div className="flex justify-between items-start mb-2">
+                  <span className="font-medium">{month + 1}월</span>
+                  {stats.totalImplants > 0 && (
+                    <Badge variant="secondary" className="text-xs px-1 py-0 h-4">
+                      {stats.totalImplants}개
+                    </Badge>
+                  )}
+                </div>
+
+                {stats.totalImplants > 0 && (
+                  <div className="space-y-1">
+                    <div className="text-xs text-blue-700 font-medium">제조사별</div>
+                    {Object.entries(stats.implants).map(([manufacturer, count]) => (
+                      <div key={manufacturer} className="flex justify-between text-xs">
+                        <span className="truncate">{manufacturer}</span>
+                        <span>{count}개</span>
+                      </div>
+                    ))}
+                    
+                    {Object.keys(stats.fixtures).length > 0 && (
+                      <>
+                        <div className="text-xs text-green-700 font-medium">이식재</div>
+                        {Object.entries(stats.fixtures).map(([type, count]) => (
+                          <div key={type} className="flex justify-between text-xs text-green-600">
+                            <span className="truncate">{type}</span>
+                            <span>{count}개</span>
+                          </div>
+                        ))}
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       {/* 필터 섹션 */}
@@ -535,17 +792,25 @@ const ImplantStats = () => {
 
       {/* 메인 컨텐츠 */}
       {!loading && mainData && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* 왼쪽: 통계 요약 */}
-          <div className="lg:col-span-1">
-            {renderStatsSummary()}
-          </div>
+        <>
+          {compareData.length > 0 ? (
+            // 비교 테이블 렌더링
+            renderComparisonTable()
+          ) : (
+            // 기본 달력 뷰
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* 왼쪽: 통계 요약 */}
+              <div className="lg:col-span-1">
+                {renderStatsSummary()}
+              </div>
 
-          {/* 오른쪽: 달력 */}
-          <div className="lg:col-span-2">
-            {renderDailyCalendar()}
-          </div>
-        </div>
+              {/* 오른쪽: 달력 */}
+              <div className="lg:col-span-2">
+                {currentPeriod === 'monthly' ? renderDailyCalendar() : renderMonthlyCalendar()}
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* 상세 모달 */}
@@ -554,7 +819,12 @@ const ImplantStats = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Calendar className="h-5 w-5" />
-              {selectedDayData?.date} 상세 정보
+              {selectedDayData?.date.includes('-') && selectedDayData.date.length <= 7 
+                ? `${selectedDayData.date.split('-')[0]}년 ${parseInt(selectedDayData.date.split('-')[1])}월 통계`
+                : selectedDayData?.date.length === 10 
+                  ? `${new Date(selectedDayData.date).getFullYear()}년 ${new Date(selectedDayData.date).getMonth() + 1}월 ${new Date(selectedDayData.date).getDate()}일`
+                  : selectedDayData?.date
+              } 상세 정보
             </DialogTitle>
           </DialogHeader>
           
