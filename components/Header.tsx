@@ -4,15 +4,17 @@ import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { UserButton } from '@clerk/nextjs';
-import { LogOut, Clock, Calculator, Home, Users, Settings } from 'lucide-react';
+import { LogOut, Clock, Calculator, Home, Users, Settings, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getCurrentKstDate } from '@/lib/utils';
 import { useUserRole } from './UserRoleProvider';
+import { useAuth } from '@clerk/nextjs';
 
 export default function Header() {
   const [currentDateTime, setCurrentDateTime] = useState<string>('');
   const pathname = usePathname();
   const { userWithRole } = useUserRole();
+  const { signOut } = useAuth();
   
   useEffect(() => {
     const updateDateTime = () => {
@@ -80,43 +82,41 @@ export default function Header() {
           </div>
           
           <div className="flex items-center gap-3">
-            {userWithRole?.role === 'SUPER_ADMIN' && (
-              <Link href="/user-management">
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  className="flex items-center gap-2 text-white hover:bg-white/10 hover:text-white transition-all duration-300 px-3 py-2"
-                >
-                  <Users className="w-4 h-4" />
-                  <span className="hidden sm:inline">사용자관리</span>
-                </Button>
-              </Link>
-            )}
-            
-            <div className="flex items-center gap-2">
-              {userWithRole?.role && (
-                <div className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 backdrop-blur-md rounded-lg px-3 py-1 border border-blue-300/30">
-                  <span className="text-xs font-medium text-blue-100">
-                    {userWithRole.role === 'SUPER_ADMIN' && '최고관리자'}
-                    {userWithRole.role === 'ADMIN' && '관리자'}
-                    {userWithRole.role === 'STAFF' && '직원'}
-                    {userWithRole.role === 'READ_ONLY' && '읽기전용'}
-                  </span>
-                </div>
-              )}
-              <div className="bg-white/10 backdrop-blur-md rounded-lg p-1 border border-white/20">
-                <UserButton afterSignOutUrl="/" />
-              </div>
+            <div className="bg-white/10 backdrop-blur-md rounded-lg p-1 border border-white/20">
+              <UserButton 
+                afterSignOutUrl="/"
+                appearance={{
+                  elements: {
+                    userButtonAvatarBox: "w-8 h-8"
+                  }
+                }}
+              >
+                <UserButton.MenuItems>
+                  {userWithRole?.role && (
+                    <UserButton.Action
+                      label={
+                        userWithRole.role === 'SUPER_ADMIN' ? '최고관리자' :
+                        userWithRole.role === 'ADMIN' ? '관리자' :
+                        userWithRole.role === 'STAFF' ? '직원' :
+                        userWithRole.role === 'READ_ONLY' ? '읽기전용' : ''
+                      }
+                      labelIcon={<Shield className="w-4 h-4" />}
+                      onClick={() => {}}
+                    />
+                  )}
+                  {userWithRole?.role === 'SUPER_ADMIN' && (
+                    <UserButton.Action
+                      label="사용자관리"
+                      labelIcon={<Users className="w-4 h-4" />}
+                      onClick={() => window.location.href = '/user-management'}
+                    />
+                  )}
+                </UserButton.MenuItems>
+              </UserButton>
             </div>
-            
-            <Link href="/sign-out">
-              <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 hover:text-white transition-all duration-300">
-                <LogOut className="h-5 w-5" />
-              </Button>
-            </Link>
           </div>
         </div>
       </div>
     </header>
   );
-} 
+}
