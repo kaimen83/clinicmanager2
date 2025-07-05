@@ -144,9 +144,9 @@ export default function SystemSettingsModal() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="flex items-center gap-2">
+        <Button variant="outline" className="flex items-center gap-2" title="시스템 설정">
           <Settings className="w-4 h-4" />
-          <span>시스템 설정</span>
+          <span className="hidden lg:inline">시스템 설정</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[900px] max-h-[95vh] p-0 gap-0 overflow-hidden flex flex-col">

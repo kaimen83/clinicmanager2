@@ -137,8 +137,8 @@ export default function ExpenseList({ date }: ExpenseListProps) {
 
   return (
     <div className="w-full">
-      <div className="mb-4">
-        <h3 className="text-lg font-bold text-emerald-800 mb-2">💰 지출 내역</h3>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-gray-900">💰 지출 내역</h3>
         <div className="flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50/50 px-3 py-2 rounded-lg border border-emerald-200">
           <span className="font-medium">총 {expenses.length}건</span>
           <span className="text-emerald-500">•</span>
@@ -159,36 +159,36 @@ export default function ExpenseList({ date }: ExpenseListProps) {
             <Table>
               <TableHeader className="sticky top-0 bg-emerald-50 z-10">
                 <TableRow className="border-b border-emerald-200">
-                  <TableHead className="font-semibold text-emerald-800">지출 내역</TableHead>
-                  <TableHead className="font-semibold text-emerald-800">금액</TableHead>
-                  <TableHead className="font-semibold text-emerald-800">지불 방법</TableHead>
-                  <TableHead className="font-semibold text-emerald-800">영수증</TableHead>
-                  <TableHead className="font-semibold text-emerald-800">비고</TableHead>
-                  <TableHead className="text-right font-semibold text-emerald-800">관리</TableHead>
+                  <TableHead className="font-semibold text-emerald-800 py-2 text-sm">지출 내역</TableHead>
+                  <TableHead className="font-semibold text-emerald-800 py-2 text-sm">금액</TableHead>
+                  <TableHead className="font-semibold text-emerald-800 py-2 text-sm">지불 방법</TableHead>
+                  <TableHead className="font-semibold text-emerald-800 py-2 text-sm">영수증</TableHead>
+                  <TableHead className="font-semibold text-emerald-800 py-2 text-sm">비고</TableHead>
+                  <TableHead className="text-right font-semibold text-emerald-800 py-2 text-sm">관리</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {expenses.map((expense) => (
                   <TableRow key={expense._id} className="hover:bg-emerald-50/30 transition-colors">
-                    <TableCell className="font-medium">{expense.details}</TableCell>
-                    <TableCell className="font-semibold text-emerald-700">{expense.amount.toLocaleString()}원</TableCell>
-                    <TableCell>{expense.method}</TableCell>
-                    <TableCell>
+                    <TableCell className="font-medium py-1.5 text-sm">{expense.details}</TableCell>
+                    <TableCell className="font-medium text-emerald-700 py-1.5 text-sm">{expense.amount.toLocaleString()}원</TableCell>
+                    <TableCell className="py-1.5 text-sm">{expense.method}</TableCell>
+                    <TableCell className="py-1.5 text-sm">
                       {expense.hasReceipt ? (
                         <span className="text-green-600 font-medium">있음</span>
                       ) : (
                         <span className="text-red-500 font-medium">없음</span>
                       )}
                     </TableCell>
-                    <TableCell className="max-w-[120px] truncate">
+                    <TableCell className="max-w-[120px] truncate py-1.5 text-sm">
                       {expense.notes || '-'}
                     </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex gap-1 justify-end">
+                    <TableCell className="text-right py-1.5">
+                      <div className="flex gap-0.5 justify-end">
                         <Button 
                           variant="ghost" 
-                          size="icon" 
-                          className={`transition-colors ${
+                          size="sm" 
+                          className={`transition-colors h-6 w-6 p-0 ${
                             isEditDeleteDisabled(expense) 
                               ? 'text-gray-400 cursor-not-allowed opacity-50' 
                               : 'text-blue-600 hover:bg-blue-100 hover:text-blue-700'
@@ -201,12 +201,12 @@ export default function ExpenseList({ date }: ExpenseListProps) {
                               : '수정'
                           }
                         >
-                          <Edit className="h-4 w-4" />
+                          <Edit className="h-3 w-3" />
                         </Button>
                         <Button 
                           variant="ghost" 
-                          size="icon" 
-                          className={`transition-colors ${
+                          size="sm" 
+                          className={`transition-colors h-6 w-6 p-0 ${
                             isEditDeleteDisabled(expense) 
                               ? 'text-gray-400 cursor-not-allowed opacity-50' 
                               : 'text-red-600 hover:bg-red-100 hover:text-red-700'
@@ -219,7 +219,7 @@ export default function ExpenseList({ date }: ExpenseListProps) {
                               : '삭제'
                           }
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-3 w-3" />
                         </Button>
                       </div>
                     </TableCell>

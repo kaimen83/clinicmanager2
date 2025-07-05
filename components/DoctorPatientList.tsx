@@ -623,56 +623,56 @@ export default function DoctorPatientList({ date }: Props) {
       if (treatment.paymentMethod === '현금' || treatment.paymentMethod === '계좌이체') {
         return (
           <div className="flex items-center gap-1">
-            {treatment.paymentMethod}
+            <span className="text-sm">{treatment.paymentMethod}</span>
             {treatment.cashReceipt ? (
-              <Badge variant="outline" className="ml-1 text-xs">영수증 발행</Badge>
+              <Badge variant="outline" className="ml-1 text-sm h-4 px-1.5">영수증 발행</Badge>
             ) : (
-              <Badge variant="outline" className="ml-1 text-xs bg-gray-100">미발행</Badge>
+              <Badge variant="outline" className="ml-1 text-sm bg-gray-100 h-4 px-1.5">미발행</Badge>
             )}
           </div>
         );
       } else if (treatment.paymentMethod === '카드') {
         return (
           <div className="flex items-center gap-1">
-            카드
+            <span className="text-sm">카드</span>
             {treatment.cardCompany && (
-              <Badge variant="outline" className="ml-1 text-xs">{treatment.cardCompany}</Badge>
+              <Badge variant="outline" className="ml-1 text-sm h-4 px-1.5">{treatment.cardCompany}</Badge>
             )}
           </div>
         );
       } else if (treatment.paymentMethod === '수납없음' || treatment.paymentAmount <= 0) {
-        return <Badge variant="outline" className="bg-gray-100">수납없음</Badge>;
+        return <Badge variant="outline" className="bg-gray-100 text-sm h-4 px-1.5">수납없음</Badge>;
       }
       
-      return treatment.paymentMethod;
+      return <span className="text-sm">{treatment.paymentMethod}</span>;
     }
     
     // 기존 로직 (이전 버전 호환성 유지)
     if (transaction.paymentMethod === '현금' || transaction.paymentMethod === '계좌이체') {
       return (
         <div className="flex items-center gap-1">
-          {transaction.paymentMethod}
+          <span className="text-sm">{transaction.paymentMethod}</span>
           {transaction.cashReceipt ? (
-            <Badge variant="outline" className="ml-1 text-xs">영수증 발행</Badge>
+            <Badge variant="outline" className="ml-1 text-sm h-4 px-1.5">영수증 발행</Badge>
           ) : (
-            <Badge variant="outline" className="ml-1 text-xs bg-gray-100">미발행</Badge>
+            <Badge variant="outline" className="ml-1 text-sm bg-gray-100 h-4 px-1.5">미발행</Badge>
           )}
         </div>
       );
     } else if (transaction.paymentMethod === '카드') {
       return (
         <div className="flex items-center gap-1">
-          카드
+          <span className="text-sm">카드</span>
           {transaction.cardCompany && (
-            <Badge variant="outline" className="ml-1 text-xs">{transaction.cardCompany}</Badge>
+            <Badge variant="outline" className="ml-1 text-sm h-4 px-1.5">{transaction.cardCompany}</Badge>
           )}
         </div>
       );
     } else if (!transaction.paymentMethod || transaction.paymentAmount <= 0) {
-      return <Badge variant="outline" className="bg-gray-100">수납없음</Badge>;
+      return <Badge variant="outline" className="bg-gray-100 text-sm h-4 px-1.5">수납없음</Badge>;
     }
     
-    return transaction.paymentMethod;
+    return <span className="text-sm">{transaction.paymentMethod}</span>;
   };
 
   // 데이터 가공 - 의사별 환자 목록
@@ -726,16 +726,6 @@ export default function DoctorPatientList({ date }: Props) {
   return (
     <>
       <div className="w-full">
-        <div className="mb-4">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="p-1.5 bg-blue-600 rounded-md">
-              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-            </div>
-            <h3 className="text-lg font-semibold text-gray-800">진료 환자 목록</h3>
-          </div>
-        </div>
         
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
           {doctorNames.length > 0 ? (
@@ -749,21 +739,21 @@ export default function DoctorPatientList({ date }: Props) {
             >
               {doctorNames.map(doctor => (
                 <div key={doctor} className="min-h-0 flex flex-col overflow-hidden">
-                  <div className="bg-gradient-to-r from-blue-50 to-blue-100 px-4 py-2.5 sticky top-0 z-20 flex justify-between items-center border-b border-blue-200">
+                  <div className="bg-gradient-to-r from-blue-50 to-blue-100 px-4 py-2 sticky top-0 z-20 flex justify-between items-center border-b border-blue-200">
                     <div className="flex items-center gap-2">
-                      <div className="w-1 h-5 bg-blue-500 rounded-full"></div>
-                      <div className="text-blue-800 font-semibold text-base">{doctor} 원장</div>
+                      <div className="w-1 h-4 bg-blue-500 rounded-full"></div>
+                      <div className="text-blue-800 font-medium text-sm">{doctor} 원장</div>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
                       {(() => {
                         const stats = calculateDoctorStats(groupedTransactions[doctor]);
                         return (
                           <>
-                            <div className="bg-white/60 px-3 py-1 rounded-md border border-blue-200/50 text-blue-700 text-xs font-medium">
+                            <div className="bg-white/60 px-2 py-0.5 rounded-md border border-blue-200/50 text-blue-700 text-xs font-medium">
                               환자 / 신환 : <span className="font-bold">{stats.patientCount}명 / {stats.newPatientCount}명</span>
                             </div>
-                            <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-1.5 rounded-md shadow-sm">
-                              <div className="text-white text-sm font-bold">
+                            <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-3 py-1 rounded-md shadow-sm">
+                              <div className="text-white text-xs font-bold">
                                 ₩{stats.totalAmount.toLocaleString()}
                               </div>
                             </div>
@@ -777,13 +767,13 @@ export default function DoctorPatientList({ date }: Props) {
                     <Table className="w-full border-collapse">
                       <TableHeader className="sticky top-0 bg-gray-50 z-10 border-b-2 border-gray-200" style={{ display: 'table', width: '100%', tableLayout: 'fixed' }}>
                         <TableRow className="hover:bg-gray-50">
-                          <TableHead className="w-12 font-bold text-gray-700 text-center py-3">No.</TableHead>
-                          <TableHead className="w-28 font-bold text-gray-700 py-3">{renderSortableHeader('차트번호', 'chartNumber')}</TableHead>
-                          <TableHead className="w-32 font-bold text-gray-700 py-3">{renderSortableHeader('환자성명', 'patientName')}</TableHead>
-                          <TableHead className="font-bold text-gray-700 py-3">{renderSortableHeader('진료내용', 'treatmentType')}</TableHead>
-                          <TableHead className="w-28 text-right font-bold text-gray-700 py-3">{renderSortableHeader('수납금액', 'paymentAmount')}</TableHead>
-                          <TableHead className="w-44 font-bold text-gray-700 py-3">{renderSortableHeader('수납방법', 'paymentMethod')}</TableHead>
-                          <TableHead className="w-24 text-center font-bold text-gray-700 py-3">관리</TableHead>
+                          <TableHead className="w-12 font-semibold text-gray-700 text-center py-2 text-sm">No.</TableHead>
+                          <TableHead className="w-32 font-semibold text-gray-700 py-2 text-sm">{renderSortableHeader('차트번호', 'chartNumber')}</TableHead>
+                          <TableHead className="w-40 font-semibold text-gray-700 py-2 text-sm">{renderSortableHeader('환자성명', 'patientName')}</TableHead>
+                          <TableHead className="w-32 font-semibold text-gray-700 py-2 text-sm">{renderSortableHeader('진료내용', 'treatmentType')}</TableHead>
+                          <TableHead className="w-32 text-right font-semibold text-gray-700 py-2 text-sm">{renderSortableHeader('수납금액', 'paymentAmount')}</TableHead>
+                          <TableHead className="w-32 font-semibold text-gray-700 py-2 text-sm">{renderSortableHeader('수납방법', 'paymentMethod')}</TableHead>
+                          <TableHead className="w-24 text-center font-semibold text-gray-700 py-2 text-sm">관리</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody style={{
@@ -794,40 +784,40 @@ export default function DoctorPatientList({ date }: Props) {
                       }}>
                         {groupedTransactions[doctor].map((transaction, index) => (
                           <TableRow key={transaction._id} style={{ display: 'table', width: '100%', tableLayout: 'fixed' }} className="hover:bg-blue-50/30 transition-colors">
-                            <TableCell className="py-1.5 w-12">{index + 1}</TableCell>
-                            <TableCell className="py-1.5 w-24">{transaction.chartNumber}</TableCell>
-                            <TableCell className="py-1.5 w-32">
+                            <TableCell className="py-1.5 w-12 text-sm">{index + 1}</TableCell>
+                            <TableCell className="py-1.5 w-32 text-sm">{transaction.chartNumber}</TableCell>
+                            <TableCell className="py-1.5 w-40">
                               <div className="flex items-center gap-1">
                                 <button
                                   onClick={() => openPatientInfoModal(transaction.chartNumber)}
-                                  className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer font-medium"
+                                  className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer font-medium text-sm"
                                 >
                                   {transaction.patientName}
                                 </button>
                                 {transaction.isNew && (
-                                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300 text-xs">신환</Badge>
+                                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300 text-sm h-4 px-1.5">신환</Badge>
                                 )}
                               </div>
                             </TableCell>
-                            <TableCell className="py-1.5 truncate">
+                            <TableCell className="py-1.5 w-32 truncate text-sm">
                               {transaction.treatments && transaction.treatments.length > 0 
                                 ? transaction.treatments[0].treatmentType
                                 : transaction.treatmentType
                               }
                             </TableCell>
-                            <TableCell className="py-1.5 text-right w-28 font-semibold text-blue-700">
+                            <TableCell className="py-1.5 text-right w-32 font-medium text-blue-700 text-sm">
                               {transaction.treatments && transaction.treatments.length > 0 
                                 ? `${formatAmount(transaction.treatments[0].paymentAmount)}원`
                                 : `${formatAmount(transaction.paymentAmount)}원`
                               }
                             </TableCell>
-                            <TableCell className="py-1.5 w-44">{formatPaymentMethod(transaction)}</TableCell>
+                            <TableCell className="py-1.5 w-32 text-sm">{formatPaymentMethod(transaction)}</TableCell>
                             <TableCell className="py-1.5 text-right w-24">
-                              <div className="flex justify-end gap-1">
+                              <div className="flex justify-end gap-0.5">
                                 <Button 
                                   variant="ghost" 
-                                  size="icon" 
-                                  className={`transition-colors ${
+                                  size="sm" 
+                                  className={`transition-colors h-6 w-6 p-0 ${
                                     isEditDeleteDisabled(transaction) 
                                       ? 'text-gray-400 cursor-not-allowed opacity-50' 
                                       : 'text-blue-600 hover:bg-blue-100 hover:text-blue-700'
@@ -840,12 +830,12 @@ export default function DoctorPatientList({ date }: Props) {
                                       : '수정'
                                   }
                                 >
-                                  <Edit className="h-4 w-4" />
+                                  <Edit className="h-3 w-3" />
                                 </Button>
                                 <Button 
                                   variant="ghost" 
-                                  size="icon" 
-                                  className={`transition-colors ${
+                                  size="sm" 
+                                  className={`transition-colors h-6 w-6 p-0 ${
                                     isEditDeleteDisabled(transaction) 
                                       ? 'text-gray-400 cursor-not-allowed opacity-50' 
                                       : 'text-red-600 hover:bg-red-100 hover:text-red-700'
@@ -858,7 +848,7 @@ export default function DoctorPatientList({ date }: Props) {
                                       : '삭제'
                                   }
                                 >
-                                  <Trash2 className="h-4 w-4" />
+                                  <Trash2 className="h-3 w-3" />
                                 </Button>
                               </div>
                             </TableCell>

@@ -53,12 +53,6 @@ export default function DashboardContent({ children: _ }: Props) {
             {/* Stats Card */}
             <Card className="border-0 shadow-sm bg-white">
               <div className="p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-blue-50 rounded-lg">
-                    <TrendingUp className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900">진료 통계</h3>
-                </div>
                 <ClinicStats 
                   date={selectedDate} 
                   onDailySettlement={() => setIsDailySettlementModalOpen(true)}
@@ -70,12 +64,6 @@ export default function DashboardContent({ children: _ }: Props) {
             {/* Extra Income Card */}
             <Card className="border-0 shadow-sm bg-white">
               <div className="p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-green-50 rounded-lg">
-                    <Wallet className="h-5 w-5 text-green-600" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900">진료외수입</h3>
-                </div>
                 <ExtraIncomeList date={selectedDate} />
               </div>
             </Card>

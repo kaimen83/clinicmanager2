@@ -152,54 +152,59 @@ export default function ClinicNavigation() {
         <div className="flex flex-wrap gap-3">
           <Button 
             variant="outline" 
-            className="flex items-center gap-2 bg-white border-2 border-blue-200 hover:bg-blue-50 hover:border-blue-300 text-gray-700 hover:text-blue-700 transition-all duration-200 font-medium"
+            className="flex items-center gap-2 lg:gap-2 bg-white border-2 border-blue-200 hover:bg-blue-50 hover:border-blue-300 text-gray-700 hover:text-blue-700 transition-all duration-200 font-medium"
             onClick={handlePatientFormOpen}
+            title="내원정보등록"
           >
             <UserPlus className="w-4 h-4" />
-            <span>내원정보등록</span>
+            <span className="hidden lg:inline">내원정보등록</span>
           </Button>
           
           <Button 
             variant="outline" 
-            className="flex items-center gap-2 bg-white border-2 border-green-200 hover:bg-green-50 hover:border-green-300 text-gray-700 hover:text-green-700 transition-all duration-200 font-medium"
+            className="flex items-center gap-2 lg:gap-2 bg-white border-2 border-green-200 hover:bg-green-50 hover:border-green-300 text-gray-700 hover:text-green-700 transition-all duration-200 font-medium"
             onClick={handleExtraIncomeModalOpen}
+            title="진료 외 수입"
           >
             <CreditCard className="w-4 h-4" />
-            <span>진료 외 수입</span>
+            <span className="hidden lg:inline">진료 외 수입</span>
           </Button>
           
           <Button 
             variant="outline" 
             className="flex items-center gap-2 bg-white border-2 border-amber-200 hover:bg-amber-50 hover:border-amber-300 text-gray-700 hover:text-amber-700 transition-all duration-200 font-medium"
             onClick={handleExpenseModalOpen}
+            title="지출등록"
           >
             <DollarSign className="w-4 h-4" />
-            <span>지출등록</span>
+            <span className="hidden lg:inline">지출등록</span>
           </Button>
           
           <Button 
             variant="outline" 
             className="flex items-center gap-2 bg-white border-2 border-purple-200 hover:bg-purple-50 hover:border-purple-300 text-gray-700 hover:text-purple-700 transition-all duration-200 font-medium"
             onClick={handleCashManagementModalOpen}
+            title="시재관리"
           >
             <Calculator className="w-4 h-4" />
-            <span>시재관리</span>
+            <span className="hidden lg:inline">시재관리</span>
           </Button>
           
           <Button 
             variant="outline" 
             className="flex items-center gap-2 bg-white border-2 border-cyan-200 hover:bg-cyan-50 hover:border-cyan-300 text-gray-700 hover:text-cyan-700 transition-all duration-200 font-medium"
             onClick={handleSupplyModalOpen}
+            title="매입원장"
           >
             <ShoppingCart className="w-4 h-4" />
-            <span>매입원장</span>
+            <span className="hidden lg:inline">매입원장</span>
           </Button>
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="flex items-center gap-2 bg-white border-2 border-indigo-200 hover:bg-indigo-50 hover:border-indigo-300 text-gray-700 hover:text-indigo-700 transition-all duration-200 font-medium">
+              <Button variant="outline" className="flex items-center gap-2 bg-white border-2 border-indigo-200 hover:bg-indigo-50 hover:border-indigo-300 text-gray-700 hover:text-indigo-700 transition-all duration-200 font-medium" title="수불부">
                 <ClipboardList className="w-4 h-4" />
-                <span>수불부</span>
+                <span className="hidden lg:inline">수불부</span>
                 <ChevronDown className="w-4 h-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -213,9 +218,9 @@ export default function ClinicNavigation() {
             </DropdownMenuContent>
           </DropdownMenu>
           
-          <Button variant="outline" className="flex items-center gap-2 bg-white border-2 border-rose-200 hover:bg-rose-50 hover:border-rose-300 text-gray-700 hover:text-rose-700 transition-all duration-200 font-medium">
+          <Button variant="outline" className="flex items-center gap-2 bg-white border-2 border-rose-200 hover:bg-rose-50 hover:border-rose-300 text-gray-700 hover:text-rose-700 transition-all duration-200 font-medium" title="병원리뷰">
             <Star className="w-4 h-4" />
-            <span>병원리뷰</span>
+            <span className="hidden lg:inline">병원리뷰</span>
           </Button>
           
           {/* 일반직원은 시스템설정 버튼 숨김 */}
@@ -239,7 +244,7 @@ export default function ClinicNavigation() {
                 <Button
                   variant="outline"
                   className={cn(
-                    "justify-start text-left font-medium px-4 py-2 h-10 min-w-[220px]",
+                    "justify-start text-left font-medium px-4 py-2 h-10 min-w-[220px] lg:min-w-[220px]",
                     "bg-white border-gray-200 hover:bg-gray-50 hover:border-gray-300",
                     "transition-all duration-200",
                     !selectedDate && "text-gray-400"
@@ -247,7 +252,10 @@ export default function ClinicNavigation() {
                 >
                   <CalendarIcon className="mr-3 h-4 w-4 text-blue-600" />
                   {selectedDate ? (
-                    <span className="text-gray-800">{format(selectedDate, "PPP (EEEE)", { locale: ko })}</span>
+                    <>
+                      <span className="hidden lg:inline text-gray-800">{format(selectedDate, "PPP (EEEE)", { locale: ko })}</span>
+                      <span className="lg:hidden text-gray-800">{format(selectedDate, "MM/dd (EEE)", { locale: ko })}</span>
+                    </>
                   ) : (
                     <span>날짜 선택</span>
                   )}
@@ -276,8 +284,10 @@ export default function ClinicNavigation() {
           <Button 
             onClick={goToToday}
             className="h-10 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium transition-all duration-200"
+            title="오늘"
           >
-            오늘
+            <span className="hidden lg:inline">오늘</span>
+            <span className="lg:hidden">T</span>
           </Button>
         </div>
       </div>
