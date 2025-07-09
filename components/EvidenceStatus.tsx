@@ -492,20 +492,20 @@ export default function EvidenceStatus() {
                                   <span className="font-medium">{match.expense.vendor}</span>
                                   <span className="text-gray-400">→</span>
                                   <span className="text-green-700">
-                                    {match.type === 'tax' ? match.receipt.상호 : match.receipt.상호명}
+                                    {match.type === 'cash' ? match.receipt.상호명 : match.receipt.상호}
                                   </span>
                                 </div>
                                 <div className="text-xs text-gray-600 space-y-0.5">
                                   <div>지출: {new Date(match.expense.date).toLocaleDateString('ko-KR')} · {match.expense.amount.toLocaleString()}원</div>
                                   <div>
-                                    영수증: {new Date(match.type === 'tax' ? match.receipt.작성일자 : match.receipt.매입일시).toLocaleDateString('ko-KR')} · 
-                                    {(match.type === 'tax' ? match.receipt.합계금액 : match.receipt.매입금액).toLocaleString()}원
+                                    영수증: {new Date(match.type === 'cash' ? match.receipt.매입일시 : match.receipt.작성일자).toLocaleDateString('ko-KR')} · 
+                                    {(match.type === 'cash' ? match.receipt.매입금액 : match.receipt.합계금액).toLocaleString()}원
                                   </div>
                                   <div className="text-gray-500">{match.expense.details}</div>
                                 </div>
                               </div>
                               <div className="text-green-600 font-medium text-xs whitespace-nowrap">
-                                ✓ {match.type === 'tax' ? '세금계산서' : '현금영수증'}
+                                ✓ {match.type === 'tax' ? '세금계산서' : match.type === 'cash' ? '현금영수증' : '전자계산서'}
                               </div>
                             </div>
                           </div>

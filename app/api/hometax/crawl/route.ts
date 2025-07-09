@@ -40,6 +40,7 @@ async function startCrawlingProcess() {
     const { connectToDatabase } = await import('@/lib/mongodb');
     const { HomeTaxReceipt } = await import('@/lib/models/HomeTaxReceipt');
     const { HomeTaxCashReceipt } = await import('@/lib/models/HomeTaxCashReceipt');
+    const { HomeTaxInvoice } = await import('@/lib/models/HomeTaxInvoice');
 
     // 금액 문자열을 숫자로 변환하는 함수
     function parseAmount(amountStr: string) {
@@ -248,6 +249,60 @@ async function startCrawlingProcess() {
             console.error('MongoDB 저장 중 에러 발생:', error);
           }
 
+          // 전자계산서 수집을 위해 진행률을 80%로 설정
+          updateStatus(80, '전자계산서 데이터 수집 중...');
+          
+          // 분류를 전자계산서로 변경 (텍스트 클릭으로 변경)
+          await page.waitForTimeout(1000);
+          await page.getByText('전자계산서').click();
+          
+          // 조회기간을 1개월로 선택
+          await page.waitForTimeout(1000);
+          await page.click('#mf_txppWframe_btnChk1');
+          
+          // 조회 버튼 클릭
+          await page.waitForTimeout(1000);
+          await page.click('#mf_txppWframe_trigger50');
+          await page.waitForTimeout(2000);
+          
+          // 전자계산서 데이터 수집
+          let allInvoiceData: any[] = [];
+          currentPage = 1;
+          hasNextPage = true;
+          
+          while (hasNextPage) {
+            updateStatus(80 + (currentPage * 1), `전자계산서 ${currentPage}페이지 처리 중...`);
+            
+            // 현재 페이지 데이터 수집
+            const pageData = await collectTableData();
+            allInvoiceData = allInvoiceData.concat(pageData);
+            
+            // 다음 페이지 버튼 확인
+            const nextPageSelector = `#mf_txppWframe_pglNavi_page_${currentPage + 1}`;
+            const hasNext = await page.$(nextPageSelector);
+            
+            if (hasNext) {
+              await page.click(nextPageSelector);
+              await page.waitForTimeout(1000);
+              currentPage++;
+            } else {
+              hasNextPage = false;
+            }
+          }
+          
+          // MongoDB에 전자계산서 데이터 저장
+          try {
+            for (const item of allInvoiceData) {
+              await HomeTaxInvoice.updateOne(
+                { 승인번호: item.승인번호 },
+                item,
+                { upsert: true }
+              );
+            }
+          } catch (error) {
+            console.error('전자계산서 MongoDB 저장 중 에러 발생:', error);
+          }
+          
           updateStatus(100, '크롤링이 완료되었습니다.');
         }
       }
