@@ -31,7 +31,7 @@ export default function NoticeItem({ notice, onDismiss, onUpdate, onDelete }: No
   };
 
   return (
-    <div className="relative bg-[#FFF59D] border border-[#F9A825] rounded-lg p-4 w-[250px] shadow-md">
+    <div className={`relative ${notice.isPrivate ? 'bg-[#E8F5E8] border-[#4CAF50]' : 'bg-[#FFF59D] border-[#F9A825]'} rounded-lg p-4 w-[250px] shadow-md`}>
       {isAuthor && (
         <button
           onClick={() => setShowSettings(!showSettings)}
@@ -98,7 +98,10 @@ export default function NoticeItem({ notice, onDismiss, onUpdate, onDelete }: No
       </div>
 
       <div className="text-xs text-gray-600 mb-2">
-        <div>작성: {notice.authorName}</div>
+        <div className="flex items-center gap-1">
+          <span>작성: {notice.authorName}</span>
+          {notice.isPrivate && <span className="text-green-600">🔒</span>}
+        </div>
         <div>{formatDate(notice.createdAt)}</div>
       </div>
 

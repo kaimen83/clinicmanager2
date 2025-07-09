@@ -7,6 +7,7 @@ export interface NoticeDocument extends Document {
   createdAt: Date;
   expiresAt?: Date;
   isActive: boolean;
+  isPrivate: boolean;
 }
 
 const noticeSchema = new Schema<NoticeDocument>({
@@ -15,7 +16,8 @@ const noticeSchema = new Schema<NoticeDocument>({
   authorName: { type: String, required: true },
   createdAt: { type: Date, default: Date.now },
   expiresAt: { type: Date },
-  isActive: { type: Boolean, default: true }
+  isActive: { type: Boolean, default: true },
+  isPrivate: { type: Boolean, default: false }
 });
 
 export const Notice = mongoose.models.Notice || mongoose.model<NoticeDocument>('Notice', noticeSchema);

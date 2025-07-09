@@ -105,12 +105,12 @@ export default function NoticeBoard() {
     }
   };
 
-  const handleCreate = async (content: string, expiresAt?: string) => {
+  const handleCreate = async (content: string, expiresAt?: string, isPrivate?: boolean) => {
     try {
       const response = await fetch('/api/notices', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content, expiresAt })
+        body: JSON.stringify({ content, expiresAt, isPrivate })
       });
 
       if (response.ok) {

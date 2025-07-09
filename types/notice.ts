@@ -6,6 +6,7 @@ export interface Notice {
   createdAt: Date;
   expiresAt?: Date;
   isActive: boolean;
+  isPrivate: boolean;
 }
 
 export interface NoticeReadStatus {

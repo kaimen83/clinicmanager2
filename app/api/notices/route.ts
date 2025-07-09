@@ -17,10 +17,22 @@ export async function GET(request: NextRequest) {
     
     const notices = await Notice.find({
       isActive: true,
-      $or: [
-        { expiresAt: { $gt: now } },
-        { expiresAt: { $exists: false } },
-        { expiresAt: null }
+      $and: [
+        // 만료일 조건
+        {
+          $or: [
+            { expiresAt: { $gt: now } },
+            { expiresAt: { $exists: false } },
+            { expiresAt: null }
+          ]
+        },
+        // Private 공지사항 필터링: 내가 작성한 private 공지 + 모든 public 공지
+        {
+          $or: [
+            { isPrivate: false }, // 모든 사용자에게 보이는 공지
+            { isPrivate: true, authorId: userId } // 내가 작성한 private 공지
+          ]
+        }
       ]
     }).sort({ createdAt: 1 });
 
@@ -60,7 +72,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { content, expiresAt } = body;
+    const { content, expiresAt, isPrivate } = body;
 
     if (!content) {
       return NextResponse.json({ error: 'Content is required' }, { status: 400 });
@@ -81,7 +93,8 @@ export async function POST(request: NextRequest) {
       authorName,
       createdAt: createNewDate(),
       expiresAt: expiresAt ? toKstDate(expiresAt) : undefined,
-      isActive: true
+      isActive: true,
+      isPrivate: isPrivate || false
     });
 
     await notice.save();
