@@ -14,7 +14,7 @@ export function useUserActivity({
   events = ['click', 'keydown', 'scroll', 'mousemove', 'touchstart']
 }: UseUserActivityOptions) {
   const lastActivityRef = useRef<number>(0);
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleActivity = useCallback(() => {
     const now = Date.now();
