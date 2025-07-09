@@ -169,10 +169,13 @@ export default function ExtraIncomeList({ date }: Props) {
   return (
     <>
       <div className="w-full">
-        <div className="flex items-center gap-2 text-sm text-violet-700 bg-violet-50/50 px-3 py-2 rounded-lg border border-violet-200 mb-4">
-          <span className="font-medium">총 {extraincomes.length}건</span>
-          <span className="text-violet-500">•</span>
-          <span className="font-semibold">{formatAmount(calculateTotal())}원</span>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">💰 진료외수입</h3>
+          <div className="flex items-center gap-2 text-sm text-violet-700 bg-violet-50/50 px-3 py-2 rounded-lg border border-violet-200">
+            <span className="font-medium">총 {extraincomes.length}건</span>
+            <span className="text-violet-500">•</span>
+            <span className="font-semibold">{formatAmount(calculateTotal())}원</span>
+          </div>
         </div>
 
         {isLoading ? (
@@ -212,7 +215,7 @@ export default function ExtraIncomeList({ date }: Props) {
                             className={`transition-colors ${
                               isEditDeleteDisabled(item) 
                                 ? 'text-gray-400 cursor-not-allowed opacity-50' 
-                                : 'hover:bg-blue-100 hover:text-blue-700'
+                                : 'text-blue-600 hover:bg-blue-100 hover:text-blue-700'
                             }`}
                             disabled={isEditDeleteDisabled(item)}
                             onClick={() => !isEditDeleteDisabled(item) && handleOpenEditModal(item)}
@@ -230,7 +233,7 @@ export default function ExtraIncomeList({ date }: Props) {
                             className={`transition-colors ${
                               isEditDeleteDisabled(item) 
                                 ? 'text-gray-400 cursor-not-allowed opacity-50' 
-                                : 'hover:bg-red-100 hover:text-red-700'
+                                : 'text-red-600 hover:bg-red-100 hover:text-red-700'
                             }`}
                             disabled={isEditDeleteDisabled(item)}
                             onClick={() => !isEditDeleteDisabled(item) && handleOpenDeleteDialog(item._id || '')}

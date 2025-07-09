@@ -83,6 +83,11 @@ type SettlementData = {
     agreedAmount: number;
     nonAgreedAmount: number;
   };
+  cardDeposits?: {
+    pending: any[];
+    totalPendingAmount: number;
+    totalExpectedDeposits: number;
+  };
   newPatientCount: number;
   settlementCheck?: {
     income: { checked: boolean; checkedBy?: string; checkedAt?: Date };
@@ -92,6 +97,7 @@ type SettlementData = {
     dentalProducts: { checked: boolean; checkedBy?: string; checkedAt?: Date };
     consultations: { checked: boolean; checkedBy?: string; checkedAt?: Date };
     cashReceipts: { checked: boolean; checkedBy?: string; checkedAt?: Date };
+    cardDeposits: { checked: boolean; checkedBy?: string; checkedAt?: Date };
     isCompleted: boolean;
     completedBy?: string;
     completedAt?: Date;
@@ -302,7 +308,7 @@ export default function DailySettlementModal({ isOpen, onClose, date, onDateChan
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-7xl max-h-[95vh] overflow-y-auto">
+      <DialogContent className="max-w-[90vw] max-h-[95vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -327,7 +333,9 @@ export default function DailySettlementModal({ isOpen, onClose, date, onDateChan
                       year: 'numeric',
                       month: 'long',
                       day: 'numeric',
-                    })}
+                    })} ({date.toLocaleDateString('ko-KR', {
+                      weekday: 'short',
+                    })})
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="center">
@@ -409,8 +417,8 @@ export default function DailySettlementModal({ isOpen, onClose, date, onDateChan
             </div>
           )}
 
-          {/* 메인 콘텐츠 영역 - 컴팩트 */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* 메인 콘텐츠 영역 - 3단 레이아웃 */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             
             {/* 첫 번째 열: 수입/지출/현금시재 */}
             <div className="space-y-4">
@@ -545,7 +553,7 @@ export default function DailySettlementModal({ isOpen, onClose, date, onDateChan
               </Card>
             </div>
 
-            {/* 두 번째 열: 임플란트/구강용품/상담/현금영수증 */}
+            {/* 두 번째 열: 임플란트/구강용품/상담내역 */}
             <div className="space-y-4">
               {/* 임플란트 - 컴팩트 */}
               <Card className={`shadow-sm ${checkStates.implant?.checked ? 'ring-2 ring-green-200 bg-green-50/30' : ''}`}>
@@ -563,7 +571,7 @@ export default function DailySettlementModal({ isOpen, onClose, date, onDateChan
                 <CardContent className="pt-0">
                   <div className="grid grid-cols-2 gap-2 mb-3">
                     <div className="bg-blue-50 rounded-lg p-2 text-center">
-                      <p className="text-xs text-gray-600">식립수</p>
+                      <p className="text-xs text-gray-600">임플란트</p>
                       <p className="text-lg font-bold text-blue-600">{data.implant.implantCount}</p>
                     </div>
                     <div className="bg-green-50 rounded-lg p-2 text-center">
@@ -576,18 +584,42 @@ export default function DailySettlementModal({ isOpen, onClose, date, onDateChan
                     <div className="space-y-2 max-h-32 overflow-y-auto">
                       {data.implant.placements.map((placement, index) => (
                         <div key={index} className="bg-blue-50 rounded-lg p-2">
-                          <div className="flex justify-between items-center text-sm">
+                          <div className="flex justify-between items-center text-sm mb-1">
                             <span className="font-medium">{placement.patientName}</span>
                             <span className="text-xs text-gray-600">{placement.doctor}</span>
                           </div>
+                          
+                          {/* 임플란트 상세 정보 */}
                           {placement.implants && placement.implants.length > 0 && (
-                            <div className="mt-1 text-xs text-gray-600">
-                              임플란트: {placement.implants.reduce((sum: number, implant: any) => sum + (implant.quantity || 0), 0)}개
+                            <div className="mb-1">
+                              <span className="text-xs font-medium text-blue-700 block mb-1">임플란트:</span>
+                              {placement.implants.map((implantGroup: any, idx: number) => (
+                                <div key={idx} className="ml-2 text-xs text-gray-600">
+                                  {implantGroup.products?.map((product: any, pIdx: number) => (
+                                    <div key={pIdx} className="flex justify-between items-center">
+                                      <span>{product.name} ({product.specification})</span>
+                                      <span className="font-medium text-blue-600">{product.quantity}개</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              ))}
                             </div>
                           )}
+                          
+                          {/* 이식재 상세 정보 */}
                           {placement.fixtures && placement.fixtures.length > 0 && (
-                            <div className="text-xs text-gray-600">
-                              이식재: {placement.fixtures.reduce((sum: number, fixture: any) => sum + (fixture.quantity || 0), 0)}개
+                            <div>
+                              <span className="text-xs font-medium text-green-700 block mb-1">이식재:</span>
+                              {placement.fixtures.map((fixtureGroup: any, idx: number) => (
+                                <div key={idx} className="ml-2 text-xs text-gray-600">
+                                  {fixtureGroup.products?.map((product: any, pIdx: number) => (
+                                    <div key={pIdx} className="flex justify-between items-center">
+                                      <span>{product.name} ({product.specification})</span>
+                                      <span className="font-medium text-green-600">{product.quantity}개</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              ))}
                             </div>
                           )}
                         </div>
@@ -684,7 +716,10 @@ export default function DailySettlementModal({ isOpen, onClose, date, onDateChan
                   )}
                 </CardContent>
               </Card>
+            </div>
 
+            {/* 세 번째 열: 현금영수증/카드매출입금 */}
+            <div className="space-y-4">
               {/* 현금영수증 - 컴팩트 */}
               <Card className={`shadow-sm ${checkStates.cashReceipts?.checked ? 'ring-2 ring-green-200 bg-green-50/30' : ''}`}>
                 <CardHeader className="pb-2">
@@ -718,9 +753,9 @@ export default function DailySettlementModal({ isOpen, onClose, date, onDateChan
                   </div>
 
                   {/* 발행 + 미발행 내역을 합쳐서 표시 */}
-                  <div className="space-y-1 max-h-24 overflow-y-auto">
+                  <div className="space-y-1 max-h-40 overflow-y-auto">
                     {/* 발행된 현금영수증 */}
-                    {data.cashReceipts.transactions.slice(0, 2).map((transaction, index) => (
+                    {data.cashReceipts.transactions.map((transaction, index) => (
                       <div key={`issued-${index}`} className="flex justify-between items-center p-1 bg-blue-50 rounded text-sm">
                         <div className="flex items-center gap-2">
                           <span className="text-xs">{transaction.patientName}</span>
@@ -731,7 +766,7 @@ export default function DailySettlementModal({ isOpen, onClose, date, onDateChan
                     ))}
                     
                     {/* 미발행 현금영수증 */}
-                    {data.cashReceipts.nonIssuedTransactions && data.cashReceipts.nonIssuedTransactions.slice(0, 2).map((transaction, index) => (
+                    {data.cashReceipts.nonIssuedTransactions && data.cashReceipts.nonIssuedTransactions.map((transaction, index) => (
                       <div key={`non-issued-${index}`} className="flex justify-between items-center p-1 bg-orange-50 rounded text-sm">
                         <div className="flex items-center gap-2">
                           <span className="text-xs">{transaction.patientName}</span>
@@ -740,13 +775,6 @@ export default function DailySettlementModal({ isOpen, onClose, date, onDateChan
                         <span className="text-xs font-medium text-orange-600">₩{formatAmount(transaction.paymentAmount)}</span>
                       </div>
                     ))}
-                    
-                    {/* 더 많은 항목이 있을 때 */}
-                    {(data.cashReceipts.transactions.length + (data.cashReceipts.nonIssuedTransactions?.length || 0)) > 4 && (
-                      <p className="text-xs text-gray-500 text-center">
-                        외 {(data.cashReceipts.transactions.length + (data.cashReceipts.nonIssuedTransactions?.length || 0)) - 4}건
-                      </p>
-                    )}
 
                     {data.cashReceipts.transactions.length === 0 && (!data.cashReceipts.nonIssuedTransactions || data.cashReceipts.nonIssuedTransactions.length === 0) && (
                       <p className="text-center text-gray-400 py-2 text-sm">현금영수증 내역이 없습니다.</p>
@@ -754,6 +782,140 @@ export default function DailySettlementModal({ isOpen, onClose, date, onDateChan
                   </div>
                 </CardContent>
               </Card>
+
+              {/* 카드매출 입금 - 새로 추가 */}
+              {data.cardDeposits && (
+                <Card className={`shadow-sm ${checkStates.cardDeposits?.checked ? 'ring-2 ring-green-200 bg-green-50/30' : ''}`}>
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="flex items-center gap-2 text-base">
+                        <div className="h-4 w-4 bg-indigo-600 rounded flex items-center justify-center">
+                          <CreditCard className="h-3 w-3 text-white" />
+                        </div>
+                        카드매출 입금
+                      </CardTitle>
+                      <SectionCheckbox section="cardDeposits" title="카드매출 입금" />
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <div className="grid grid-cols-2 gap-2 mb-3">
+                      <div className="bg-indigo-50 rounded-lg p-2 text-center">
+                        <p className="text-xs text-gray-600">입금예정</p>
+                        <p className="text-base font-bold text-indigo-600">{data.cardDeposits.pending.length}건</p>
+                        <p className="text-xs">₩{formatAmount(data.cardDeposits.totalExpectedDeposits)}</p>
+                      </div>
+                      <div className="bg-yellow-50 rounded-lg p-2 text-center">
+                        <p className="text-xs text-gray-600">미입금</p>
+                        <p className="text-base font-bold text-yellow-600">
+                          {data.cardDeposits.pending.filter((deposit: any) => deposit.status === '미입금').length}건
+                        </p>
+                        <p className="text-xs">₩{formatAmount(data.cardDeposits.totalPendingAmount)}</p>
+                      </div>
+                    </div>
+
+                    {data.cardDeposits.pending.length > 0 ? (
+                      <div className="max-h-40 overflow-y-auto">
+                        {(() => {
+                          // 카드사별로 그룹화
+                          const groupedByCompany = data.cardDeposits.pending.reduce((acc: any, deposit: any) => {
+                            const company = deposit.cardCompany;
+                            if (!acc[company]) {
+                              acc[company] = {
+                                company,
+                                totalSaleAmount: 0,
+                                totalActualAmount: 0,
+                                totalFee: 0,
+                                completedCount: 0,
+                                pendingCount: 0,
+                                holdCount: 0,
+                                totalCount: 0
+                              };
+                            }
+                            
+                            acc[company].totalSaleAmount += deposit.saleAmount || 0;
+                            acc[company].totalActualAmount += deposit.actualDepositAmount || 0;
+                            acc[company].totalFee += deposit.fee || 0;
+                            acc[company].totalCount++;
+                            
+                            if (deposit.status === '입금완료') {
+                              acc[company].completedCount++;
+                            } else if (deposit.status === '입금보류') {
+                              acc[company].holdCount++;
+                            } else {
+                              acc[company].pendingCount++;
+                            }
+                            
+                            return acc;
+                          }, {});
+
+                          return (
+                            <table className="w-full text-xs">
+                              <thead>
+                                <tr className="bg-indigo-100">
+                                  <th className="border border-indigo-200 p-1 text-left">카드사</th>
+                                  <th className="border border-indigo-200 p-1 text-center">건수</th>
+                                  <th className="border border-indigo-200 p-1 text-right">매출금액</th>
+                                  <th className="border border-indigo-200 p-1 text-right">실제입금액</th>
+                                  <th className="border border-indigo-200 p-1 text-right">수수료</th>
+                                  <th className="border border-indigo-200 p-1 text-right">수수료율</th>
+                                  <th className="border border-indigo-200 p-1 text-center">상태</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {Object.values(groupedByCompany).map((group: any, index: number) => {
+                                  const feeRate = group.totalSaleAmount > 0 
+                                    ? ((group.totalFee / group.totalSaleAmount) * 100).toFixed(2) 
+                                    : '0.00';
+
+                                  return (
+                                    <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-indigo-25'}>
+                                      <td className="border border-indigo-200 p-1 font-medium">{group.company}</td>
+                                      <td className="border border-indigo-200 p-1 text-center">{group.totalCount}</td>
+                                      <td className="border border-indigo-200 p-1 text-right font-bold text-indigo-600">
+                                        ₩{formatAmount(group.totalSaleAmount)}
+                                      </td>
+                                      <td className="border border-indigo-200 p-1 text-right font-bold text-blue-600">
+                                        ₩{formatAmount(group.totalActualAmount)}
+                                      </td>
+                                      <td className="border border-indigo-200 p-1 text-right font-bold text-red-600">
+                                        ₩{formatAmount(group.totalFee)}
+                                      </td>
+                                      <td className="border border-indigo-200 p-1 text-right font-bold text-orange-600">
+                                        {feeRate}%
+                                      </td>
+                                      <td className="border border-indigo-200 p-1 text-center">
+                                        <div className="flex flex-wrap gap-1 justify-center">
+                                          {group.completedCount > 0 && (
+                                            <Badge variant="default" className="text-xs px-1 py-0">
+                                              완료{group.completedCount}
+                                            </Badge>
+                                          )}
+                                          {group.pendingCount > 0 && (
+                                            <Badge variant="secondary" className="text-xs px-1 py-0">
+                                              미입금{group.pendingCount}
+                                            </Badge>
+                                          )}
+                                          {group.holdCount > 0 && (
+                                            <Badge variant="destructive" className="text-xs px-1 py-0">
+                                              보류{group.holdCount}
+                                            </Badge>
+                                          )}
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          );
+                        })()}
+                      </div>
+                    ) : (
+                      <p className="text-center text-gray-400 py-2 text-sm">입금예정 내역이 없습니다.</p>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
         </div>

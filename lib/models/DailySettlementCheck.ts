@@ -37,6 +37,11 @@ export interface IDailySettlementCheck extends Document {
         checkedBy?: string;
         checkedAt?: Date;
     };
+    cardDeposits: {
+        checked: boolean;
+        checkedBy?: string;
+        checkedAt?: Date;
+    };
     isCompleted: boolean;
     completedBy?: string;
     completedAt?: Date;
@@ -99,6 +104,14 @@ const dailySettlementCheckSchema = new Schema({
         checkedAt: Date
     },
     cashReceipts: {
+        checked: {
+            type: Boolean,
+            default: false
+        },
+        checkedBy: String,
+        checkedAt: Date
+    },
+    cardDeposits: {
         checked: {
             type: Boolean,
             default: false

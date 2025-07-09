@@ -11,7 +11,7 @@ import { toast } from '@/hooks/use-toast';
 import { useDateContext } from '@/lib/context/dateContext';
 import { PatientData } from '@/lib/types';
 import { Check, ChevronLeft, ChevronRight, Loader2, Plus, Trash2, UserPlus } from 'lucide-react';
-import { toISODateString, getCurrentKstDate } from '@/lib/utils';
+import { toISODateString, getCurrentKstDate, generateUUID } from '@/lib/utils';
 import { useUserRole } from './UserRoleProvider';
 
 // 타입 및 컴포넌트 임포트
@@ -85,7 +85,7 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
   // 진료 그룹 관리
   const [treatmentGroups, setTreatmentGroups] = useState<TreatmentGroup[]>([]);
   const [currentTreatmentGroup, setCurrentTreatmentGroup] = useState<TreatmentGroup>({
-    id: crypto.randomUUID(),
+    id: generateUUID(),
     doctor: '',
     treatmentType: '',
     paymentMethod: '현금',
@@ -320,7 +320,7 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
     const defaultPaymentMethod = paymentMethods.length > 0 ? paymentMethods[0].value : '현금';
     
     setCurrentTreatmentGroup({
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       doctor: '',
       treatmentType: '',
       paymentMethod: defaultPaymentMethod,
@@ -812,10 +812,10 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="sm:max-w-[1200px] max-h-[90vh] overflow-y-auto p-0 gap-0">
-          <DialogHeader className="px-4 py-3 border-b bg-gradient-to-r from-purple-50 to-pink-50">
+          <DialogHeader className="px-4 py-3 border-b bg-gradient-to-r from-blue-50 to-sky-50">
             <div className="flex items-center gap-2">
-              <div className="flex items-center justify-center w-8 h-8 bg-purple-100 rounded-full">
-                <UserPlus className="w-4 h-4 text-purple-600" />
+              <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-full">
+                <UserPlus className="w-4 h-4 text-blue-600" />
               </div>
               <div>
                 <DialogTitle className="text-lg font-semibold text-gray-900">내원 정보 등록</DialogTitle>
@@ -849,12 +849,12 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
                   )}
                   
                   {currentStep < totalSteps ? (
-                    <Button type="button" onClick={goToNextStep} className="px-6 bg-purple-600 hover:bg-purple-700">
+                    <Button type="button" onClick={goToNextStep} className="px-6 bg-blue-600 hover:bg-blue-700">
                       다음
                       <ChevronRight className="ml-2 h-4 w-4" />
                     </Button>
                   ) : (
-                    <Button type="submit" disabled={isSubmitting} className="px-6 bg-purple-600 hover:bg-purple-700">
+                    <Button type="submit" disabled={isSubmitting} className="px-6 bg-blue-600 hover:bg-blue-700">
                       {isSubmitting ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />

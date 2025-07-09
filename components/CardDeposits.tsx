@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Download, Trash2 } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { Download, Trash2, RefreshCcw, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 
 interface CardDeposit {
   _id: string;
@@ -49,6 +50,23 @@ export default function CardDeposits() {
   const [bulkDepositModal, setBulkDepositModal] = useState(false);
   const [currentEditId, setCurrentEditId] = useState<string | null>(null);
   const [editableRows, setEditableRows] = useState<Set<string>>(new Set());
+  const [isCrawling, setIsCrawling] = useState(false);
+  const [crawlingModal, setCrawlingModal] = useState(false);
+  const [crawlingStatus, setCrawlingStatus] = useState<{
+    step: string;
+    progress: number;
+    message: string;
+    details?: {
+      processed?: number;
+      errors?: number;
+      total?: number;
+    };
+    errorDetails?: any[];
+  }>({
+    step: 'ready',
+    progress: 0,
+    message: '크롤링을 시작합니다...'
+  });
   
   // 모달 폼 데이터
   const [actualDepositDate, setActualDepositDate] = useState('');
@@ -254,6 +272,78 @@ export default function CardDeposits() {
     return totalAmount - actualAmount;
   };
 
+  // 크롤링 실행
+  const handleCrawling = async () => {
+    setIsCrawling(true);
+    setCrawlingModal(true);
+    setCrawlingStatus({
+      step: 'initializing',
+      progress: 10,
+      message: '브라우저를 초기화하고 있습니다...'
+    });
+
+    try {
+      // 크롤링 시작과 동시에 API 호출
+      const responsePromise = fetch('/api/card-deposits/crawl', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      // 크롤링 진행 상황을 시뮬레이션 (실제로는 WebSocket이나 SSE를 사용할 수 있음)
+      const crawlingSteps = [
+        { step: 'login', progress: 30, message: '여신금융협회 웹사이트에 로그인 중입니다...', delay: 2000 },
+        { step: 'searching', progress: 50, message: '카드 매출 데이터를 조회하고 있습니다...', delay: 3000 },
+        { step: 'extracting', progress: 70, message: '매출 내역을 추출하고 있습니다...', delay: 2000 },
+        { step: 'processing', progress: 90, message: '추출한 데이터를 처리하고 있습니다...', delay: 1000 }
+      ];
+
+      // 단계별로 상태 업데이트
+      for (const step of crawlingSteps) {
+        await new Promise(resolve => setTimeout(resolve, step.delay));
+        setCrawlingStatus({
+          step: step.step,
+          progress: step.progress,
+          message: step.message
+        });
+      }
+
+      // API 응답 대기
+      const response = await responsePromise;
+      
+      if (response.ok) {
+        const result = await response.json();
+        setCrawlingStatus({
+          step: 'completed',
+          progress: 100,
+          message: '크롤링이 완료되었습니다!',
+          details: {
+            processed: result.processed || 0,
+            errors: result.errors || 0,
+            total: (result.processed || 0) + (result.errors || 0)
+          },
+          errorDetails: result.errorDetails || []
+        });
+        await loadData(); // 데이터 새로고침
+      } else {
+        const error = await response.json();
+        setCrawlingStatus({
+          step: 'error',
+          progress: 0,
+          message: `크롤링 실패: ${error.message}`
+        });
+      }
+    } catch (error) {
+      console.error('크롤링 실패:', error);
+      setCrawlingStatus({
+        step: 'error',
+        progress: 0,
+        message: '크롤링 중 오류가 발생했습니다.'
+      });
+    } finally {
+      setIsCrawling(false);
+    }
+  };
+
   // 일괄 입금 처리
   const handleBulkDeposit = async () => {
     const actualAmount = parseInt(bulkActualAmount.replace(/[^\d]/g, '')) || 0;
@@ -358,6 +448,10 @@ export default function CardDeposits() {
           </div>
           <Button onClick={loadData} disabled={loading}>
             {loading ? '로딩...' : '조회'}
+          </Button>
+          <Button onClick={handleCrawling} disabled={isCrawling} variant="outline">
+            <RefreshCcw className={`w-4 h-4 mr-2 ${isCrawling ? 'animate-spin' : ''}`} />
+            {isCrawling ? '크롤링 중...' : '크롤링'}
           </Button>
         </div>
 
@@ -649,6 +743,129 @@ export default function CardDeposits() {
           </DialogContent>
         </Dialog>
 
+        {/* 크롤링 진행 상황 모달 */}
+        <Dialog open={crawlingModal} onOpenChange={(open) => {
+          if (!open && crawlingStatus.step !== 'completed' && crawlingStatus.step !== 'error') {
+            // 진행 중일 때는 모달을 닫을 수 없음
+            return;
+          }
+          setCrawlingModal(open);
+        }}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                {crawlingStatus.step === 'completed' ? (
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                ) : crawlingStatus.step === 'error' ? (
+                  <XCircle className="w-5 h-5 text-red-500" />
+                ) : (
+                  <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
+                )}
+                카드매출 크롤링
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>{crawlingStatus.message}</span>
+                  <span className="text-gray-500">{crawlingStatus.progress}%</span>
+                </div>
+                <Progress value={crawlingStatus.progress} className="h-2" />
+              </div>
+              
+              {crawlingStatus.details && (
+                <div className="space-y-2 bg-gray-50 p-4 rounded-lg">
+                  <h4 className="font-medium text-sm">처리 결과</h4>
+                  <div className="grid grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <div className="text-gray-600">전체</div>
+                      <div className="font-bold">{crawlingStatus.details.total}건</div>
+                    </div>
+                    <div>
+                      <div className="text-gray-600">성공</div>
+                      <div className="font-bold text-green-600">{crawlingStatus.details.processed}건</div>
+                    </div>
+                    <div>
+                      <div className="text-gray-600">실패</div>
+                      <div className="font-bold text-red-600">{crawlingStatus.details.errors}건</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {crawlingStatus.errorDetails && crawlingStatus.errorDetails.length > 0 && (
+                <div className="space-y-2 bg-red-50 p-4 rounded-lg max-h-60 overflow-y-auto">
+                  <h4 className="font-medium text-sm text-red-800">실패 상세 정보</h4>
+                  <div className="space-y-2">
+                    {crawlingStatus.errorDetails.map((error, index) => (
+                      <div key={index} className="border-l-2 border-red-300 pl-3 text-xs bg-white p-2 rounded">
+                        <div className="font-medium text-red-700">
+                          {error.data?.originalCardCompany} - {error.data?.saleAmount?.toLocaleString()}원
+                        </div>
+                        <div className="text-red-600 mt-1">{error.error}</div>
+                        <div className="text-gray-600 text-xs mt-1 space-y-1">
+                          {error.data?.date && <div>매출일: {error.data.date}</div>}
+                          {error.data?.actualAmount && <div>실입금액: {error.data.actualAmount}</div>}
+                          {error.data?.mappedCardCompany !== error.data?.originalCardCompany && (
+                            <div>매핑: {error.data?.originalCardCompany} → {error.data?.mappedCardCompany}</div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <div className={`w-2 h-2 rounded-full ${
+                    ['initializing', 'login'].includes(crawlingStatus.step) ? 'bg-blue-500 animate-pulse' : 
+                    crawlingStatus.progress >= 30 ? 'bg-green-500' : 'bg-gray-300'
+                  }`} />
+                  <span>로그인</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <div className={`w-2 h-2 rounded-full ${
+                    ['searching', 'extracting'].includes(crawlingStatus.step) ? 'bg-blue-500 animate-pulse' : 
+                    crawlingStatus.progress >= 70 ? 'bg-green-500' : 'bg-gray-300'
+                  }`} />
+                  <span>데이터 조회 및 추출</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <div className={`w-2 h-2 rounded-full ${
+                    crawlingStatus.step === 'processing' ? 'bg-blue-500 animate-pulse' : 
+                    crawlingStatus.progress >= 90 ? 'bg-green-500' : 'bg-gray-300'
+                  }`} />
+                  <span>데이터 처리</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <div className={`w-2 h-2 rounded-full ${
+                    crawlingStatus.step === 'completed' ? 'bg-green-500' : 
+                    crawlingStatus.step === 'error' ? 'bg-red-500' : 'bg-gray-300'
+                  }`} />
+                  <span>완료</span>
+                </div>
+              </div>
+            </div>
+            {(crawlingStatus.step === 'completed' || crawlingStatus.step === 'error') && (
+              <DialogFooter>
+                <Button 
+                  onClick={() => {
+                    setCrawlingModal(false);
+                    setCrawlingStatus({
+                      step: 'ready',
+                      progress: 0,
+                      message: '크롤링을 시작합니다...'
+                    });
+                  }}
+                  variant={crawlingStatus.step === 'error' ? 'destructive' : 'default'}
+                >
+                  닫기
+                </Button>
+              </DialogFooter>
+            )}
+          </DialogContent>
+        </Dialog>
 
       </CardContent>
     </Card>

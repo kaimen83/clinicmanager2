@@ -23,10 +23,9 @@ export async function getCurrentUserWithRole(): Promise<UserWithRole | null> {
     
     let userProfile = await db.collection('userProfiles').findOne({ clerkId: user.id });
     
-    // 사용자 프로필이 없다면 생성 (첫 사용자는 SUPER_ADMIN으로 설정)
+    // 사용자 프로필이 없다면 생성 (모든 신규 사용자는 READ_ONLY로 설정)
     if (!userProfile) {
-      const existingUsersCount = await db.collection('userProfiles').countDocuments();
-      const role: UserRole = existingUsersCount === 0 ? 'SUPER_ADMIN' : 'STAFF';
+      const role: UserRole = 'READ_ONLY';
       
       const newUserProfile = {
         clerkId: user.id,

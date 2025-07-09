@@ -87,7 +87,7 @@ async function startCrawlingProcess() {
       const frames = page.frames();
       
       // 모달 프레임 찾기 (oacx/index.jsp URL로)
-      const modalFrame = frames.find(frame => frame.url().includes('oacx/index.jsp'));
+      const modalFrame = frames.find((frame: any) => frame.url().includes('oacx/index.jsp'));
       if (modalFrame) {
         // 네이버 로그인 버튼 클릭
         await modalFrame.click('img[alt="NAVER(네이버)"]');
@@ -122,7 +122,7 @@ async function startCrawlingProcess() {
         const newFrames = page.frames();
         
         // 새로운 모달 프레임 찾기
-        const newModalFrame = newFrames.find(frame => frame.url().includes('oacx'));
+        const newModalFrame = newFrames.find((frame: any) => frame.url().includes('oacx'));
         if (newModalFrame) {
           // 인증 완료 버튼이 나타날 때까지 대기
           await newModalFrame.waitForSelector('button.basic.sky.w70', { timeout: 60000 });
@@ -146,7 +146,7 @@ async function startCrawlingProcess() {
           await page.waitForTimeout(3000);
 
           // 메인 프레임에서 확인 버튼 찾기
-          const mainFrame = await page.frames().find(frame => 
+          const mainFrame = await page.frames().find((frame: any) => 
               frame.url().includes('/ui/pp/index_pp.xml')
             );
     
@@ -185,17 +185,17 @@ async function startCrawlingProcess() {
               return rows.map(row => {
                 const cells = Array.from(row.querySelectorAll('td'));
                 return {
-                  작성일자: cells[2]?.textContent.trim(),
-                  발급일자: cells[3]?.textContent.trim(),
-                  전송일자: cells[4]?.textContent.trim(),
-                  공급자등록번호: cells[6]?.textContent.trim(),
-                  상호: cells[8]?.textContent.trim(),
-                  대표자명: cells[9]?.textContent.trim(),
-                  품목명: cells[10]?.textContent.trim(),
-                  합계금액: cells[11]?.textContent.trim(),
-                  공급가액: cells[12]?.textContent.trim(),
-                  세액: cells[13]?.textContent.trim(),
-                  승인번호: cells[14]?.textContent.trim()
+                  작성일자: cells[2]?.textContent?.trim(),
+                  발급일자: cells[3]?.textContent?.trim(),
+                  전송일자: cells[4]?.textContent?.trim(),
+                  공급자등록번호: cells[6]?.textContent?.trim(),
+                  상호: cells[8]?.textContent?.trim(),
+                  대표자명: cells[9]?.textContent?.trim(),
+                  품목명: cells[10]?.textContent?.trim(),
+                  합계금액: cells[11]?.textContent?.trim(),
+                  공급가액: cells[12]?.textContent?.trim(),
+                  세액: cells[13]?.textContent?.trim(),
+                  승인번호: cells[14]?.textContent?.trim()
                 };
               });
             });

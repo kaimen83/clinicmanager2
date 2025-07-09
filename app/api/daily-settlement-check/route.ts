@@ -48,6 +48,7 @@ export async function GET(request: NextRequest) {
         dentalProducts: { checked: false },
         consultations: { checked: false },
         cashReceipts: { checked: false },
+        cardDeposits: { checked: false },
         isCompleted: false
       });
       await settlementCheck.save();
@@ -82,7 +83,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 유효한 섹션인지 확인
-    const validSections = ['income', 'expenses', 'cashRecords', 'implant', 'dentalProducts', 'consultations', 'cashReceipts'];
+    const validSections = ['income', 'expenses', 'cashRecords', 'implant', 'dentalProducts', 'consultations', 'cashReceipts', 'cardDeposits'];
     if (!validSections.includes(section)) {
       return NextResponse.json(
         { error: "유효하지 않은 섹션입니다." },
@@ -115,6 +116,7 @@ export async function POST(request: NextRequest) {
         dentalProducts: { checked: false },
         consultations: { checked: false },
         cashReceipts: { checked: false },
+        cardDeposits: { checked: false },
         isCompleted: false
       });
     }
@@ -126,7 +128,7 @@ export async function POST(request: NextRequest) {
     updateData[`${section}.checkedAt`] = checked ? new Date() : null;
 
     // 모든 섹션이 체크되었는지 확인
-    const allSections = ['income', 'expenses', 'cashRecords', 'implant', 'dentalProducts', 'consultations', 'cashReceipts'];
+    const allSections = ['income', 'expenses', 'cashRecords', 'implant', 'dentalProducts', 'consultations', 'cashReceipts', 'cardDeposits'];
     let allChecked = true;
     
     for (const sec of allSections) {
