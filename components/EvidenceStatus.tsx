@@ -219,26 +219,56 @@ export default function EvidenceStatus() {
               const matchResults = await matchResponse.json();
               
               // 자동 매칭 리스트 처리
+              const successfulMatches = [];
+              const failedMatches = [];
+              
               for (const match of matchResults.automatic) {
-                await fetch('/api/hometax/confirm-match', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({ expenseId: match.expense._id })
-                });
+                try {
+                  const response = await fetch('/api/hometax/confirm-match', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ expenseId: match.expense._id })
+                  });
+                  
+                  const result = await response.json();
+                  
+                  if (response.ok && result.success) {
+                    successfulMatches.push(match);
+                    console.log(`[자동 매칭 성공] ${match.expense.vendor} ${match.expense.amount}원`);
+                  } else {
+                    failedMatches.push(match);
+                    console.error(`[자동 매칭 실패] ${match.expense.vendor} ${match.expense.amount}원:`, result.error || '알 수 없는 오류');
+                  }
+                } catch (error) {
+                  failedMatches.push(match);
+                  console.error(`[자동 매칭 API 오류] ${match.expense.vendor} ${match.expense.amount}원:`, error);
+                }
               }
               
+              // 실제 성공한 매칭만 결과에 반영
+              const updatedMatchResults = {
+                ...matchResults,
+                automatic: successfulMatches,
+                failed: failedMatches
+              };
+              
               // 결과를 상태에 저장하고 완료 화면 표시
-              setMatchingResults(matchResults);
+              setMatchingResults(updatedMatchResults);
               setCrawlingComplete(true);
               setCrawlingStatus({ 
                 progress: 100, 
-                message: `크롤링 완료! 자동 매칭: ${matchResults.automatic.length}건, 수동 확인 필요: ${matchResults.needConfirmation.length}건` 
+                message: `크롤링 완료! 자동 매칭: ${successfulMatches.length}건, 실패: ${failedMatches.length}건, 수동 확인 필요: ${matchResults.needConfirmation.length}건` 
               });
               
-              // 데이터 새로고침
-              loadExpenses();
+              // 매칭 완료 후 즉시 새로고침 (실제 성공한 매칭만 반영되었으므로)
+              if (successfulMatches.length > 0) {
+                // 성공한 매칭이 있는 경우에만 새로고침
+                setTimeout(() => {
+                  loadExpenses();
+                }, 500); // 대기 시간을 500ms로 단축
+              }
               
             } catch (error) {
               console.error('영수증 매칭 중 오류:', error);
@@ -480,7 +510,7 @@ export default function EvidenceStatus() {
                   </div>
                   
                   {/* 자동 매칭된 내역 표시 */}
-                  {matchingResults.automatic.length > 0 && (
+                  {matchingResults.automatic && matchingResults.automatic.length > 0 && (
                     <div className="mt-4">
                       <h5 className="font-medium text-sm mb-2 text-green-800">자동 매칭 완료 내역</h5>
                       <div className="max-h-60 overflow-y-auto space-y-2 pr-1">
@@ -513,6 +543,35 @@ export default function EvidenceStatus() {
                       </div>
                     </div>
                   )}
+                  
+                  {/* 실패한 매칭 내역 표시 */}
+                  {matchingResults.failed && matchingResults.failed.length > 0 && (
+                    <div className="mt-4">
+                      <h5 className="font-medium text-sm mb-2 text-red-800">매칭 실패 내역</h5>
+                      <div className="max-h-40 overflow-y-auto space-y-2 pr-1">
+                        {matchingResults.failed.map((match: any, index: number) => (
+                          <div key={index} className="bg-red-50 p-3 rounded border border-red-200">
+                            <div className="flex justify-between items-start gap-2">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="font-medium">{match.expense.vendor}</span>
+                                  <span className="text-gray-400">→</span>
+                                  <span className="text-red-700">매칭 실패</span>
+                                </div>
+                                <div className="text-xs text-gray-600">
+                                  <div>지출: {new Date(match.expense.date).toLocaleDateString('ko-KR')} · {match.expense.amount.toLocaleString()}원</div>
+                                  <div className="text-gray-500">{match.expense.details}</div>
+                                </div>
+                              </div>
+                              <div className="text-red-600 font-medium text-xs whitespace-nowrap">
+                                ✗ 실패
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -522,7 +581,11 @@ export default function EvidenceStatus() {
                 <>
                   <Button
                     variant="outline"
-                    onClick={() => setShowCrawlingModal(false)}
+                    onClick={() => {
+                      setShowCrawlingModal(false);
+                      // 모달 닫을 때 데이터 새로고침으로 UI 업데이트 보장
+                      loadExpenses();
+                    }}
                   >
                     닫기
                   </Button>
