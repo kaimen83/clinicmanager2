@@ -248,12 +248,19 @@ export async function GET(request: NextRequest) {
       })
       .toArray();
     
-    // 신환수 계산 (오늘 처음 방문한 환자)
-    const newPatients = await db.collection('patients')
-      .find({
-        createdAt: { $gte: startDate, $lte: endDate }
-      })
-      .toArray();
+    // 신환수 및 총 내원인원 계산 (stats API와 동일한 로직 사용)
+    const uniqueChartNumbers = new Set();
+    const uniqueNewPatientChartNumbers = new Set();
+
+    transactions.forEach(t => {
+      uniqueChartNumbers.add(t.chartNumber);
+      if (t.isNew) {
+        uniqueNewPatientChartNumbers.add(t.chartNumber);
+      }
+    });
+    
+    const totalPatients = uniqueChartNumbers.size;
+    const newPatients = uniqueNewPatientChartNumbers.size;
     
     // 8. 카드매출 입금 데이터 (선택된 날짜에 입금예정인 데이터)
     const cardDeposits = await db.collection('carddeposits')
@@ -336,8 +343,9 @@ export async function GET(request: NextRequest) {
       // 8. 카드매출 입금
       cardDeposits: cardDepositSummary,
       
-      // 9. 신환수
-      newPatientCount: newPatients.length
+      // 9. 환자 통계
+      newPatientCount: newPatients,
+      totalPatientCount: totalPatients
     };
     
     return NextResponse.json(settlementData);

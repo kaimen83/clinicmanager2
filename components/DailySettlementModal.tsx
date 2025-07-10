@@ -89,6 +89,7 @@ type SettlementData = {
     totalExpectedDeposits: number;
   };
   newPatientCount: number;
+  totalPatientCount: number;
   settlementCheck?: {
     income: { checked: boolean; checkedBy?: string; checkedAt?: Date };
     expenses: { checked: boolean; checkedBy?: string; checkedAt?: Date };
@@ -213,7 +214,7 @@ export default function DailySettlementModal({ isOpen, onClose, date, onDateChan
   if (!data) return null;
 
   const totalIncome = data.income.totalAmount + data.income.extraIncomeTotal;
-  const patientCount = Object.values(data.income.paymentByMethod).reduce((sum, method) => sum + method.count, 0);
+  const patientCount = data.totalPatientCount || Object.values(data.income.paymentByMethod).reduce((sum, method) => sum + method.count, 0);
   
   const handlePreviousDay = () => {
     if (onDateChange) {
