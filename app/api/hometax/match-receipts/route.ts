@@ -4,6 +4,7 @@ import { connectToDatabase } from '@/lib/mongodb';
 import Expense from '@/lib/models/Expense';
 import { HomeTaxReceipt } from '@/lib/models/HomeTaxReceipt';
 import { HomeTaxCashReceipt } from '@/lib/models/HomeTaxCashReceipt';
+import { HomeTaxInvoice } from '@/lib/models/HomeTaxInvoice';
 
 export async function GET(request: NextRequest) {
   try {
@@ -25,8 +26,9 @@ export async function GET(request: NextRequest) {
     // 매칭되지 않은 홈택스 영수증들 가져오기
     const taxReceipts = await HomeTaxReceipt.find({ 매칭여부: false });
     const cashReceipts = await HomeTaxCashReceipt.find({ 매칭여부: false });
+    const invoiceReceipts = await HomeTaxInvoice.find({ 매칭여부: false });
     
-    console.log(`[매칭 대상] 세금계산서: ${taxReceipts.length}건, 현금영수증: ${cashReceipts.length}건`);
+    console.log(`[매칭 대상] 세금계산서: ${taxReceipts.length}건, 현금영수증: ${cashReceipts.length}건, 전자계산서: ${invoiceReceipts.length}건`);
 
     const automatic = [];
     const needConfirmation = [];
@@ -84,6 +86,30 @@ export async function GET(request: NextRequest) {
         continue;
       }
 
+      // 전자계산서 매칭 확인 (정확한 금액과 날짜)
+      const invoiceMatch = invoiceReceipts.find(receipt => {
+        const receiptDate = new Date(receipt.작성일자);
+        const dateDiff = Math.abs(expenseDate.getTime() - receiptDate.getTime());
+        const daysDiff = dateDiff / (1000 * 60 * 60 * 24);
+        
+        const isMatch = receipt.합계금액 === expenseAmount && daysDiff <= 10;
+        
+        if (isMatch) {
+          console.log(`[자동 매칭] 전자계산서 - 지출: ${expense.vendor} ${expenseAmount}원 (${expense.date}) <-> 계산서: ${receipt.상호} ${receipt.합계금액}원 (${receipt.작성일자})`);
+        }
+        
+        return isMatch;
+      });
+
+      if (invoiceMatch) {
+        automatic.push({
+          expense,
+          receipt: invoiceMatch,
+          type: 'invoice'
+        });
+        continue;
+      }
+
       // 부분 매칭 (금액이 비슷하거나 날짜가 비슷한 경우)
       const similarTaxMatches = taxReceipts.filter(receipt => {
         const receiptDate = new Date(receipt.작성일자);
@@ -101,6 +127,16 @@ export async function GET(request: NextRequest) {
         const daysDiff = dateDiff / (1000 * 60 * 60 * 24);
         const amountDiff = Math.abs(receipt.매입금액 - expenseAmount);
         const amountRatio = amountDiff / Math.max(receipt.매입금액, expenseAmount);
+        
+        return daysDiff <= 7 && amountRatio <= 0.1;
+      });
+
+      const similarInvoiceMatches = invoiceReceipts.filter(receipt => {
+        const receiptDate = new Date(receipt.작성일자);
+        const dateDiff = Math.abs(expenseDate.getTime() - receiptDate.getTime());
+        const daysDiff = dateDiff / (1000 * 60 * 60 * 24);
+        const amountDiff = Math.abs(receipt.합계금액 - expenseAmount);
+        const amountRatio = amountDiff / Math.max(receipt.합계금액, expenseAmount);
         
         return daysDiff <= 7 && amountRatio <= 0.1;
       });
@@ -124,8 +160,18 @@ export async function GET(request: NextRequest) {
         });
       } else if (similarTaxMatches.length > 1) {
         console.log(`[매칭 실패] 중복 후보 - 지출: ${expense.vendor} ${expenseAmount}원, 후보 ${similarTaxMatches.length}개`);
+      } else if (similarInvoiceMatches.length === 1) {
+        const match = similarInvoiceMatches[0];
+        console.log(`[수동 확인 필요] 전자계산서 - 지출: ${expense.vendor} ${expenseAmount}원 (${expense.date}) <-> 계산서: ${match.상호} ${match.합계금액}원 (${match.작성일자})`);
+        needConfirmation.push({
+          expense,
+          receipt: match,
+          type: 'invoice'
+        });
       } else if (similarCashMatches.length > 1) {
         console.log(`[매칭 실패] 중복 후보 - 지출: ${expense.vendor} ${expenseAmount}원, 후보 ${similarCashMatches.length}개`);
+      } else if (similarInvoiceMatches.length > 1) {
+        console.log(`[매칭 실패] 중복 후보 - 지출: ${expense.vendor} ${expenseAmount}원, 전자계산서 후보 ${similarInvoiceMatches.length}개`);
       } else {
         console.log(`[매칭 실패] 후보 없음 - 지출: ${expense.vendor} ${expenseAmount}원 (${expense.date})`);
       }

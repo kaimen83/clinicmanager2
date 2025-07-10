@@ -4,6 +4,7 @@ import { connectToDatabase } from '@/lib/mongodb';
 import Expense from '@/lib/models/Expense';
 import { HomeTaxReceipt } from '@/lib/models/HomeTaxReceipt';
 import { HomeTaxCashReceipt } from '@/lib/models/HomeTaxCashReceipt';
+import { HomeTaxInvoice } from '@/lib/models/HomeTaxInvoice';
 
 export async function POST(request: NextRequest) {
   try {
@@ -38,6 +39,8 @@ export async function POST(request: NextRequest) {
         matchedReceipt = await HomeTaxReceipt.findById(receiptId);
       } else if (receiptType === 'cash') {
         matchedReceipt = await HomeTaxCashReceipt.findById(receiptId);
+      } else if (receiptType === 'invoice') {
+        matchedReceipt = await HomeTaxInvoice.findById(receiptId);
       }
       
       if (!matchedReceipt) {
@@ -84,6 +87,25 @@ export async function POST(request: NextRequest) {
         }
       }
 
+      // 전자계산서 매칭 확인 (세금계산서, 현금영수증 매칭이 없는 경우)
+      if (!matchedReceipt) {
+        const invoiceReceipt = await HomeTaxInvoice.findOne({
+          매칭여부: false,
+          합계금액: expenseAmount
+        });
+
+        if (invoiceReceipt) {
+          const receiptDate = new Date(invoiceReceipt.작성일자);
+          const dateDiff = Math.abs(expenseDate.getTime() - receiptDate.getTime());
+          const daysDiff = dateDiff / (1000 * 60 * 60 * 24);
+          
+          if (daysDiff <= 7) { // 7일 이내
+            matchedReceipt = invoiceReceipt;
+            finalReceiptType = 'invoice';
+          }
+        }
+      }
+
       if (!matchedReceipt) {
         return NextResponse.json({ error: 'No matching receipt found' }, { status: 404 });
       }
@@ -102,9 +124,18 @@ export async function POST(request: NextRequest) {
         매칭여부: true, 
         매칭된_지출ID: expense._id 
       });
+    } else if (finalReceiptType === 'invoice') {
+      await matchedReceipt.updateOne({ 
+        매칭여부: true, 
+        매칭된_지출ID: expense._id 
+      });
     }
 
-    console.log(`[매칭 확정] ${finalReceiptType === 'tax' ? '세금계산서' : '현금영수증'} - 지출: ${expense.vendor} ${expense.amount}원 <-> 영수증: ${finalReceiptType === 'tax' ? matchedReceipt.상호 : matchedReceipt.상호명}`);
+    const receiptTypeLabel = finalReceiptType === 'tax' ? '세금계산서' : 
+                            finalReceiptType === 'cash' ? '현금영수증' : '전자계산서';
+    const receiptVendor = finalReceiptType === 'cash' ? matchedReceipt.상호명 : matchedReceipt.상호;
+    
+    console.log(`[매칭 확정] ${receiptTypeLabel} - 지출: ${expense.vendor} ${expense.amount}원 <-> 영수증: ${receiptVendor}`);
 
     return NextResponse.json({
       success: true,
