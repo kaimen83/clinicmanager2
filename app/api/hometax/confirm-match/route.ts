@@ -174,7 +174,7 @@ export async function POST(request: NextRequest) {
         );
       }
       
-      if (receiptUpdateResult.matchedCount === 0) {
+      if (!receiptUpdateResult || receiptUpdateResult.matchedCount === 0) {
         // 영수증 업데이트 실패 시 지출 업데이트 롤백
         await Expense.updateOne(
           { _id: expense._id },
