@@ -123,6 +123,8 @@ export default function ClinicNavigation() {
   };
 
   const handleExtraIncomeSuccess = (data: ExtraIncome) => {
+    // 진료외수입 관련 데이터 새로고침
+    triggerStatsRefresh();
     toast.success('진료외수입이 등록되었습니다.');
   };
 
@@ -143,6 +145,7 @@ export default function ClinicNavigation() {
     // 트랜잭션이 추가된 후 데이터 새로고침
     triggerRefresh();
     triggerCashRefresh(); // 시재 데이터도 새로고침
+    triggerStatsRefresh(); // 통계 데이터도 새로고침
     toast.success('내원정보가 등록되었습니다.');
   };
 

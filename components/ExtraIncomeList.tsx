@@ -30,6 +30,7 @@ import { ExtraIncome } from '@/lib/types';
 import { toISODateString } from '@/lib/utils';
 import ExtraIncomeModal from './ExtraIncomeModal';
 import { useUserRole } from '@/components/UserRoleProvider';
+import { useDateContext } from '@/lib/context/dateContext';
 
 type Props = {
   date: Date;
@@ -38,6 +39,7 @@ type Props = {
 export default function ExtraIncomeList({ date }: Props) {
   const { userId } = useAuth();
   const { userWithRole } = useUserRole();
+  const { statsRefreshTrigger } = useDateContext();
   const [isLoading, setIsLoading] = useState(false);
   const [extraincomes, setextraincomes] = useState<ExtraIncome[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -93,10 +95,10 @@ export default function ExtraIncomeList({ date }: Props) {
     }
   };
 
-  // 날짜 문자열이 변경될 때마다 목록 새로 조회
+  // 날짜 문자열이 변경되거나 통계 새로고침 트리거가 발생할 때마다 목록 새로 조회
   useEffect(() => {
     fetchextraincomes();
-  }, [dateStr, userId]);
+  }, [dateStr, userId, statsRefreshTrigger]);
 
   // 등록 모달 열기
   const handleOpenModal = () => {
