@@ -228,4 +228,12 @@
   .nav-button-icon {
     @apply w-4 h-4 group-hover:scale-110 transition-transform;
   }
+  
+  /* 전체 페이지 90% 스케일 효과 */
+  .page-zoom-90 {
+    transform: scale(0.9);
+    transform-origin: top center;
+    width: 111.11%; /* 100% / 0.9 = 111.11% */
+    margin-left: -5.56%; /* (111.11% - 100%) / 2 = 5.56% */
+  }
 }

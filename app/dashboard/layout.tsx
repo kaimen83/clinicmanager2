@@ -15,7 +15,7 @@ export default function DashboardLayout({
   return (
     <DateProvider>
       <UserRoleProvider>
-        <div className="flex flex-col min-h-screen bg-gray-50">
+        <div className="flex flex-col min-h-screen bg-gray-50 page-zoom-90">
           <Header />
           
           <main className="flex-1">
