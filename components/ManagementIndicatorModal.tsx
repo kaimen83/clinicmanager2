@@ -6,7 +6,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { Users, TrendingUp, MessageSquare, CreditCard, Calendar, Activity, Target, PieChart, Stethoscope, Award } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Users, TrendingUp, MessageSquare, CreditCard, Calendar, Activity, Target, PieChart, Stethoscope, Award, ChevronLeft, ChevronRight } from 'lucide-react';
+import { DayPicker } from 'react-day-picker';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LabelList } from 'recharts';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
@@ -54,26 +56,35 @@ type DayOfWeekStats = {
 export default function ManagementIndicatorModal({ isOpen, onClose }: ManagementIndicatorModalProps) {
   const { selectedDate } = useDateContext();
   const [activeTab, setActiveTab] = useState('visit');
+  const [currentDate, setCurrentDate] = useState(selectedDate);
   const [monthlyStats, setMonthlyStats] = useState<MonthlyStats | null>(null);
   const [historicalData, setHistoricalData] = useState<HistoricalData[]>([]);
   const [doctorStats, setDoctorStats] = useState<DoctorStats[]>([]);
   const [dayOfWeekStats, setDayOfWeekStats] = useState<DayOfWeekStats[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+
+  // 모달이 열릴 때 currentDate를 selectedDate로 초기화
+  useEffect(() => {
+    if (isOpen) {
+      setCurrentDate(selectedDate);
+    }
+  }, [isOpen, selectedDate]);
 
   // 현재 월 통계 데이터 가져오기
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && currentDate) {
       fetchMonthlyStats();
       fetchHistoricalData();
       fetchDoctorStats();
       fetchDayOfWeekStats();
     }
-  }, [isOpen, selectedDate]);
+  }, [isOpen, currentDate]);
 
   const fetchMonthlyStats = async () => {
     setLoading(true);
     try {
-      const month = format(selectedDate, 'yyyy-MM');
+      const month = format(currentDate, 'yyyy-MM');
       const response = await fetch(`/api/stats?type=monthly&date=${month}`);
       const data = await response.json();
       if (data.stats) {
@@ -100,7 +111,7 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
 
   const fetchDoctorStats = async () => {
     try {
-      const month = format(selectedDate, 'yyyy-MM');
+      const month = format(currentDate, 'yyyy-MM');
       const response = await fetch(`/api/doctor-stats?date=${month}`);
       const data = await response.json();
       if (data.doctorStats) {
@@ -113,7 +124,7 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
 
   const fetchDayOfWeekStats = async () => {
     try {
-      const month = format(selectedDate, 'yyyy-MM');
+      const month = format(currentDate, 'yyyy-MM');
       const response = await fetch(`/api/dayofweek-stats?date=${month}`);
       const data = await response.json();
       if (data.dayOfWeekStats) {
@@ -124,11 +135,97 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
     }
   };
 
+  // 월 이동 함수들
+  const goToPreviousMonth = () => {
+    const newDate = new Date(currentDate);
+    newDate.setMonth(newDate.getMonth() - 1);
+    setCurrentDate(newDate);
+  };
+
+  const goToNextMonth = () => {
+    const newDate = new Date(currentDate);
+    newDate.setMonth(newDate.getMonth() + 1);
+    setCurrentDate(newDate);
+  };
+
+  // 캘린더에서 월 선택 핸들러
+  const handleMonthSelect = (date: Date | undefined) => {
+    if (date) {
+      setCurrentDate(date);
+      setIsCalendarOpen(false);
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto p-0">
         <DialogHeader className="px-6 pt-6 pb-4 border-b bg-gradient-to-r from-purple-50 to-pink-50">
-          <DialogTitle className="text-2xl font-bold text-gray-800">경영지표 대시보드</DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle className="text-2xl font-bold text-gray-800">경영지표 대시보드</DialogTitle>
+            
+            {/* 월 네비게이션 */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={goToPreviousMonth}
+                className="p-2 hover:bg-white/50 rounded-lg transition-colors"
+                disabled={loading}
+              >
+                <ChevronLeft className="h-5 w-5 text-gray-600" />
+              </button>
+              
+              <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
+                <PopoverTrigger asChild>
+                  <button className="text-lg font-semibold text-gray-700 min-w-[120px] text-center p-2 hover:bg-white/50 rounded-lg transition-colors flex items-center justify-center gap-2">
+                    {format(currentDate, 'yyyy년 MM월', { locale: ko })}
+                    <Calendar className="h-4 w-4" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="center">
+                  <DayPicker
+                    mode="single"
+                    selected={currentDate}
+                    onSelect={handleMonthSelect}
+                    locale={ko}
+                    captionLayout="dropdown-buttons"
+                    fromYear={2020}
+                    toYear={2030}
+                    className="p-3"
+                    classNames={{
+                      months: "flex flex-col space-y-4",
+                      month: "space-y-4",
+                      caption: "flex justify-center pt-1 relative items-center",
+                      caption_label: "text-sm font-medium",
+                      nav: "space-x-1 flex items-center",
+                      nav_button: "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100",
+                      nav_button_previous: "absolute left-1",
+                      nav_button_next: "absolute right-1",
+                      table: "w-full border-collapse space-y-1",
+                      head_row: "flex",
+                      head_cell: "text-muted-foreground rounded-md w-9 font-normal text-[0.8rem]",
+                      row: "flex w-full mt-2",
+                      cell: "h-9 w-9 text-center text-sm p-0 relative [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
+                      day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100",
+                      day_range_end: "day-range-end",
+                      day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
+                      day_today: "bg-accent text-accent-foreground",
+                      day_outside: "day-outside text-muted-foreground opacity-50 aria-selected:bg-accent/50 aria-selected:text-muted-foreground aria-selected:opacity-30",
+                      day_disabled: "text-muted-foreground opacity-50",
+                      day_range_middle: "aria-selected:bg-accent aria-selected:text-accent-foreground",
+                      day_hidden: "invisible",
+                    }}
+                  />
+                </PopoverContent>
+              </Popover>
+              
+              <button
+                onClick={goToNextMonth}
+                className="p-2 hover:bg-white/50 rounded-lg transition-colors"
+                disabled={loading}
+              >
+                <ChevronRight className="h-5 w-5 text-gray-600" />
+              </button>
+            </div>
+          </div>
         </DialogHeader>
         
         <div className="p-6">
@@ -322,11 +419,6 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
                                 } border-2 border-solid`}
                                 style={{ height: `${Math.max(heightPercentage, 5)}%` }}
                               />
-                              {day.totalPatients > 0 && (
-                                <div className="absolute -top-5 text-xs font-semibold text-gray-700">
-                                  {day.totalPatients}
-                                </div>
-                              )}
                             </div>
                             
                             {/* 통계 정보 */}
