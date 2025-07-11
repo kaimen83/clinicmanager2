@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Users, TrendingUp, MessageSquare, CreditCard, Calendar, Activity, Target, PieChart, Stethoscope, Award, ChevronLeft, ChevronRight } from 'lucide-react';
 import { DayPicker } from 'react-day-picker';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LabelList } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LabelList, ComposedChart, Bar } from 'recharts';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { useDateContext } from '@/lib/context/dateContext';
@@ -38,6 +38,9 @@ type HistoricalData = {
   month: string;
   newPatients: number;
   totalPatients: number;
+  avgNewPatients: number;
+  avgTotalPatients: number;
+  treatmentDays: number;
 };
 
 type DoctorStats = {
@@ -438,54 +441,141 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
                 </Card>
               </div>
 
-              {/* 15개월 트렌드 차트 */}
+              {/* 통합 15개월 트렌드 차트 */}
               <Card>
                 <CardHeader>
                   <CardTitle>최근 15개월 내원 추이</CardTitle>
+                  <CardDescription>월별 총계 및 일평균 내원인원과 신환 수 (진료일 기준)</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="h-[400px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={historicalData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="month" />
-                        <YAxis />
-                        <Tooltip />
-                        <Legend />
+                      <ComposedChart data={historicalData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                        <XAxis 
+                          dataKey="month" 
+                          tick={{ fontSize: 12 }}
+                          tickLine={{ stroke: '#d1d5db' }}
+                        />
+                        {/* 왼쪽 Y축 - 월별 총계 */}
+                        <YAxis 
+                          yAxisId="monthly"
+                          tick={{ fontSize: 12 }}
+                          tickLine={{ stroke: '#d1d5db' }}
+                          label={{ value: '월별 총계 (명)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }}
+                        />
+                        {/* 오른쪽 Y축 - 일평균 */}
+                        <YAxis 
+                          yAxisId="daily"
+                          orientation="right"
+                          tick={{ fontSize: 12 }}
+                          tickLine={{ stroke: '#d1d5db' }}
+                          label={{ value: '일평균 (명)', angle: 90, position: 'insideRight', style: { textAnchor: 'middle' } }}
+                        />
+                        <Tooltip 
+                          formatter={(value, name, props) => [
+                            `${value}명`,
+                            name
+                          ]}
+                          labelFormatter={(label) => `${label}`}
+                          contentStyle={{
+                            backgroundColor: 'white',
+                            border: '1px solid #e5e7eb',
+                            borderRadius: '8px',
+                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                          }}
+                        />
+                        <Legend 
+                          wrapperStyle={{ paddingTop: '20px' }}
+                        />
+                        
+                        {/* 월별 총계 라인 - 실선 */}
                         <Line 
+                          yAxisId="monthly"
                           type="monotone" 
                           dataKey="totalPatients" 
-                          stroke="#8884d8" 
-                          strokeWidth={2}
-                          name="총 내원인원"
-                          dot={{ fill: '#8884d8', strokeWidth: 2, r: 4 }}
-                          activeDot={{ r: 6, stroke: '#8884d8', strokeWidth: 2 }}
+                          stroke="#3b82f6" 
+                          strokeWidth={3}
+                          name="월별 총 내원"
+                          dot={{ fill: '#3b82f6', strokeWidth: 2, r: 5 }}
+                          activeDot={{ r: 7, stroke: '#3b82f6', strokeWidth: 2, fill: '#fff' }}
                         >
                           <LabelList 
                             dataKey="totalPatients" 
                             position="top" 
-                            style={{ fontSize: '12px', fill: '#8884d8', fontWeight: 'bold' }}
-                            offset={8}
+                            style={{ fontSize: '10px', fill: '#3b82f6', fontWeight: 'bold' }}
+                            offset={15}
                           />
                         </Line>
                         <Line 
+                          yAxisId="monthly"
                           type="monotone" 
                           dataKey="newPatients" 
-                          stroke="#82ca9d" 
-                          strokeWidth={2}
-                          name="신환"
-                          dot={{ fill: '#82ca9d', strokeWidth: 2, r: 4 }}
-                          activeDot={{ r: 6, stroke: '#82ca9d', strokeWidth: 2 }}
+                          stroke="#10b981" 
+                          strokeWidth={3}
+                          name="월별 신환"
+                          dot={{ fill: '#10b981', strokeWidth: 2, r: 5 }}
+                          activeDot={{ r: 7, stroke: '#10b981', strokeWidth: 2, fill: '#fff' }}
                         >
                           <LabelList 
                             dataKey="newPatients" 
-                            position="top" 
-                            style={{ fontSize: '12px', fill: '#82ca9d', fontWeight: 'bold' }}
-                            offset={8}
+                            position="bottom" 
+                            style={{ fontSize: '10px', fill: '#10b981', fontWeight: 'bold' }}
+                            offset={10}
                           />
                         </Line>
-                      </LineChart>
+                        
+                        {/* 일평균 막대 그래프 */}
+                        <Bar 
+                          yAxisId="daily"
+                          dataKey="avgTotalPatients" 
+                          fill="#f59e0b" 
+                          fillOpacity={0.6}
+                          name="일평균 총 내원"
+                          stroke="#f59e0b"
+                          strokeWidth={1}
+                        >
+                          <LabelList 
+                            dataKey="avgTotalPatients" 
+                            position="top" 
+                            style={{ fontSize: '9px', fill: '#f59e0b', fontWeight: 'bold' }}
+                            offset={5}
+                          />
+                        </Bar>
+                        <Bar 
+                          yAxisId="daily"
+                          dataKey="avgNewPatients" 
+                          fill="#ef4444" 
+                          fillOpacity={0.6}
+                          name="일평균 신환"
+                          stroke="#ef4444"
+                          strokeWidth={1}
+                        >
+                          <LabelList 
+                            dataKey="avgNewPatients" 
+                            position="insideTop" 
+                            style={{ fontSize: '9px', fill: '#ffffff', fontWeight: 'bold', textShadow: '1px 1px 1px rgba(0,0,0,0.5)' }}
+                            offset={-5}
+                          />
+                        </Bar>
+                      </ComposedChart>
                     </ResponsiveContainer>
+                  </div>
+                  
+                  {/* 차트 설명 */}
+                  <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                    <div className="text-sm text-gray-600 space-y-1">
+                      <div className="flex items-center gap-6">
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-0.5 bg-blue-500"></div>
+                          <span>라인: 월별 총계 (왼쪽 축)</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-3 bg-orange-500 opacity-60"></div>
+                          <span>막대: 진료일 기준 일평균 (오른쪽 축)</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

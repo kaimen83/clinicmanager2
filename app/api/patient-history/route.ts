@@ -82,10 +82,24 @@ export async function GET(request: NextRequest) {
       const newPatients = Array.from(dailyNewPatientMap.values())
         .reduce((total, patientSet) => total + patientSet.size, 0);
       
+      // 실제 진료한 날짜 수 계산 (환자 데이터가 있는 날짜만)
+      const actualTreatmentDays = dailyPatientMap.size;
+      
+      // 일평균 계산 (실제 진료한 날짜만 기준)
+      const avgTotalPatients = actualTreatmentDays > 0 
+        ? Math.round((totalPatients / actualTreatmentDays) * 10) / 10 
+        : 0;
+      const avgNewPatients = actualTreatmentDays > 0 
+        ? Math.round((newPatients / actualTreatmentDays) * 10) / 10 
+        : 0;
+      
       return {
         month: key,
         totalPatients,
-        newPatients
+        newPatients,
+        avgTotalPatients,
+        avgNewPatients,
+        treatmentDays: actualTreatmentDays
       };
     }));
     
