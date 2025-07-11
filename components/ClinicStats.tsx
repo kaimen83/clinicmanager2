@@ -4,13 +4,14 @@ import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Calculator } from 'lucide-react';
+import { Calculator, TrendingUp } from 'lucide-react';
 import { DailyStats, MonthlyStats, ExtraIncome } from '@/lib/types';
 import { toISODateString } from '@/lib/utils';
 import PaymentListModal from './PaymentListModal';
 import CardCompanyStatsModal from './CardCompanyStatsModal';
 import ExtraIncomeListModal from './ExtraIncomeListModal';
 import ConsultationStatsModal from './ConsultationStatsModal';
+import ManagementIndicatorModal from './ManagementIndicatorModal';
 import { useDateContext } from '@/lib/context/dateContext';
 
 type Props = {
@@ -31,6 +32,7 @@ export default function ClinicStats({ date, onDailySettlement, onMonthlySettleme
   const [isCardStatsModalOpen, setIsCardStatsModalOpen] = useState(false);
   const [isExtraIncomeModalOpen, setIsExtraIncomeModalOpen] = useState(false);
   const [isConsultationStatsModalOpen, setIsConsultationStatsModalOpen] = useState(false);
+  const [isManagementIndicatorModalOpen, setIsManagementIndicatorModalOpen] = useState(false);
   const [modalTitle, setModalTitle] = useState('');
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | undefined>(undefined);
   
@@ -305,28 +307,40 @@ export default function ClinicStats({ date, onDailySettlement, onMonthlySettleme
               <TabsTrigger value="monthly" className="text-sm font-medium data-[state=active]:bg-indigo-500 data-[state=active]:text-white">월간 통계</TabsTrigger>
             </TabsList>
             
-            {/* 탭에 따른 결산 버튼 */}
-            {activeTab === 'daily' ? (
+            {/* 탭에 따른 결산 버튼과 경영지표 버튼 */}
+            <div className="flex items-center gap-2">
+              {activeTab === 'daily' ? (
+                <Button
+                  onClick={onDailySettlement}
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-500 text-blue-700 font-semibold hover:bg-gradient-to-r hover:from-blue-100 hover:to-indigo-100 hover:border-blue-600 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
+                >
+                  <Calculator className="h-4 w-4" />
+                  일일결산
+                </Button>
+              ) : (
+                <Button
+                  onClick={onMonthlySettlement}
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2 bg-gradient-to-r from-emerald-50 to-green-50 border-2 border-emerald-500 text-emerald-700 font-semibold hover:bg-gradient-to-r hover:from-emerald-100 hover:to-green-100 hover:border-emerald-600 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
+                >
+                  <Calculator className="h-4 w-4" />
+                  월간결산
+                </Button>
+              )}
+              
               <Button
-                onClick={onDailySettlement}
+                onClick={() => setIsManagementIndicatorModalOpen(true)}
                 variant="outline"
                 size="sm"
-                className="flex items-center gap-2 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-500 text-blue-700 font-semibold hover:bg-gradient-to-r hover:from-blue-100 hover:to-indigo-100 hover:border-blue-600 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
+                className="flex items-center gap-2 bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-500 text-purple-700 font-semibold hover:bg-gradient-to-r hover:from-purple-100 hover:to-pink-100 hover:border-purple-600 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
               >
-                <Calculator className="h-4 w-4" />
-                일일결산
+                <TrendingUp className="h-4 w-4" />
+                경영지표
               </Button>
-            ) : (
-              <Button
-                onClick={onMonthlySettlement}
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-2 bg-gradient-to-r from-emerald-50 to-green-50 border-2 border-emerald-500 text-emerald-700 font-semibold hover:bg-gradient-to-r hover:from-emerald-100 hover:to-green-100 hover:border-emerald-600 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
-              >
-                <Calculator className="h-4 w-4" />
-                월간결산
-              </Button>
-            )}
+            </div>
           </div>
             
           <TabsContent value="daily" className="pt-2">
@@ -373,6 +387,12 @@ export default function ClinicStats({ date, onDailySettlement, onMonthlySettleme
         onClose={() => setIsConsultationStatsModalOpen(false)}
         date={toISODateString(date)}
         type={activeTab as 'daily' | 'monthly'}
+      />
+      
+      {/* 경영지표 모달 */}
+      <ManagementIndicatorModal
+        isOpen={isManagementIndicatorModalOpen}
+        onClose={() => setIsManagementIndicatorModalOpen(false)}
       />
     </>
   );
