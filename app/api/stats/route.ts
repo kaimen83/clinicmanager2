@@ -102,6 +102,9 @@ export async function GET(request: NextRequest) {
     // 환자 통계 계산 (일별과 월별 다르게 처리)
     let totalPatients = 0;
     let newPatients = 0;
+    let dailyAvgPatients = 0;
+    let dailyAvgNewPatients = 0;
+    let treatmentDays = 0;
 
     if (type === 'daily') {
       // 일별 통계 - 차트번호 기준으로 중복 제거
@@ -152,6 +155,18 @@ export async function GET(request: NextRequest) {
       // 일별 신환 환자 수 총합 계산 (중복 허용)
       newPatients = Array.from(dailyNewPatientMap.values())
         .reduce((total, patientSet) => total + patientSet.size, 0);
+      
+      // 실제 진료한 날짜 수 계산 (환자 데이터가 있는 날짜만)
+      treatmentDays = dailyPatientMap.size;
+      
+      // 일평균 계산 (실제 진료한 날짜만 기준)
+      dailyAvgPatients = treatmentDays > 0 
+        ? Math.round((totalPatients / treatmentDays) * 10) / 10 
+        : 0;
+      
+      dailyAvgNewPatients = treatmentDays > 0 
+        ? Math.round((newPatients / treatmentDays) * 10) / 10 
+        : 0;
     }
     
     // 진료외수입 총액 계산
@@ -161,6 +176,9 @@ export async function GET(request: NextRequest) {
     const stats = {
       totalPatients,
       newPatients,
+      dailyAvgPatients,
+      dailyAvgNewPatients,
+      treatmentDays,
       cashTransferAmount: transactions
         .filter(t => t.paymentMethod === '현금' || t.paymentMethod === '계좌이체')
         .reduce((sum, t) => sum + (Number(t.paymentAmount) || 0), 0),

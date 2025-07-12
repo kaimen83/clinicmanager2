@@ -22,6 +22,9 @@ interface ManagementIndicatorModalProps {
 type MonthlyStats = {
   totalPatients: number;
   newPatients: number;
+  dailyAvgPatients: number;
+  dailyAvgNewPatients: number;
+  treatmentDays: number;
   cashTransferAmount: number;
   cardAmount: number;
   totalPaymentAmount: number;
@@ -267,7 +270,7 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
             {/* 내원지표 탭 */}
             <TabsContent value="visit" className="space-y-6 mt-0">
               {/* 현재 월 내원 통계 - 컴팩트 */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 <Card className="p-3">
                   <div className="flex items-center gap-2 mb-1">
                     <Users className="h-4 w-4 text-blue-500" />
@@ -275,6 +278,11 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
                   </div>
                   <div className="text-xl font-bold text-blue-600">
                     {loading ? '...' : monthlyStats?.totalPatients?.toLocaleString() || '0'}
+                    {!loading && monthlyStats?.dailyAvgPatients ? (
+                      <span className="text-sm font-normal text-gray-500 ml-1">
+                        (일평균 {monthlyStats.dailyAvgPatients})
+                      </span>
+                    ) : null}
                   </div>
                 </Card>
 
@@ -285,6 +293,11 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
                   </div>
                   <div className="text-xl font-bold text-green-600">
                     {loading ? '...' : monthlyStats?.newPatients?.toLocaleString() || '0'}
+                    {!loading && monthlyStats?.dailyAvgNewPatients ? (
+                      <span className="text-sm font-normal text-gray-500 ml-1">
+                        (일평균 {monthlyStats.dailyAvgNewPatients})
+                      </span>
+                    ) : null}
                   </div>
                 </Card>
 
