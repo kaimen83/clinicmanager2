@@ -189,7 +189,7 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
                     selected={currentDate}
                     onSelect={handleMonthSelect}
                     locale={ko}
-                    captionLayout="dropdown-buttons"
+                    captionLayout="dropdown"
                     fromYear={2020}
                     toYear={2030}
                     className="p-3"
