@@ -179,6 +179,12 @@ export default function PatientAnalysis() {
       if (!response.ok) throw new Error('데이터 로드 실패');
       const data = await response.json();
       
+      // 디버깅용 로그
+      console.log('[PatientAnalysis] API Response:', data);
+      if (data.totals) {
+        console.log('[PatientAnalysis] Server Totals:', data.totals);
+      }
+      
       setCurrentData(data.current);
       setComparisonData(data.comparisons);
     } catch (error) {

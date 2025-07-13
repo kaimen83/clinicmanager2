@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
       description: description || '',
       visitPaths,
       isActive: true,
-      userId: new ObjectId(userId),
+      userId: userId, // Clerk userId는 문자열로 저장
       createdAt: new Date(),
       updatedAt: new Date()
     };
