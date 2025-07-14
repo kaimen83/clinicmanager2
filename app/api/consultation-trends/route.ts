@@ -7,8 +7,8 @@ export async function GET(request: NextRequest) {
     const { db } = await connectToDatabase();
 
     // 15개월 전 날짜 계산
-    const currentDate = new Date();
-    const fifteenMonthsAgo = new Date(currentDate.getFullYear(), currentDate.getMonth() - 14, 1);
+    const now = new Date();
+    const fifteenMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 14, 1);
 
     // 15개월간 상담 트렌드 데이터 조회
     const consultationTrends = await db.collection('consultations').aggregate([
@@ -214,10 +214,10 @@ export async function GET(request: NextRequest) {
 
     // 15개월 전체 범위 생성 (빈 월도 포함)
     const result = [];
-    const currentDate = new Date();
+    const today = new Date();
     
     for (let i = 14; i >= 0; i--) {
-      const targetDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+      const targetDate = new Date(today.getFullYear(), today.getMonth() - i, 1);
       const monthStr = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}`;
       
       // 해당 월의 실제 데이터 찾기
