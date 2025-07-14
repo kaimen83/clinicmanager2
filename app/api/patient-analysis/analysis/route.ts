@@ -51,23 +51,48 @@ export async function POST(request: NextRequest) {
     await ensureIndexes(db);
     
     const body = await request.json();
-    const { periodType, year, month, quarter, comparePeriods, useGroups } = body;
+    const { periodType, year, month, quarter, comparePeriods, useGroups, onlyComparisons = false } = body;
+
+    // Progressive Loading: 비교 데이터만 요청하는 경우
+    if (onlyComparisons && comparePeriods) {
+      const comparisons: { [key: string]: any[] } = {};
+      
+      for (const comparePeriod of comparePeriods) {
+        const compareRange = getComparePeriodRange(periodType, { year, month, quarter }, comparePeriod);
+        
+        // 요약 데이터 확인
+        const summaryData = await getSummaryData(db, periodType, compareRange, useGroups);
+        
+        if (summaryData) {
+          comparisons[comparePeriod] = useGroups ? summaryData.groupedData : summaryData.individualData;
+        } else {
+          // 요약 데이터가 없으면 실시간 계산
+          comparisons[comparePeriod] = await getPatientAnalysisData(db, compareRange, useGroups);
+        }
+      }
+      
+      return NextResponse.json({ comparisons });
+    }
 
     // 기준 기간 설정
     const baseRange = getPeriodRange(periodType, { year, month, quarter });
     
-    // 현재 기간 데이터 조회
-    const currentData = await getPatientAnalysisData(db, baseRange, useGroups);
+    // 현재 기간 요약 데이터 확인
+    const currentSummaryData = await getSummaryData(db, periodType, baseRange, useGroups);
+    let currentData;
     
-    // 비교 기간별 데이터 조회
-    const comparisons: { [key: string]: any[] } = {};
-    
-    for (const comparePeriod of comparePeriods) {
-      const compareRange = getComparePeriodRange(periodType, { year, month, quarter }, comparePeriod);
-      comparisons[comparePeriod] = await getPatientAnalysisData(db, compareRange, useGroups);
+    if (currentSummaryData) {
+      // 요약 데이터 사용
+      currentData = useGroups ? currentSummaryData.groupedData : currentSummaryData.individualData;
+    } else {
+      // 요약 데이터가 없으면 실시간 계산 후 저장
+      currentData = await getPatientAnalysisData(db, baseRange, useGroups);
+      
+      // 백그라운드에서 요약 데이터 생성 (비동기)
+      generateSummaryInBackground(db, periodType, { year, month, quarter });
     }
-
-    // 총합 계산 추가
+    
+    // 총합 계산
     const currentTotals = currentData.reduce((totals, item) => {
       totals.totalPatientCount += item.totalPatientCount || 0;
       totals.newPatientCount += item.newPatientCount || 0;
@@ -83,19 +108,57 @@ export async function POST(request: NextRequest) {
       totalConsultationAmount: 0
     });
 
-    console.log('[PatientAnalysis] Current Period Totals:', currentTotals);
-    console.log('[PatientAnalysis] Individual Data Count:', currentData.length);
-
     return NextResponse.json({
       current: currentData,
-      comparisons,
+      comparisons: {}, // Progressive Loading을 위해 비어있는 객체 반환
       isGrouped: useGroups,
-      totals: currentTotals // 디버깅을 위해 총합 포함
+      totals: currentTotals,
+      hasComparisons: comparePeriods && comparePeriods.length > 0
     });
 
   } catch (error) {
     console.error('환자 분석 데이터 조회 오류:', error);
     return NextResponse.json({ error: '데이터 조회 중 오류가 발생했습니다.' }, { status: 500 });
+  }
+}
+
+// 요약 데이터 조회
+async function getSummaryData(db: any, periodType: string, range: { startDate: Date; endDate: Date }, useGroups: boolean) {
+  const { startDate } = range;
+  const year = startDate.getFullYear();
+  const month = startDate.getMonth() + 1;
+  const quarter = Math.floor(startDate.getMonth() / 3) + 1;
+  
+  const query: any = { periodType, year };
+  if (periodType === 'month') query.month = month;
+  if (periodType === 'quarter') query.quarter = quarter;
+  
+  const summary = await db.collection('patient_analysis_summary').findOne(query);
+  
+  // 24시간 이내의 데이터만 사용
+  if (summary && summary.updatedAt) {
+    const hoursSinceUpdate = (Date.now() - new Date(summary.updatedAt).getTime()) / (1000 * 60 * 60);
+    if (hoursSinceUpdate < 24) {
+      return summary;
+    }
+  }
+  
+  return null;
+}
+
+// 백그라운드에서 요약 데이터 생성
+async function generateSummaryInBackground(db: any, periodType: string, params: { year: number; month?: number; quarter?: number }) {
+  try {
+    // 요약 데이터 생성 API 호출 (비동기)
+    fetch('/api/patient-analysis/generate-summary', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ periodType, ...params })
+    }).catch(error => {
+      console.error('백그라운드 요약 데이터 생성 실패:', error);
+    });
+  } catch (error) {
+    console.error('백그라운드 요약 데이터 생성 오류:', error);
   }
 }
 

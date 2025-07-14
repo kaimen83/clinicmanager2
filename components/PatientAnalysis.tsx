@@ -57,6 +57,7 @@ export default function PatientAnalysis() {
   const [currentData, setCurrentData] = useState<AnalysisData[]>([]);
   const [comparisonData, setComparisonData] = useState<ComparisonData>({});
   const [loading, setLoading] = useState(false);
+  const [comparisonLoading, setComparisonLoading] = useState<{ [key: string]: boolean }>({});
   
   // 날짜 상태
   const [baseMonth, setBaseMonth] = useState('');
@@ -163,6 +164,7 @@ export default function PatientAnalysis() {
       setLoading(true);
       const period = getCurrentPeriod();
       
+      // 1. 현재 기간 데이터 로드
       const response = await fetch('/api/patient-analysis/analysis', {
         method: 'POST',
         headers: {
@@ -179,14 +181,15 @@ export default function PatientAnalysis() {
       if (!response.ok) throw new Error('데이터 로드 실패');
       const data = await response.json();
       
-      // 디버깅용 로그
-      console.log('[PatientAnalysis] API Response:', data);
-      if (data.totals) {
-        console.log('[PatientAnalysis] Server Totals:', data.totals);
-      }
-      
       setCurrentData(data.current);
-      setComparisonData(data.comparisons);
+      setLoading(false);
+      
+      // 2. Progressive Loading: 비교 기간 데이터 비동기 로드
+      if (data.hasComparisons) {
+        loadComparisonData(period);
+      } else {
+        setComparisonData({});
+      }
     } catch (error) {
       console.error('데이터 로드 중 에러:', error);
       toast({
@@ -194,10 +197,51 @@ export default function PatientAnalysis() {
         description: "데이터를 불러오는 중 오류가 발생했습니다.",
         variant: "destructive",
       });
-    } finally {
       setLoading(false);
     }
   }, [baseMonth, baseYear, periodType, selectedPeriods, useGroups, toast]);
+  
+  // 비교 데이터 비동기 로드
+  const loadComparisonData = useCallback(async (period: any) => {
+    const periodsToLoad = Array.from(selectedPeriods);
+    const newComparisonLoading: { [key: string]: boolean } = {};
+    
+    // 모든 비교 기간을 로딩 상태로 설정
+    periodsToLoad.forEach(p => {
+      newComparisonLoading[p] = true;
+    });
+    setComparisonLoading(newComparisonLoading);
+    
+    try {
+      const response = await fetch('/api/patient-analysis/analysis', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          periodType,
+          ...period,
+          comparePeriods: periodsToLoad,
+          useGroups,
+          onlyComparisons: true
+        })
+      });
+
+      if (!response.ok) throw new Error('비교 데이터 로드 실패');
+      const data = await response.json();
+      
+      setComparisonData(data.comparisons);
+      setComparisonLoading({});
+    } catch (error) {
+      console.error('비교 데이터 로드 중 에러:', error);
+      toast({
+        title: "오류",
+        description: "비교 데이터를 불러오는 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+      setComparisonLoading({});
+    }
+  }, [periodType, selectedPeriods, useGroups, toast]);
 
   const loadGroups = async () => {
     try {
@@ -607,6 +651,29 @@ export default function PatientAnalysis() {
                       <td className="border border-gray-200 p-3 text-right">{item.totalConsultationAmount.toLocaleString()}</td>
                       
                       {Array.from(selectedPeriods).map(period => {
+                        // Progressive Loading: 로딩 중인 경우 스켈레톤 UI 표시
+                        if (comparisonLoading[period]) {
+                          return (
+                            <React.Fragment key={period}>
+                              <td className="border border-gray-200 p-3 text-right">
+                                <div className="h-4 w-16 bg-gray-200 animate-pulse rounded mx-auto"></div>
+                              </td>
+                              <td className="border border-gray-200 p-3 text-right">
+                                <div className="h-4 w-16 bg-gray-200 animate-pulse rounded mx-auto"></div>
+                              </td>
+                              <td className="border border-gray-200 p-3 text-right">
+                                <div className="h-4 w-16 bg-gray-200 animate-pulse rounded mx-auto"></div>
+                              </td>
+                              <td className="border border-gray-200 p-3 text-right">
+                                <div className="h-4 w-16 bg-gray-200 animate-pulse rounded mx-auto"></div>
+                              </td>
+                              <td className="border border-gray-200 p-3 text-right">
+                                <div className="h-4 w-16 bg-gray-200 animate-pulse rounded mx-auto"></div>
+                              </td>
+                            </React.Fragment>
+                          );
+                        }
+                        
                         const comparison = comparisonData[period]?.find(comp => {
                           if (item.isGroup && comp.isGroup) {
                             return comp.groupId === item.groupId;
@@ -726,6 +793,29 @@ export default function PatientAnalysis() {
                   <td className="border border-gray-200 p-3 text-right">{currentTotals.totalConsultationAmount.toLocaleString()}</td>
                   
                   {Array.from(selectedPeriods).map(period => {
+                    // 로딩 중인 경우
+                    if (comparisonLoading[period]) {
+                      return (
+                        <React.Fragment key={period}>
+                          <td className="border border-gray-200 p-3 text-right">
+                            <div className="h-4 w-20 bg-gray-200 animate-pulse rounded mx-auto"></div>
+                          </td>
+                          <td className="border border-gray-200 p-3 text-right">
+                            <div className="h-4 w-20 bg-gray-200 animate-pulse rounded mx-auto"></div>
+                          </td>
+                          <td className="border border-gray-200 p-3 text-right">
+                            <div className="h-4 w-20 bg-gray-200 animate-pulse rounded mx-auto"></div>
+                          </td>
+                          <td className="border border-gray-200 p-3 text-right">
+                            <div className="h-4 w-20 bg-gray-200 animate-pulse rounded mx-auto"></div>
+                          </td>
+                          <td className="border border-gray-200 p-3 text-right">
+                            <div className="h-4 w-20 bg-gray-200 animate-pulse rounded mx-auto"></div>
+                          </td>
+                        </React.Fragment>
+                      );
+                    }
+                    
                     const periodTotal = comparisonTotals[period] || {
                       totalPatientCount: 0, newPatientCount: 0, revisitCount: 0, 
                       paymentAmount: 0, totalConsultationAmount: 0
