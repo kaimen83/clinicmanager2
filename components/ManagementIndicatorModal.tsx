@@ -109,6 +109,7 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
   const [doctorRevenueStats, setDoctorRevenueStats] = useState<DoctorRevenueStats[]>([]);
   const [dayOfWeekRevenueStats, setDayOfWeekRevenueStats] = useState<DayOfWeekRevenueStats[]>([]);
   const [revenueHistoricalData, setRevenueHistoricalData] = useState<RevenueHistoricalData[]>([]);
+  const [doctorNames, setDoctorNames] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   
@@ -220,22 +221,36 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
     try {
       const month = format(currentDate, 'yyyy-MM');
       
-      // 매출 기록 데이터는 patient-history API를 재활용해서 매출 중심으로 변환
-      const response = await fetch('/api/patient-history');
+      // 매출 기록 데이터 가져오기
+      const response = await fetch('/api/revenue-history');
       const data = await response.json();
-      if (data.history) {
-        // 내원 기록을 매출 기록으로 변환
-        const revenueHistory = data.history.map((monthData: any) => ({
-          month: monthData.month,
-          totalRevenue: monthData.totalPatients * 50000, // 임시로 환자 수 * 평균 단가로 계산
-          cashRevenue: monthData.newPatients * 30000,
-          cardRevenue: (monthData.totalPatients - monthData.newPatients) * 60000,
-          extraIncome: monthData.totalPatients * 5000,
-          avgTotalRevenue: monthData.avgTotalPatients * 50000,
-          avgCashRevenue: monthData.avgNewPatients * 30000,
-          treatmentDays: monthData.treatmentDays
-        }));
-        setRevenueHistoricalData(revenueHistory);
+      console.log('Revenue history response:', data);
+      
+      if (data.revenueHistory) {
+        setRevenueHistoricalData(data.revenueHistory);
+        console.log('Revenue historical data set:', data.revenueHistory);
+        
+        // 원장 이름 추출 (모든 월 데이터에서)
+        if (data.revenueHistory.length > 0) {
+          const doctors = new Set<string>();
+          
+          // 모든 월 데이터를 확인해서 원장 이름 추출
+          data.revenueHistory.forEach((monthData: any, index: number) => {
+            console.log(`Month ${index} data:`, monthData);
+            Object.keys(monthData).forEach(key => {
+              if (key.includes('_총매출')) {
+                const doctorName = key.replace('_총매출', '').trim();
+                if (doctorName && doctorName !== '미분류') {
+                  doctors.add(doctorName);
+                  console.log(`Found doctor: "${doctorName}" in month ${monthData.month}`);
+                }
+              }
+            });
+          });
+          
+          console.log('All doctor names extracted:', Array.from(doctors));
+          setDoctorNames(Array.from(doctors));
+        }
       }
 
       // 의사별, 요일별 매출 통계는 transactions 데이터를 직접 가공
@@ -307,12 +322,12 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
           .sort((a, b) => b.totalRevenue - a.totalRevenue);
         setDoctorRevenueStats(doctorRevenueArray);
 
-        // 요일별 데이터는 요일 순서대로 정렬
-        const dayOrder = ['월', '화', '수', '목', '금', '토', '일'];
+        // 요일별 데이터는 일요일부터 시작하는 순서로 정렬
+        const dayOrder = ['일', '월', '화', '수', '목', '금', '토'];
         const dayOfWeekRevenueArray = dayOrder.map(day => 
           dayOfWeekRevenueMap.get(day) || {
             dayOfWeek: day,
-            dayNumber: dayOrder.indexOf(day) + 1,
+            dayNumber: dayOrder.indexOf(day),
             totalRevenue: 0,
             cashRevenue: 0,
             cardRevenue: 0
@@ -968,12 +983,6 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
                               <div className="text-xs text-gray-600">
                                 총: <span className="font-semibold">{(day.totalRevenue / 10000).toFixed(0)}만</span>
                               </div>
-                              <div className="text-xs text-green-600">
-                                현금: <span className="font-semibold">{(day.cashRevenue / 10000).toFixed(0)}만</span>
-                              </div>
-                              <div className="text-xs text-purple-600">
-                                카드: <span className="font-semibold">{(day.cardRevenue / 10000).toFixed(0)}만</span>
-                              </div>
                             </div>
                           </div>
                         );
@@ -1053,31 +1062,51 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
                           />
                         </Line>
                         
-                        {/* 현금매출 라인 */}
-                        <Line 
-                          yAxisId="monthly"
-                          type="monotone" 
-                          dataKey="cashRevenue" 
-                          stroke="#10b981" 
-                          strokeWidth={2}
-                          strokeDasharray="5 5"
-                          name="월별 현금매출"
-                          dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
-                          activeDot={{ r: 6, stroke: '#10b981', strokeWidth: 2, fill: '#fff' }}
-                        />
+                        {/* 원장별 총매출 라인 */}
+                        {doctorNames.map((doctor, index) => {
+                          const colors = ['#10b981', '#8b5cf6', '#f59e0b', '#ef4444', '#06b6d4'];
+                          const color = colors[index % colors.length];
+                          const dataKey = `${doctor}_총매출`;
+                          
+                          console.log(`Rendering doctor line for ${doctor}, dataKey: ${dataKey}, color: ${color}`);
+                          console.log('Sample data for this doctor:', revenueHistoricalData[0]?.[dataKey]);
+                          
+                          return (
+                            <Line
+                              key={`${doctor}_total`}
+                              yAxisId="monthly"
+                              type="monotone"
+                              dataKey={dataKey}
+                              stroke={color}
+                              strokeWidth={2}
+                              strokeDasharray="5 5"
+                              name={`${doctor} 총매출`}
+                              dot={{ fill: color, strokeWidth: 2, r: 4 }}
+                              activeDot={{ r: 6, stroke: color, strokeWidth: 2, fill: '#fff' }}
+                            />
+                          );
+                        })}
                         
-                        {/* 카드매출 라인 */}
-                        <Line 
-                          yAxisId="monthly"
-                          type="monotone" 
-                          dataKey="cardRevenue" 
-                          stroke="#8b5cf6" 
-                          strokeWidth={2}
-                          strokeDasharray="3 3"
-                          name="월별 카드매출"
-                          dot={{ fill: '#8b5cf6', strokeWidth: 2, r: 4 }}
-                          activeDot={{ r: 6, stroke: '#8b5cf6', strokeWidth: 2, fill: '#fff' }}
-                        />
+                        {/* 원장별 일평균매출 라인 */}
+                        {doctorNames.map((doctor, index) => {
+                          const colors = ['#22c55e', '#a855f7', '#fb923c', '#f87171', '#38bdf8'];
+                          const color = colors[index % colors.length];
+                          
+                          return (
+                            <Line
+                              key={`${doctor}_avg`}
+                              yAxisId="daily"
+                              type="monotone"
+                              dataKey={`${doctor}_일평균매출`}
+                              stroke={color}
+                              strokeWidth={1}
+                              strokeDasharray="2 2"
+                              name={`${doctor} 일평균`}
+                              dot={{ fill: color, strokeWidth: 1, r: 3 }}
+                              activeDot={{ r: 5, stroke: color, strokeWidth: 1, fill: '#fff' }}
+                            />
+                          );
+                        })}
                         
                         {/* 일평균 총매출 막대 그래프 */}
                         <Bar 
@@ -1095,19 +1124,25 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
                   
                   {/* 차트 설명 */}
                   <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                    <div className="text-sm text-gray-600 space-y-1">
-                      <div className="flex items-center gap-6">
+                    <div className="text-sm text-gray-600 space-y-2">
+                      <div className="flex items-center gap-6 flex-wrap">
                         <div className="flex items-center gap-2">
                           <div className="w-4 h-0.5 bg-blue-500"></div>
-                          <span>실선: 월별 총매출 (왼쪽 축)</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-4 h-0.5 bg-green-500 border-dashed border-t-2"></div>
-                          <span>점선: 현금/카드매출</span>
+                          <span>실선: 전체 월별 총매출 (왼쪽 축)</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <div className="w-4 h-3 bg-orange-500 opacity-60"></div>
-                          <span>막대: 일평균 총매출 (오른쪽 축)</span>
+                          <span>막대: 전체 일평균 총매출 (오른쪽 축)</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-6 flex-wrap">
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-0.5 bg-green-500 border-dashed border-t-2"></div>
+                          <span>긴 점선: 원장별 월별 총매출 (왼쪽 축)</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-0.5 bg-green-400 border-dotted border-t-2"></div>
+                          <span>짧은 점선: 원장별 일평균 매출 (오른쪽 축)</span>
                         </div>
                       </div>
                     </div>
