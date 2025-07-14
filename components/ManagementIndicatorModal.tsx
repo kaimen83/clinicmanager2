@@ -96,6 +96,48 @@ type VisitPathHistoryData = {
   }>;
 };
 
+type ConsultationStats = {
+  consultationAgreedAmount: number;
+  consultationNonAgreedAmount: number;
+  totalConsultationAmount: number;
+  agreedCount: number;
+  nonAgreedCount: number;
+  totalConsultationCount: number;
+  agreedPercentage: number;
+  agreedAmountPercentage: number;
+};
+
+type ConsultationTrendData = {
+  month: string;
+  totalConsultations: number;
+  agreedConsultations: number;
+  nonAgreedConsultations: number;
+  agreedPercentage: number;
+  agreedAmountPercentage: number;
+  avgConsultationAmount: number;
+  totalAmount: number;
+  agreedAmount: number;
+  nonAgreedAmount: number;
+  [key: string]: any; // 의사별, 직원별 동의율 데이터를 위한 동적 프로퍼티
+};
+
+type DoctorConsultationStats = {
+  doctor: string;
+  totalConsultations: number;
+  agreedConsultations: number;
+  nonAgreedConsultations: number;
+  agreedPercentage: number;
+  totalAmount: number;
+  agreedAmount: number;
+};
+
+type StaffConsultationStats = {
+  staff: string;
+  totalConsultations: number;
+  agreedConsultations: number;
+  agreedPercentage: number;
+};
+
 export default function ManagementIndicatorModal({ isOpen, onClose }: ManagementIndicatorModalProps) {
   const { selectedDate } = useDateContext();
   const [activeTab, setActiveTab] = useState('visit');
@@ -112,6 +154,14 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
   const [doctorNames, setDoctorNames] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  
+  // 상담지표 관련 상태
+  const [consultationStats, setConsultationStats] = useState<ConsultationStats | null>(null);
+  const [consultationTrendData, setConsultationTrendData] = useState<ConsultationTrendData[]>([]);
+  const [doctorConsultationStats, setDoctorConsultationStats] = useState<DoctorConsultationStats[]>([]);
+  const [staffConsultationStats, setStaffConsultationStats] = useState<StaffConsultationStats[]>([]);
+  const [consultationDoctorNames, setConsultationDoctorNames] = useState<string[]>([]);
+  const [topStaffs, setTopStaffs] = useState<string[]>([]);
   
   // 차트 하이라이트 상태 관리
   const [highlightedGroup, setHighlightedGroup] = useState<string | null>(null);
@@ -133,6 +183,9 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
       fetchVisitPathHistoryData();
       if (activeTab === 'revenue') {
         fetchRevenueData();
+      }
+      if (activeTab === 'consultation') {
+        fetchConsultationData();
       }
     }
   }, [isOpen, currentDate, activeTab]);
@@ -214,6 +267,62 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
       }
     } catch (error) {
       console.error('내원경로별 통계 조회 실패:', error);
+    }
+  };
+
+  const fetchConsultationData = async () => {
+    try {
+      const month = format(currentDate, 'yyyy-MM');
+      
+      // 현재 월 상담 통계 가져오기
+      const statsResponse = await fetch(`/api/consultations/stats?type=monthly&date=${month}`);
+      const statsData = await statsResponse.json();
+      
+      if (statsData.summary) {
+        const summary = {
+          consultationAgreedAmount: statsData.summary.consultationAgreedAmount || 0,
+          consultationNonAgreedAmount: statsData.summary.consultationNonAgreedAmount || 0,
+          totalConsultationAmount: statsData.summary.totalConsultationAmount || 0,
+          agreedCount: statsData.summary.agreedCount || 0,
+          nonAgreedCount: statsData.summary.nonAgreedCount || 0,
+          totalConsultationCount: statsData.summary.totalConsultationCount || 0,
+          agreedPercentage: statsData.summary.agreedPercentage || 0,
+          agreedAmountPercentage: statsData.summary.agreedAmountPercentage || 0
+        };
+        setConsultationStats(summary);
+      }
+      
+      if (statsData.doctorStats) {
+        const doctorStats = statsData.doctorStats.map((doctor: any) => ({
+          doctor: doctor.doctor,
+          totalConsultations: doctor.totalCount,
+          agreedConsultations: doctor.agreedCount,
+          nonAgreedConsultations: doctor.nonAgreedCount,
+          agreedPercentage: doctor.agreedPercentage,
+          totalAmount: doctor.totalAmount,
+          agreedAmount: doctor.agreedAmount
+        }));
+        setDoctorConsultationStats(doctorStats);
+      }
+      
+      // 15개월 상담 트렌드 데이터 가져오기
+      const trendResponse = await fetch('/api/consultation-trends');
+      const trendData = await trendResponse.json();
+      
+      if (trendData.trends) {
+        setConsultationTrendData(trendData.trends);
+      }
+      
+      if (trendData.doctors) {
+        setConsultationDoctorNames(trendData.doctors);
+      }
+      
+      if (trendData.topStaffs) {
+        setTopStaffs(trendData.topStaffs);
+      }
+      
+    } catch (error) {
+      console.error('상담 데이터 조회 실패:', error);
     }
   };
 
@@ -1431,8 +1540,405 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
             </TabsContent>
 
             {/* 상담지표 탭 */}
-            <TabsContent value="consultation" className="space-y-4 mt-0">
-              {/* 상담지표 컨텐츠 */}
+            <TabsContent value="consultation" className="space-y-6 mt-0">
+              {/* 현재 월 상담 핵심 지표 카드 */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <Card className="p-3 border-l-4 border-l-green-500">
+                  <div className="flex items-center gap-2 mb-1">
+                    <MessageSquare className="h-4 w-4 text-green-500" />
+                    <span className="text-xs font-medium text-gray-600">총 상담건수</span>
+                  </div>
+                  <div className="text-xl font-bold text-green-600">
+                    {loading ? '...' : (consultationStats?.totalConsultationCount || 0).toLocaleString()}
+                    {!loading && consultationStats && consultationStats.totalConsultationCount > 0 ? (
+                      <span className="text-sm font-normal text-gray-500 ml-1">
+                        (동의율 {consultationStats.agreedPercentage}%)
+                      </span>
+                    ) : null}
+                  </div>
+                </Card>
+
+                <Card className="p-3 border-l-4 border-l-blue-500">
+                  <div className="flex items-center gap-2 mb-1">
+                    <TrendingUp className="h-4 w-4 text-blue-500" />
+                    <span className="text-xs font-medium text-gray-600">상담 총금액</span>
+                  </div>
+                  <div className="text-xl font-bold text-blue-600">
+                    {loading ? '...' : (consultationStats?.totalConsultationAmount || 0).toLocaleString()}원
+                    {!loading && consultationStats && consultationStats.totalConsultationAmount > 0 && consultationStats.totalConsultationCount > 0 ? (
+                      <span className="text-sm font-normal text-gray-500 ml-1">
+                        (평균 {Math.round((consultationStats.totalConsultationAmount / consultationStats.totalConsultationCount) / 10000)}만원)
+                      </span>
+                    ) : null}
+                  </div>
+                </Card>
+
+                <Card className="p-3 border-l-4 border-l-purple-500">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Users className="h-4 w-4 text-purple-500" />
+                    <span className="text-xs font-medium text-gray-600">동의 건수</span>
+                  </div>
+                  <div className="text-xl font-bold text-purple-600">
+                    {loading ? '...' : (consultationStats?.agreedCount || 0).toLocaleString()}
+                    {!loading && consultationStats && consultationStats.agreedCount > 0 && consultationStats.totalConsultationAmount > 0 ? (
+                      <span className="text-sm font-normal text-gray-500 ml-1">
+                        ({((consultationStats.consultationAgreedAmount / consultationStats.totalConsultationAmount) * 100).toFixed(1)}% 금액)
+                      </span>
+                    ) : null}
+                  </div>
+                </Card>
+
+                <Card className="p-3 border-l-4 border-l-red-500">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Activity className="h-4 w-4 text-red-500" />
+                    <span className="text-xs font-medium text-gray-600">미동의금액</span>
+                  </div>
+                  <div className="text-xl font-bold text-red-600">
+                    {loading ? '...' : (consultationStats?.nonAgreedAmount || 0).toLocaleString()}원
+                    {!loading && consultationStats && consultationStats.nonAgreedCount > 0 ? (
+                      <span className="text-sm font-normal text-gray-500 ml-1">
+                        ({consultationStats.nonAgreedCount}건)
+                      </span>
+                    ) : null}
+                  </div>
+                </Card>
+              </div>
+
+              {/* 15개월 상담 트렌드 차트 */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>최근 15개월 상담 성과 트렌드</CardTitle>
+                  <CardDescription>월별 상담건수, 동의율 및 평균상담금액 추이</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-[400px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <ComposedChart data={consultationTrendData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                        <XAxis 
+                          dataKey="month" 
+                          tick={{ fontSize: 12 }}
+                          tickLine={{ stroke: '#d1d5db' }}
+                        />
+                        {/* 왼쪽 Y축 - 상담건수 */}
+                        <YAxis 
+                          yAxisId="count"
+                          tick={{ fontSize: 12 }}
+                          tickLine={{ stroke: '#d1d5db' }}
+                          label={{ value: '상담건수 (건)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }}
+                        />
+                        {/* 오른쪽 Y축 - 동의율 */}
+                        <YAxis 
+                          yAxisId="percentage"
+                          orientation="right"
+                          tick={{ fontSize: 12 }}
+                          tickLine={{ stroke: '#d1d5db' }}
+                          domain={[0, 100]}
+                          label={{ value: '동의율 (%)', angle: 90, position: 'insideRight', style: { textAnchor: 'middle' } }}
+                        />
+                        <Tooltip 
+                          formatter={(value, name, props) => {
+                            if (name.includes('동의율')) {
+                              return [`${value}%`, name];
+                            } else if (name.includes('건수')) {
+                              return [`${value}건`, name];
+                            } else {
+                              return [`${Number(value).toLocaleString()}원`, name];
+                            }
+                          }}
+                          labelFormatter={(label) => `${label}`}
+                          contentStyle={{
+                            backgroundColor: 'white',
+                            border: '1px solid #e5e7eb',
+                            borderRadius: '8px',
+                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                          }}
+                        />
+                        <Legend 
+                          wrapperStyle={{ paddingTop: '20px' }}
+                        />
+                        
+                        {/* 상담건수 막대 차트 */}
+                        <Bar 
+                          yAxisId="count"
+                          dataKey="totalConsultations" 
+                          fill="#3b82f6" 
+                          fillOpacity={0.7}
+                          name="월별 상담건수"
+                          stroke="#3b82f6"
+                          strokeWidth={1}
+                        />
+                        
+                        {/* 동의율 라인 차트 */}
+                        <Line 
+                          yAxisId="percentage"
+                          type="monotone" 
+                          dataKey="agreedPercentage" 
+                          stroke="#10b981" 
+                          strokeWidth={3}
+                          name="건수기준 동의율"
+                          dot={{ fill: '#10b981', strokeWidth: 2, r: 5 }}
+                          activeDot={{ r: 7, stroke: '#10b981', strokeWidth: 2, fill: '#fff' }}
+                        />
+                        
+                        <Line 
+                          yAxisId="percentage"
+                          type="monotone" 
+                          dataKey="agreedAmountPercentage" 
+                          stroke="#f59e0b" 
+                          strokeWidth={2}
+                          strokeDasharray="8 4"
+                          name="금액기준 동의율"
+                          dot={{ fill: '#f59e0b', strokeWidth: 2, r: 4 }}
+                          activeDot={{ r: 6, stroke: '#f59e0b', strokeWidth: 2, fill: '#fff' }}
+                        />
+                      </ComposedChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* 의사별 성과 분석 */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* 의사별 상담 성과 */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Stethoscope className="h-4 w-4" />
+                      의사별 상담 성과
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <div className="space-y-3">
+                      {doctorConsultationStats.map((doctor, index) => {
+                        return (
+                          <div 
+                            key={doctor.doctor} 
+                            className="relative p-3 rounded-lg border border-gray-200 bg-gradient-to-br from-white to-gray-50 hover:shadow-sm transition-all duration-200"
+                          >
+                            {/* 순위 뱃지 */}
+                            {index < 3 && (
+                              <div className={`absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white ${
+                                index === 0 ? 'bg-yellow-500' : 
+                                index === 1 ? 'bg-gray-400' : 
+                                'bg-orange-400'
+                              }`}>
+                                {index + 1}
+                              </div>
+                            )}
+                            
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className="p-1 bg-blue-100 rounded">
+                                <Stethoscope className="h-3 w-3 text-blue-600" />
+                              </div>
+                              <h3 className="font-medium text-sm text-gray-900">{doctor.doctor}</h3>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="space-y-1">
+                                <div className="flex justify-between items-center">
+                                  <span className="text-xs text-gray-600">총 상담</span>
+                                  <span className="font-bold text-blue-600 text-sm">
+                                    {doctor.totalConsultations}건
+                                  </span>
+                                </div>
+                                
+                                <div className="flex justify-between items-center">
+                                  <span className="text-xs text-gray-600">동의</span>
+                                  <div className="flex items-center gap-1">
+                                    <span className="font-semibold text-green-600 text-sm">
+                                      {doctor.agreedConsultations}건
+                                    </span>
+                                    <Badge 
+                                      variant="secondary" 
+                                      className="text-xs px-1 py-0 h-4 bg-green-100 text-green-700"
+                                    >
+                                      {doctor.agreedPercentage}%
+                                    </Badge>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <div className="space-y-1">
+                                <div className="flex justify-between items-center">
+                                  <span className="text-xs text-gray-600">총 금액</span>
+                                  <span className="font-bold text-purple-600 text-sm">
+                                    {(doctor.totalAmount / 10000).toFixed(0)}만원
+                                  </span>
+                                </div>
+                                
+                                <div className="flex justify-between items-center">
+                                  <span className="text-xs text-gray-600">동의금액</span>
+                                  <span className="font-semibold text-green-600 text-sm">
+                                    {(doctor.agreedAmount / 10000).toFixed(0)}만원
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {/* 동의율 진행바 */}
+                            <div className="mt-2">
+                              <div className="flex justify-between text-xs mb-1">
+                                <span>동의율</span>
+                                <span className="font-semibold">{doctor.agreedPercentage}%</span>
+                              </div>
+                              <div className="w-full bg-gray-200 rounded-full h-1.5">
+                                <div 
+                                  className={`h-1.5 rounded-full transition-all duration-300 ${
+                                    doctor.agreedPercentage >= 90 ? 'bg-green-500' :
+                                    doctor.agreedPercentage >= 80 ? 'bg-yellow-500' :
+                                    'bg-red-500'
+                                  }`}
+                                  style={{ width: `${doctor.agreedPercentage}%` }}
+                                ></div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    
+                    {doctorConsultationStats.length === 0 && !loading && (
+                      <div className="text-center py-6 text-gray-500">
+                        <Stethoscope className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                        <p className="text-sm">해당 월에 상담 데이터가 없습니다.</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* 의사별 15개월 동의율 트렌드 */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <TrendingUp className="h-4 w-4" />
+                      의사별 동의율 트렌드
+                    </CardTitle>
+                    <CardDescription>15개월간 의사별 동의율 변화 추이</CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <div className="h-[300px] w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={consultationTrendData}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                          <XAxis 
+                            dataKey="month" 
+                            tick={{ fontSize: 12 }}
+                            tickLine={{ stroke: '#d1d5db' }}
+                          />
+                          <YAxis 
+                            tick={{ fontSize: 12 }}
+                            tickLine={{ stroke: '#d1d5db' }}
+                            domain={[60, 100]}
+                            label={{ value: '동의율 (%)', angle: -90, position: 'insideLeft' }}
+                          />
+                          <Tooltip 
+                            formatter={(value, name) => [`${value}%`, name]}
+                            contentStyle={{
+                              backgroundColor: 'white',
+                              border: '1px solid #e5e7eb',
+                              borderRadius: '8px',
+                              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                            }}
+                          />
+                          <Legend />
+                          
+                          {/* 전체 평균 기준선 */}
+                          <Line 
+                            type="monotone" 
+                            dataKey="agreedPercentage" 
+                            stroke="#94a3b8" 
+                            strokeWidth={2}
+                            strokeDasharray="10 5"
+                            name="전체 평균"
+                            dot={{ fill: '#94a3b8', strokeWidth: 1, r: 3 }}
+                          />
+                          
+                          {/* 의사별 동의율 */}
+                          {consultationDoctorNames.map((doctor, index) => {
+                            const colors = ['#10b981', '#8b5cf6', '#f59e0b', '#ef4444', '#06b6d4'];
+                            const color = colors[index % colors.length];
+                            const dataKey = `${doctor}_동의율`;
+                            
+                            return (
+                              <Line
+                                key={`${doctor}_agreed`}
+                                type="monotone"
+                                dataKey={dataKey}
+                                stroke={color}
+                                strokeWidth={3}
+                                name={`${doctor} 동의율`}
+                                dot={{ fill: color, strokeWidth: 2, r: 5 }}
+                                activeDot={{ r: 7, stroke: color, strokeWidth: 2, fill: '#fff' }}
+                              />
+                            );
+                          })}
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* 상담 인사이트 분석 */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <PieChart className="h-5 w-5" />
+                    상담 성과 인사이트
+                  </CardTitle>
+                  <CardDescription>상담 동의율 개선을 위한 분석 데이터</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {consultationStats && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {/* 동의율 개선 효과 */}
+                      <div className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border border-green-200">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Target className="h-4 w-4 text-green-600" />
+                          <h4 className="font-semibold text-green-800">개선 효과</h4>
+                        </div>
+                        <p className="text-sm text-green-700 mb-2">
+                          동의율 1% 개선시 예상 매출 증가
+                        </p>
+                        <p className="text-lg font-bold text-green-600">
+                          +{consultationStats.totalConsultationCount > 0 && consultationStats.totalConsultationAmount > 0 ? 
+                            Math.round((consultationStats.totalConsultationAmount / consultationStats.totalConsultationCount) * (consultationStats.totalConsultationCount / 100) / 10000) : 0}만원
+                        </p>
+                      </div>
+                      
+                      {/* 미동의 상담 재상담 기회 */}
+                      <div className="p-4 bg-gradient-to-br from-orange-50 to-amber-50 rounded-lg border border-orange-200">
+                        <div className="flex items-center gap-2 mb-2">
+                          <MessageSquare className="h-4 w-4 text-orange-600" />
+                          <h4 className="font-semibold text-orange-800">재상담 기회</h4>
+                        </div>
+                        <p className="text-sm text-orange-700 mb-2">
+                          미동의 {consultationStats.nonAgreedCount}건 재상담 시
+                        </p>
+                        <p className="text-lg font-bold text-orange-600">
+                          최대 +{consultationStats.consultationNonAgreedAmount ? (consultationStats.consultationNonAgreedAmount / 10000).toFixed(0) : 0}만원
+                        </p>
+                      </div>
+                      
+                      {/* 평균 상담 단가 */}
+                      <div className="p-4 bg-gradient-to-br from-blue-50 to-sky-50 rounded-lg border border-blue-200">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Award className="h-4 w-4 text-blue-600" />
+                          <h4 className="font-semibold text-blue-800">평균 단가</h4>
+                        </div>
+                        <p className="text-sm text-blue-700 mb-2">
+                          건당 평균 상담금액
+                        </p>
+                        <p className="text-lg font-bold text-blue-600">
+                          {consultationStats.totalConsultationCount > 0 && consultationStats.totalConsultationAmount > 0 ? 
+                            Math.round((consultationStats.totalConsultationAmount / consultationStats.totalConsultationCount) / 10000) : 0}만원
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </TabsContent>
 
             {/* 지출지표 탭 */}
