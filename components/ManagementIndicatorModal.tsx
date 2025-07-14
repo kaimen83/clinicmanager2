@@ -166,13 +166,15 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
   const [highlightedStaff, setHighlightedStaff] = useState<string | null>(null);
   const [doctorAgreementType, setDoctorAgreementType] = useState<'count' | 'amount'>('count');
   const [staffAgreementType, setStaffAgreementType] = useState<'count' | 'amount'>('count');
+  const [doctorPerformanceType, setDoctorPerformanceType] = useState<'count' | 'amount'>('count');
   
   // 차트 하이라이트 상태 관리
   const [highlightedGroup, setHighlightedGroup] = useState<string | null>(null);
 
   // 직원별 차트 범례 클릭 핸들러
   const handleStaffLegendClick = (data: any) => {
-    const staffName = data.value.replace(' 동의율', '');
+    // 범례 이름 형태: "${staff} 동의율 (건수)" 또는 "${staff} 동의율 (금액)"
+    const staffName = data.value.replace(/ 동의율 \(.*\)$/, '');
     setHighlightedStaff(highlightedStaff === staffName ? null : staffName);
   };
 
@@ -1583,29 +1585,21 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
                 </Card>
 
                 <Card className="p-3 border-l-4 border-l-purple-500">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Users className="h-4 w-4 text-purple-500" />
-                    <span className="text-xs font-medium text-gray-600">동의 건수</span>
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-purple-500" />
+                      <span className="text-xs font-medium text-gray-600">동의 건수</span>
+                    </div>
+                    {!loading && consultationStats && consultationStats.totalConsultationCount > 0 && consultationStats.totalConsultationAmount > 0 ? (
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className="text-gray-500">건별: <span className="font-semibold text-purple-600">{consultationStats.agreedPercentage}%</span></span>
+                        <span className="text-gray-500">금액별: <span className="font-semibold text-purple-600">{consultationStats.agreedAmountPercentage}%</span></span>
+                      </div>
+                    ) : null}
                   </div>
                   <div className="text-xl font-bold text-purple-600">
                     {loading ? '...' : (consultationStats?.agreedCount || 0).toLocaleString()}
                   </div>
-                  {!loading && consultationStats && consultationStats.totalConsultationCount > 0 && consultationStats.totalConsultationAmount > 0 ? (
-                    <div className="flex items-center gap-3 mt-2">
-                      <div className="flex items-center gap-1">
-                        <span className="text-xs text-gray-500">건별:</span>
-                        <span className="text-sm font-semibold text-purple-600">
-                          {consultationStats.agreedPercentage}%
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <span className="text-xs text-gray-500">금액별:</span>
-                        <span className="text-sm font-semibold text-purple-600">
-                          {consultationStats.agreedAmountPercentage}%
-                        </span>
-                      </div>
-                    </div>
-                  ) : null}
                 </Card>
 
                 <Card className="p-3 border-l-4 border-l-red-500">
@@ -1723,99 +1717,187 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
                 {/* 의사별 상담 성과 */}
                 <Card>
                   <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                      <Stethoscope className="h-4 w-4" />
-                      의사별 상담 성과
-                    </CardTitle>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="flex items-center gap-2 text-lg">
+                        <Stethoscope className="h-4 w-4" />
+                        의사별 상담 성과
+                      </CardTitle>
+                      <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+                        <button
+                          onClick={() => setDoctorPerformanceType('count')}
+                          className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                            doctorPerformanceType === 'count' 
+                              ? 'bg-white text-blue-600 shadow-sm font-medium' 
+                              : 'text-gray-600 hover:text-gray-800'
+                          }`}
+                        >
+                          건수
+                        </button>
+                        <button
+                          onClick={() => setDoctorPerformanceType('amount')}
+                          className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                            doctorPerformanceType === 'amount' 
+                              ? 'bg-white text-blue-600 shadow-sm font-medium' 
+                              : 'text-gray-600 hover:text-gray-800'
+                          }`}
+                        >
+                          금액
+                        </button>
+                      </div>
+                    </div>
                   </CardHeader>
                   <CardContent className="pt-0">
                     <div className="space-y-3">
-                      {doctorConsultationStats.map((doctor, index) => {
-                        return (
-                          <div 
-                            key={doctor.doctor} 
-                            className="relative p-3 rounded-lg border border-gray-200 bg-gradient-to-br from-white to-gray-50 hover:shadow-sm transition-all duration-200"
-                          >
-                            {/* 순위 뱃지 */}
-                            {index < 3 && (
-                              <div className={`absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white ${
-                                index === 0 ? 'bg-yellow-500' : 
-                                index === 1 ? 'bg-gray-400' : 
-                                'bg-orange-400'
-                              }`}>
-                                {index + 1}
-                              </div>
-                            )}
-                            
-                            <div className="flex items-center gap-2 mb-2">
-                              <div className="p-1 bg-blue-100 rounded">
-                                <Stethoscope className="h-3 w-3 text-blue-600" />
-                              </div>
-                              <h3 className="font-medium text-sm text-gray-900">{doctor.doctor}</h3>
-                            </div>
-                            
-                            <div className="grid grid-cols-2 gap-4">
-                              <div className="space-y-1">
-                                <div className="flex justify-between items-center">
-                                  <span className="text-xs text-gray-600">총 상담</span>
-                                  <span className="font-bold text-blue-600 text-sm">
-                                    {doctor.totalConsultations}건
-                                  </span>
+                      {doctorConsultationStats
+                        .sort((a, b) => {
+                          // Sort by the selected metric
+                          if (doctorPerformanceType === 'count') {
+                            return b.agreedConsultations - a.agreedConsultations;
+                          } else {
+                            return b.agreedAmount - a.agreedAmount;
+                          }
+                        })
+                        .map((doctor, index) => {
+                          // Calculate amount-based agreement percentage
+                          const amountAgreedPercentage = doctor.totalAmount > 0 
+                            ? Math.round((doctor.agreedAmount / doctor.totalAmount) * 100) 
+                            : 0;
+                          
+                          const displayPercentage = doctorPerformanceType === 'count' 
+                            ? doctor.agreedPercentage 
+                            : amountAgreedPercentage;
+                          
+                          return (
+                            <div 
+                              key={doctor.doctor} 
+                              className="relative p-3 rounded-lg border border-gray-200 bg-gradient-to-br from-white to-gray-50 hover:shadow-sm transition-all duration-200"
+                            >
+                              {/* 순위 뱃지 */}
+                              {index < 3 && (
+                                <div className={`absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white ${
+                                  index === 0 ? 'bg-yellow-500' : 
+                                  index === 1 ? 'bg-gray-400' : 
+                                  'bg-orange-400'
+                                }`}>
+                                  {index + 1}
                                 </div>
-                                
-                                <div className="flex justify-between items-center">
-                                  <span className="text-xs text-gray-600">동의</span>
-                                  <div className="flex items-center gap-1">
-                                    <span className="font-semibold text-green-600 text-sm">
-                                      {doctor.agreedConsultations}건
-                                    </span>
-                                    <Badge 
-                                      variant="secondary" 
-                                      className="text-xs px-1 py-0 h-4 bg-green-100 text-green-700"
-                                    >
-                                      {doctor.agreedPercentage}%
-                                    </Badge>
-                                  </div>
+                              )}
+                              
+                              <div className="flex items-center gap-2 mb-2">
+                                <div className="p-1 bg-blue-100 rounded">
+                                  <Stethoscope className="h-3 w-3 text-blue-600" />
                                 </div>
+                                <h3 className="font-medium text-sm text-gray-900">{doctor.doctor}</h3>
                               </div>
                               
-                              <div className="space-y-1">
-                                <div className="flex justify-between items-center">
-                                  <span className="text-xs text-gray-600">총 금액</span>
-                                  <span className="font-bold text-purple-600 text-sm">
-                                    {(doctor.totalAmount / 10000).toFixed(0)}만원
-                                  </span>
+                              {doctorPerformanceType === 'count' ? (
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div className="space-y-1">
+                                    <div className="flex justify-between items-center">
+                                      <span className="text-xs text-gray-600">총 상담</span>
+                                      <span className="font-bold text-blue-600 text-sm">
+                                        {doctor.totalConsultations}건
+                                      </span>
+                                    </div>
+                                    
+                                    <div className="flex justify-between items-center">
+                                      <span className="text-xs text-gray-600">동의</span>
+                                      <div className="flex items-center gap-1">
+                                        <span className="font-semibold text-green-600 text-sm">
+                                          {doctor.agreedConsultations}건
+                                        </span>
+                                        <Badge 
+                                          variant="secondary" 
+                                          className="text-xs px-1 py-0 h-4 bg-green-100 text-green-700"
+                                        >
+                                          {doctor.agreedPercentage}%
+                                        </Badge>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="space-y-1">
+                                    <div className="flex justify-between items-center">
+                                      <span className="text-xs text-gray-600">평균 금액</span>
+                                      <span className="font-bold text-purple-600 text-sm">
+                                        {doctor.totalConsultations > 0 ? 
+                                          (doctor.totalAmount / doctor.totalConsultations / 10000).toFixed(0) : 0}만원
+                                      </span>
+                                    </div>
+                                    
+                                    <div className="flex justify-between items-center">
+                                      <span className="text-xs text-gray-600">미동의</span>
+                                      <span className="font-semibold text-red-600 text-sm">
+                                        {doctor.nonAgreedConsultations}건
+                                      </span>
+                                    </div>
+                                  </div>
                                 </div>
-                                
-                                <div className="flex justify-between items-center">
-                                  <span className="text-xs text-gray-600">동의금액</span>
-                                  <span className="font-semibold text-green-600 text-sm">
-                                    {(doctor.agreedAmount / 10000).toFixed(0)}만원
-                                  </span>
+                              ) : (
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div className="space-y-1">
+                                    <div className="flex justify-between items-center">
+                                      <span className="text-xs text-gray-600">총 금액</span>
+                                      <span className="font-bold text-blue-600 text-sm">
+                                        {(doctor.totalAmount / 10000).toFixed(0)}만원
+                                      </span>
+                                    </div>
+                                    
+                                    <div className="flex justify-between items-center">
+                                      <span className="text-xs text-gray-600">동의금액</span>
+                                      <div className="flex items-center gap-1">
+                                        <span className="font-semibold text-green-600 text-sm">
+                                          {(doctor.agreedAmount / 10000).toFixed(0)}만원
+                                        </span>
+                                        <Badge 
+                                          variant="secondary" 
+                                          className="text-xs px-1 py-0 h-4 bg-green-100 text-green-700"
+                                        >
+                                          {amountAgreedPercentage}%
+                                        </Badge>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="space-y-1">
+                                    <div className="flex justify-between items-center">
+                                      <span className="text-xs text-gray-600">평균 상담금액</span>
+                                      <span className="font-bold text-purple-600 text-sm">
+                                        {doctor.totalConsultations > 0 ? 
+                                          (doctor.totalAmount / doctor.totalConsultations / 10000).toFixed(0) : 0}만원
+                                      </span>
+                                    </div>
+                                    
+                                    <div className="flex justify-between items-center">
+                                      <span className="text-xs text-gray-600">미동의금액</span>
+                                      <span className="font-semibold text-red-600 text-sm">
+                                        {((doctor.totalAmount - doctor.agreedAmount) / 10000).toFixed(0)}만원
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* 동의율 진행바 */}
+                              <div className="mt-2">
+                                <div className="flex justify-between text-xs mb-1">
+                                  <span>동의율 ({doctorPerformanceType === 'count' ? '건수' : '금액'})</span>
+                                  <span className="font-semibold">{displayPercentage}%</span>
+                                </div>
+                                <div className="w-full bg-gray-200 rounded-full h-1.5">
+                                  <div 
+                                    className={`h-1.5 rounded-full transition-all duration-300 ${
+                                      displayPercentage >= 90 ? 'bg-green-500' :
+                                      displayPercentage >= 80 ? 'bg-yellow-500' :
+                                      'bg-red-500'
+                                    }`}
+                                    style={{ width: `${displayPercentage}%` }}
+                                  ></div>
                                 </div>
                               </div>
                             </div>
-                            
-                            {/* 동의율 진행바 */}
-                            <div className="mt-2">
-                              <div className="flex justify-between text-xs mb-1">
-                                <span>동의율</span>
-                                <span className="font-semibold">{doctor.agreedPercentage}%</span>
-                              </div>
-                              <div className="w-full bg-gray-200 rounded-full h-1.5">
-                                <div 
-                                  className={`h-1.5 rounded-full transition-all duration-300 ${
-                                    doctor.agreedPercentage >= 90 ? 'bg-green-500' :
-                                    doctor.agreedPercentage >= 80 ? 'bg-yellow-500' :
-                                    'bg-red-500'
-                                  }`}
-                                  style={{ width: `${doctor.agreedPercentage}%` }}
-                                ></div>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
                     </div>
                     
                     {doctorConsultationStats.length === 0 && !loading && (
