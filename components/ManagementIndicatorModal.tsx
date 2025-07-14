@@ -1394,7 +1394,7 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
                                         dataKey={dataKey}
                                         position="top"
                                         style={{ fontSize: '11px', fill: colors[index % colors.length] }}
-                                        formatter={(value: number) => value > 0 ? `${value}명` : ''}
+                                        formatter={(value: any) => typeof value === 'number' && value > 0 ? `${value}명` : ''}
                                       />
                                     )}
                                   </Line>
@@ -1463,7 +1463,7 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
                                         dataKey={dataKey}
                                         position="top"
                                         style={{ fontSize: '11px', fill: colors[index % colors.length] }}
-                                        formatter={(value: number) => value > 0 ? `${(value / 10000).toFixed(0)}만` : ''}
+                                        formatter={(value: any) => typeof value === 'number' && value > 0 ? `${(value / 10000).toFixed(0)}만` : ''}
                                       />
                                     )}
                                   </Line>
@@ -1532,7 +1532,7 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
                                         dataKey={dataKey}
                                         position="top"
                                         style={{ fontSize: '11px', fill: colors[index % colors.length] }}
-                                        formatter={(value: number) => value > 0 ? `${(value / 10000).toFixed(0)}만` : ''}
+                                        formatter={(value: any) => typeof value === 'number' && value > 0 ? `${(value / 10000).toFixed(0)}만` : ''}
                                       />
                                     )}
                                   </Line>
@@ -1652,9 +1652,10 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
                         />
                         <Tooltip 
                           formatter={(value, name, props) => {
-                            if (name.includes('동의율')) {
+                            const nameStr = String(name);
+                            if (nameStr.includes('동의율')) {
                               return [`${value}%`, name];
-                            } else if (name.includes('건수')) {
+                            } else if (nameStr.includes('건수')) {
                               return [`${value}건`, name];
                             } else {
                               return [`${Number(value).toLocaleString()}원`, name];

@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
       revisitCount: number;
       paymentAmount: number;
       totalConsultationAmount: number;
-    }, item) => {
+    }, item: any) => {
       totals.totalPatientCount += item.totalPatientCount || 0;
       totals.newPatientCount += item.newPatientCount || 0;
       totals.revisitCount += item.revisitCount || 0;
