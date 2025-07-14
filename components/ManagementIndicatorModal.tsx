@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Users, TrendingUp, MessageSquare, CreditCard, Calendar, Activity, Target, PieChart, Stethoscope, Award, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Users, TrendingUp, MessageSquare, CreditCard, Calendar, Activity, Target, PieChart, Stethoscope, Award, ChevronLeft, ChevronRight, MapPin } from 'lucide-react';
 import { DayPicker } from 'react-day-picker';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LabelList, ComposedChart, Bar } from 'recharts';
 import { format } from 'date-fns';
@@ -59,6 +59,16 @@ type DayOfWeekStats = {
   newPatients: number;
 };
 
+type VisitPathHistoryData = {
+  month: string;
+  groups: Array<{
+    groupName: string;
+    patientCount: number;
+    paymentAmount: number;
+    consultationAmount: number;
+  }>;
+};
+
 export default function ManagementIndicatorModal({ isOpen, onClose }: ManagementIndicatorModalProps) {
   const { selectedDate } = useDateContext();
   const [activeTab, setActiveTab] = useState('visit');
@@ -67,6 +77,8 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
   const [historicalData, setHistoricalData] = useState<HistoricalData[]>([]);
   const [doctorStats, setDoctorStats] = useState<DoctorStats[]>([]);
   const [dayOfWeekStats, setDayOfWeekStats] = useState<DayOfWeekStats[]>([]);
+  const [visitPathHistoryData, setVisitPathHistoryData] = useState<VisitPathHistoryData[]>([]);
+  const [visitPathGroupNames, setVisitPathGroupNames] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
@@ -84,6 +96,7 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
       fetchHistoricalData();
       fetchDoctorStats();
       fetchDayOfWeekStats();
+      fetchVisitPathHistoryData();
     }
   }, [isOpen, currentDate]);
 
@@ -138,6 +151,32 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
       }
     } catch (error) {
       console.error('요일별 통계 조회 실패:', error);
+    }
+  };
+
+  const fetchVisitPathHistoryData = async () => {
+    try {
+      const response = await fetch('/api/visit-path-history');
+      const data = await response.json();
+      if (data.visitPathHistory) {
+        // 그룹명 추출
+        const groupNames = data.visitPathHistory[0]?.groups.map((group: any) => group.groupName) || [];
+        setVisitPathGroupNames(groupNames);
+        
+        // 차트용 데이터 변환
+        const transformedData = data.visitPathHistory.map((monthData: any) => {
+          const transformed: any = { month: monthData.month };
+          monthData.groups.forEach((group: any, index: number) => {
+            transformed[`${group.groupName}_환자수`] = group.patientCount;
+            transformed[`${group.groupName}_결제금액`] = group.paymentAmount;
+            transformed[`${group.groupName}_상담금액`] = group.consultationAmount;
+          });
+          return transformed;
+        });
+        setVisitPathHistoryData(transformedData);
+      }
+    } catch (error) {
+      console.error('내원경로별 통계 조회 실패:', error);
     }
   };
 
@@ -236,7 +275,7 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
         
         <div className="p-6">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-4 h-14 mb-6 bg-gray-100/50">
+            <TabsList className="grid w-full grid-cols-5 h-14 mb-6 bg-gray-100/50">
               <TabsTrigger 
                 value="visit" 
                 className="data-[state=active]:bg-white data-[state=active]:shadow-md flex items-center gap-2 text-sm font-medium"
@@ -250,6 +289,13 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
               >
                 <TrendingUp className="h-4 w-4" />
                 매출지표
+              </TabsTrigger>
+              <TabsTrigger 
+                value="visitpath" 
+                className="data-[state=active]:bg-white data-[state=active]:shadow-md flex items-center gap-2 text-sm font-medium"
+              >
+                <MapPin className="h-4 w-4" />
+                내원경로별
               </TabsTrigger>
               <TabsTrigger 
                 value="consultation" 
@@ -597,6 +643,177 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
             {/* 매출지표 탭 */}
             <TabsContent value="revenue" className="space-y-4 mt-0">
               {/* 매출지표 컨텐츠 */}
+            </TabsContent>
+
+            {/* 내원경로별 통계 탭 */}
+            <TabsContent value="visitpath" className="space-y-6 mt-0">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <MapPin className="h-5 w-5" />
+                    내원경로별 15개월 통계
+                  </CardTitle>
+                  <CardDescription>대분류별 환자 수, 결제금액, 상담금액 추이</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {visitPathHistoryData.length > 0 ? (
+                    <div className="space-y-8">
+                      {/* 환자 수 차트 */}
+                      <div>
+                        <h3 className="text-lg font-semibold mb-4 text-blue-700">환자 수 추이</h3>
+                        <div className="h-[400px] w-full">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={visitPathHistoryData}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                              <XAxis 
+                                dataKey="month" 
+                                tick={{ fontSize: 12 }}
+                                tickLine={{ stroke: '#d1d5db' }}
+                              />
+                              <YAxis 
+                                tick={{ fontSize: 12 }}
+                                tickLine={{ stroke: '#d1d5db' }}
+                                label={{ value: '환자 수 (명)', angle: -90, position: 'insideLeft' }}
+                              />
+                              <Tooltip 
+                                formatter={(value, name) => [`${value}명`, name]}
+                                labelFormatter={(label) => `${label}`}
+                                contentStyle={{
+                                  backgroundColor: 'white',
+                                  border: '1px solid #e5e7eb',
+                                  borderRadius: '8px',
+                                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                                }}
+                              />
+                              <Legend />
+                              {visitPathGroupNames.map((groupName, index) => {
+                                const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#f97316'];
+                                return (
+                                  <Line
+                                    key={groupName}
+                                    type="monotone"
+                                    dataKey={`${groupName}_환자수`}
+                                    stroke={colors[index % colors.length]}
+                                    strokeWidth={3}
+                                    name={groupName}
+                                    dot={{ r: 4 }}
+                                    activeDot={{ r: 6 }}
+                                  />
+                                );
+                              })}
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+
+                      {/* 결제 금액 차트 */}
+                      <div>
+                        <h3 className="text-lg font-semibold mb-4 text-green-700">결제 금액 추이</h3>
+                        <div className="h-[400px] w-full">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={visitPathHistoryData}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                              <XAxis 
+                                dataKey="month" 
+                                tick={{ fontSize: 12 }}
+                                tickLine={{ stroke: '#d1d5db' }}
+                              />
+                              <YAxis 
+                                tick={{ fontSize: 12 }}
+                                tickLine={{ stroke: '#d1d5db' }}
+                                label={{ value: '결제 금액 (원)', angle: -90, position: 'insideLeft' }}
+                                tickFormatter={(value) => `${(value / 10000).toFixed(0)}만`}
+                              />
+                              <Tooltip 
+                                formatter={(value, name) => [`${Number(value).toLocaleString()}원`, name]}
+                                labelFormatter={(label) => `${label}`}
+                                contentStyle={{
+                                  backgroundColor: 'white',
+                                  border: '1px solid #e5e7eb',
+                                  borderRadius: '8px',
+                                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                                }}
+                              />
+                              <Legend />
+                              {visitPathGroupNames.map((groupName, index) => {
+                                const colors = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#f97316'];
+                                return (
+                                  <Line
+                                    key={groupName}
+                                    type="monotone"
+                                    dataKey={`${groupName}_결제금액`}
+                                    stroke={colors[index % colors.length]}
+                                    strokeWidth={3}
+                                    name={groupName}
+                                    dot={{ r: 4 }}
+                                    activeDot={{ r: 6 }}
+                                  />
+                                );
+                              })}
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+
+                      {/* 상담 금액 차트 */}
+                      <div>
+                        <h3 className="text-lg font-semibold mb-4 text-orange-700">상담 금액 추이</h3>
+                        <div className="h-[400px] w-full">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={visitPathHistoryData}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                              <XAxis 
+                                dataKey="month" 
+                                tick={{ fontSize: 12 }}
+                                tickLine={{ stroke: '#d1d5db' }}
+                              />
+                              <YAxis 
+                                tick={{ fontSize: 12 }}
+                                tickLine={{ stroke: '#d1d5db' }}
+                                label={{ value: '상담 금액 (원)', angle: -90, position: 'insideLeft' }}
+                                tickFormatter={(value) => `${(value / 10000).toFixed(0)}만`}
+                              />
+                              <Tooltip 
+                                formatter={(value, name) => [`${Number(value).toLocaleString()}원`, name]}
+                                labelFormatter={(label) => `${label}`}
+                                contentStyle={{
+                                  backgroundColor: 'white',
+                                  border: '1px solid #e5e7eb',
+                                  borderRadius: '8px',
+                                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                                }}
+                              />
+                              <Legend />
+                              {visitPathGroupNames.map((groupName, index) => {
+                                const colors = ['#f59e0b', '#ef4444', '#3b82f6', '#10b981', '#8b5cf6', '#06b6d4', '#84cc16', '#f97316'];
+                                return (
+                                  <Line
+                                    key={groupName}
+                                    type="monotone"
+                                    dataKey={`${groupName}_상담금액`}
+                                    stroke={colors[index % colors.length]}
+                                    strokeWidth={3}
+                                    name={groupName}
+                                    dot={{ r: 4 }}
+                                    activeDot={{ r: 6 }}
+                                  />
+                                );
+                              })}
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center h-64">
+                      <div className="text-center">
+                        <MapPin className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                        <p className="text-gray-500">내원경로별 통계 데이터를 불러오는 중입니다...</p>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </TabsContent>
 
             {/* 상담지표 탭 */}
