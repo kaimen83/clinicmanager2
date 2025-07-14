@@ -116,6 +116,15 @@ export async function GET(request: NextRequest) {
               ] },
               1
             ]
+          },
+          agreedAmountPercentage: {
+            $round: [
+              { $multiply: [
+                { $divide: ["$agreedAmount", "$totalAmount"] },
+                100
+              ] },
+              1
+            ]
           }
         }
       },
@@ -165,6 +174,15 @@ export async function GET(request: NextRequest) {
               ] },
               1
             ]
+          },
+          agreedAmountPercentage: {
+            $round: [
+              { $multiply: [
+                { $divide: ["$agreedAmount", "$totalAmount"] },
+                100
+              ] },
+              1
+            ]
           }
         }
       },
@@ -181,35 +199,26 @@ export async function GET(request: NextRequest) {
         doctorsByMonth.set(key, {});
       }
       doctorsByMonth.get(key)[`${trend._id.doctor}_동의율`] = trend.agreedPercentage;
+      doctorsByMonth.get(key)[`${trend._id.doctor}_금액동의율`] = trend.agreedAmountPercentage;
       doctorsByMonth.get(key)[`${trend._id.doctor}_상담건수`] = trend.totalConsultations;
       doctorsByMonth.get(key)[`${trend._id.doctor}_상담금액`] = trend.totalAmount;
     });
 
-    // 직원별로 그룹화 (상위 5명만)
-    const staffTotalStats = new Map();
+    // 직원별로 그룹화 (모든 직원)
+    const allStaffs = new Set();
+    const staffsByMonth = new Map();
+    
     staffTrends.forEach(trend => {
       const staff = trend._id.staff;
-      if (!staffTotalStats.has(staff)) {
-        staffTotalStats.set(staff, 0);
+      allStaffs.add(staff);
+      
+      const key = trend.month_str;
+      if (!staffsByMonth.has(key)) {
+        staffsByMonth.set(key, {});
       }
-      staffTotalStats.set(staff, staffTotalStats.get(staff) + trend.totalConsultations);
-    });
-
-    const topStaffs = Array.from(staffTotalStats.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-      .map(entry => entry[0]);
-
-    const staffsByMonth = new Map();
-    staffTrends.forEach(trend => {
-      if (topStaffs.includes(trend._id.staff)) {
-        const key = trend.month_str;
-        if (!staffsByMonth.has(key)) {
-          staffsByMonth.set(key, {});
-        }
-        staffsByMonth.get(key)[`${trend._id.staff}_동의율`] = trend.agreedPercentage;
-        staffsByMonth.get(key)[`${trend._id.staff}_상담건수`] = trend.totalConsultations;
-      }
+      staffsByMonth.get(key)[`${staff}_동의율`] = trend.agreedPercentage;
+      staffsByMonth.get(key)[`${staff}_금액동의율`] = trend.agreedAmountPercentage;
+      staffsByMonth.get(key)[`${staff}_상담건수`] = trend.totalConsultations;
     });
 
     // 15개월 전체 범위 생성 (빈 월도 포함)
@@ -253,7 +262,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       trends: result,
       doctors: doctors,
-      topStaffs: topStaffs
+      allStaffs: Array.from(allStaffs)
     });
 
   } catch (error) {

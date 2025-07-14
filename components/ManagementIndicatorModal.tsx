@@ -105,6 +105,7 @@ type ConsultationStats = {
   totalConsultationCount: number;
   agreedPercentage: number;
   agreedAmountPercentage: number;
+  nonAgreedAmount: number;
 };
 
 type ConsultationTrendData = {
@@ -161,10 +162,19 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
   const [doctorConsultationStats, setDoctorConsultationStats] = useState<DoctorConsultationStats[]>([]);
   const [staffConsultationStats, setStaffConsultationStats] = useState<StaffConsultationStats[]>([]);
   const [consultationDoctorNames, setConsultationDoctorNames] = useState<string[]>([]);
-  const [topStaffs, setTopStaffs] = useState<string[]>([]);
+  const [allStaffs, setAllStaffs] = useState<string[]>([]);
+  const [highlightedStaff, setHighlightedStaff] = useState<string | null>(null);
+  const [doctorAgreementType, setDoctorAgreementType] = useState<'count' | 'amount'>('count');
+  const [staffAgreementType, setStaffAgreementType] = useState<'count' | 'amount'>('count');
   
   // 차트 하이라이트 상태 관리
   const [highlightedGroup, setHighlightedGroup] = useState<string | null>(null);
+
+  // 직원별 차트 범례 클릭 핸들러
+  const handleStaffLegendClick = (data: any) => {
+    const staffName = data.value.replace(' 동의율', '');
+    setHighlightedStaff(highlightedStaff === staffName ? null : staffName);
+  };
 
   // 모달이 열릴 때 currentDate를 selectedDate로 초기화
   useEffect(() => {
@@ -274,23 +284,35 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
     try {
       const month = format(currentDate, 'yyyy-MM');
       
-      // 현재 월 상담 통계 가져오기
+      // 15개월 상담 트렌드 데이터 가져오기 (현재 월 통계 포함)
+      const trendResponse = await fetch('/api/consultation-trends');
+      const trendData = await trendResponse.json();
+      
+      if (trendData.trends) {
+        setConsultationTrendData(trendData.trends);
+        
+        // 현재 월 데이터를 트렌드 데이터에서 추출
+        const currentMonthData = trendData.trends.find((trend: any) => trend.month === month);
+        
+        if (currentMonthData) {
+          const summary = {
+            consultationAgreedAmount: currentMonthData.agreedAmount || 0,
+            consultationNonAgreedAmount: currentMonthData.nonAgreedAmount || 0,
+            totalConsultationAmount: currentMonthData.totalAmount || 0,
+            agreedCount: currentMonthData.agreedConsultations || 0,
+            nonAgreedCount: currentMonthData.nonAgreedConsultations || 0,
+            totalConsultationCount: currentMonthData.totalConsultations || 0,
+            agreedPercentage: currentMonthData.agreedPercentage || 0,
+            agreedAmountPercentage: currentMonthData.agreedAmountPercentage || 0,
+            nonAgreedAmount: currentMonthData.nonAgreedAmount || 0
+          };
+          setConsultationStats(summary);
+        }
+      }
+      
+      // 현재 월 의사별 통계 가져오기
       const statsResponse = await fetch(`/api/consultations/stats?type=monthly&date=${month}`);
       const statsData = await statsResponse.json();
-      
-      if (statsData.summary) {
-        const summary = {
-          consultationAgreedAmount: statsData.summary.consultationAgreedAmount || 0,
-          consultationNonAgreedAmount: statsData.summary.consultationNonAgreedAmount || 0,
-          totalConsultationAmount: statsData.summary.totalConsultationAmount || 0,
-          agreedCount: statsData.summary.agreedCount || 0,
-          nonAgreedCount: statsData.summary.nonAgreedCount || 0,
-          totalConsultationCount: statsData.summary.totalConsultationCount || 0,
-          agreedPercentage: statsData.summary.agreedPercentage || 0,
-          agreedAmountPercentage: statsData.summary.agreedAmountPercentage || 0
-        };
-        setConsultationStats(summary);
-      }
       
       if (statsData.doctorStats) {
         const doctorStats = statsData.doctorStats.map((doctor: any) => ({
@@ -305,20 +327,12 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
         setDoctorConsultationStats(doctorStats);
       }
       
-      // 15개월 상담 트렌드 데이터 가져오기
-      const trendResponse = await fetch('/api/consultation-trends');
-      const trendData = await trendResponse.json();
-      
-      if (trendData.trends) {
-        setConsultationTrendData(trendData.trends);
-      }
-      
       if (trendData.doctors) {
         setConsultationDoctorNames(trendData.doctors);
       }
       
-      if (trendData.topStaffs) {
-        setTopStaffs(trendData.topStaffs);
+      if (trendData.allStaffs) {
+        setAllStaffs(trendData.allStaffs);
       }
       
     } catch (error) {
@@ -478,7 +492,7 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto p-0">
+      <DialogContent className="max-w-[80vw] max-h-[90vh] overflow-y-auto p-0">
         <DialogHeader className="px-6 pt-6 pb-4 border-b bg-gradient-to-r from-purple-50 to-pink-50">
           <div className="flex items-center justify-between">
             <DialogTitle className="text-2xl font-bold text-gray-800">경영지표 대시보드</DialogTitle>
@@ -1550,11 +1564,6 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
                   </div>
                   <div className="text-xl font-bold text-green-600">
                     {loading ? '...' : (consultationStats?.totalConsultationCount || 0).toLocaleString()}
-                    {!loading && consultationStats && consultationStats.totalConsultationCount > 0 ? (
-                      <span className="text-sm font-normal text-gray-500 ml-1">
-                        (동의율 {consultationStats.agreedPercentage}%)
-                      </span>
-                    ) : null}
                   </div>
                 </Card>
 
@@ -1580,12 +1589,23 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
                   </div>
                   <div className="text-xl font-bold text-purple-600">
                     {loading ? '...' : (consultationStats?.agreedCount || 0).toLocaleString()}
-                    {!loading && consultationStats && consultationStats.agreedCount > 0 && consultationStats.totalConsultationAmount > 0 ? (
-                      <span className="text-sm font-normal text-gray-500 ml-1">
-                        ({((consultationStats.consultationAgreedAmount / consultationStats.totalConsultationAmount) * 100).toFixed(1)}% 금액)
-                      </span>
-                    ) : null}
                   </div>
+                  {!loading && consultationStats && consultationStats.totalConsultationCount > 0 && consultationStats.totalConsultationAmount > 0 ? (
+                    <div className="flex items-center gap-3 mt-2">
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs text-gray-500">건별:</span>
+                        <span className="text-sm font-semibold text-purple-600">
+                          {consultationStats.agreedPercentage}%
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs text-gray-500">금액별:</span>
+                        <span className="text-sm font-semibold text-purple-600">
+                          {consultationStats.agreedAmountPercentage}%
+                        </span>
+                      </div>
+                    </div>
+                  ) : null}
                 </Card>
 
                 <Card className="p-3 border-l-4 border-l-red-500">
@@ -1810,11 +1830,37 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
                 {/* 의사별 15개월 동의율 트렌드 */}
                 <Card>
                   <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                      <TrendingUp className="h-4 w-4" />
-                      의사별 동의율 트렌드
-                    </CardTitle>
-                    <CardDescription>15개월간 의사별 동의율 변화 추이</CardDescription>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="flex items-center gap-2 text-lg">
+                          <TrendingUp className="h-4 w-4" />
+                          의사별 동의율 트렌드
+                        </CardTitle>
+                        <CardDescription>15개월간 의사별 동의율 변화 추이</CardDescription>
+                      </div>
+                      <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+                        <button
+                          onClick={() => setDoctorAgreementType('count')}
+                          className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                            doctorAgreementType === 'count' 
+                              ? 'bg-white text-blue-600 shadow-sm font-medium' 
+                              : 'text-gray-600 hover:text-gray-800'
+                          }`}
+                        >
+                          건수
+                        </button>
+                        <button
+                          onClick={() => setDoctorAgreementType('amount')}
+                          className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                            doctorAgreementType === 'amount' 
+                              ? 'bg-white text-blue-600 shadow-sm font-medium' 
+                              : 'text-gray-600 hover:text-gray-800'
+                          }`}
+                        >
+                          금액
+                        </button>
+                      </div>
+                    </div>
                   </CardHeader>
                   <CardContent className="pt-0">
                     <div className="h-[300px] w-full">
@@ -1846,11 +1892,11 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
                           {/* 전체 평균 기준선 */}
                           <Line 
                             type="monotone" 
-                            dataKey="agreedPercentage" 
+                            dataKey={doctorAgreementType === 'count' ? "agreedPercentage" : "agreedAmountPercentage"} 
                             stroke="#94a3b8" 
                             strokeWidth={2}
                             strokeDasharray="10 5"
-                            name="전체 평균"
+                            name={`전체 평균 (${doctorAgreementType === 'count' ? '건수' : '금액'})`}
                             dot={{ fill: '#94a3b8', strokeWidth: 1, r: 3 }}
                           />
                           
@@ -1858,16 +1904,16 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
                           {consultationDoctorNames.map((doctor, index) => {
                             const colors = ['#10b981', '#8b5cf6', '#f59e0b', '#ef4444', '#06b6d4'];
                             const color = colors[index % colors.length];
-                            const dataKey = `${doctor}_동의율`;
+                            const dataKey = doctorAgreementType === 'count' ? `${doctor}_동의율` : `${doctor}_금액동의율`;
                             
                             return (
                               <Line
-                                key={`${doctor}_agreed`}
+                                key={`${doctor}_agreed_${doctorAgreementType}`}
                                 type="monotone"
                                 dataKey={dataKey}
                                 stroke={color}
                                 strokeWidth={3}
-                                name={`${doctor} 동의율`}
+                                name={`${doctor} 동의율 (${doctorAgreementType === 'count' ? '건수' : '금액'})`}
                                 dot={{ fill: color, strokeWidth: 2, r: 5 }}
                                 activeDot={{ r: 7, stroke: color, strokeWidth: 2, fill: '#fff' }}
                               />
@@ -1879,6 +1925,110 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
                   </CardContent>
                 </Card>
               </div>
+
+              {/* 직원별 동의율 트렌드 */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="flex items-center gap-2 text-lg">
+                        <Users className="h-4 w-4" />
+                        직원별 동의율 트렌드
+                      </CardTitle>
+                      <CardDescription>15개월간 모든 직원별 동의율 변화 추이</CardDescription>
+                    </div>
+                    <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+                      <button
+                        onClick={() => setStaffAgreementType('count')}
+                        className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                          staffAgreementType === 'count' 
+                            ? 'bg-white text-blue-600 shadow-sm font-medium' 
+                            : 'text-gray-600 hover:text-gray-800'
+                        }`}
+                      >
+                        건수
+                      </button>
+                      <button
+                        onClick={() => setStaffAgreementType('amount')}
+                        className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                          staffAgreementType === 'amount' 
+                            ? 'bg-white text-blue-600 shadow-sm font-medium' 
+                            : 'text-gray-600 hover:text-gray-800'
+                        }`}
+                      >
+                        금액
+                      </button>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="h-[350px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={consultationTrendData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                        <XAxis 
+                          dataKey="month" 
+                          tick={{ fontSize: 12 }}
+                          tickLine={{ stroke: '#d1d5db' }}
+                        />
+                        <YAxis 
+                          tick={{ fontSize: 12 }}
+                          tickLine={{ stroke: '#d1d5db' }}
+                          domain={[60, 100]}
+                          label={{ value: '동의율 (%)', angle: -90, position: 'insideLeft' }}
+                        />
+                        <Tooltip 
+                          formatter={(value, name) => [`${value}%`, name]}
+                          contentStyle={{
+                            backgroundColor: 'white',
+                            border: '1px solid #e5e7eb',
+                            borderRadius: '8px',
+                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                          }}
+                        />
+                        <Legend 
+                          onClick={handleStaffLegendClick}
+                          wrapperStyle={{ cursor: 'pointer' }}
+                        />
+                        
+                        {/* 전체 평균 기준선 */}
+                        <Line 
+                          type="monotone" 
+                          dataKey={staffAgreementType === 'count' ? "agreedPercentage" : "agreedAmountPercentage"} 
+                          stroke="#94a3b8" 
+                          strokeWidth={2}
+                          strokeDasharray="10 5"
+                          name={`전체 평균 (${staffAgreementType === 'count' ? '건수' : '금액'})`}
+                          dot={{ fill: '#94a3b8', strokeWidth: 1, r: 3 }}
+                        />
+                        
+                        {/* 직원별 동의율 */}
+                        {allStaffs.map((staff, index) => {
+                          const colors = ['#10b981', '#8b5cf6', '#f59e0b', '#ef4444', '#06b6d4', '#84cc16', '#f97316', '#3b82f6', '#ec4899', '#6366f1'];
+                          const color = colors[index % colors.length];
+                          const dataKey = staffAgreementType === 'count' ? `${staff}_동의율` : `${staff}_금액동의율`;
+                          const isHighlighted = highlightedStaff === null || highlightedStaff === staff;
+                          const opacity = highlightedStaff === null ? 1 : (isHighlighted ? 1 : 0.15);
+                          
+                          return (
+                            <Line
+                              key={`${staff}_agreed_${staffAgreementType}`}
+                              type="monotone"
+                              dataKey={dataKey}
+                              stroke={color}
+                              strokeWidth={3}
+                              strokeOpacity={opacity}
+                              name={`${staff} 동의율 (${staffAgreementType === 'count' ? '건수' : '금액'})`}
+                              dot={{ fill: color, strokeWidth: 2, r: 5, fillOpacity: opacity }}
+                              activeDot={{ r: 7, stroke: color, strokeWidth: 2, fill: '#fff', fillOpacity: opacity }}
+                            />
+                          );
+                        })}
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
 
               {/* 상담 인사이트 분석 */}
               <Card>
