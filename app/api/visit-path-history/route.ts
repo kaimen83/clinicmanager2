@@ -45,48 +45,15 @@ export async function GET(request: NextRequest) {
       const startDate = new Date(startDateObj.getTime() - kstOffset);
       const endDate = new Date(endDateObj.getTime() - kstOffset);
       
-      // 각 그룹별 통계 계산
+      // 각 그룹별 통계 계산 - 환자분석과 동일한 로직 사용
       const groups = await Promise.all(visitPathGroups.map(async (group) => {
-        // 그룹에 속한 내원경로들의 트랜잭션 데이터 조회
-        const transactions = await db.collection('transactions')
-          .find({
-            date: { $gte: startDate, $lte: endDate },
-            visitPath: { $in: group.visitPaths }
-          })
-          .toArray();
-        
-        // 환자 수 계산 (중복 제거)
-        const uniquePatients = new Set(transactions.map(t => t.chartNumber));
-        const patientCount = uniquePatients.size;
-        
-        // 결제 금액 합계
-        const paymentAmount = transactions.reduce((sum, t) => sum + (t.paymentAmount || 0), 0);
-        
-        // 상담 금액 계산 (해당 내원경로의 상담 데이터)
-        // 먼저 해당 그룹의 내원경로를 가진 환자들의 차트번호를 구함
-        const groupPatients = await db.collection('patients')
-          .find({ visitPath: { $in: group.visitPaths } })
-          .toArray();
-        
-        const groupChartNumbers = groupPatients.map(p => p.chartNumber);
-        
-        const consultations = await db.collection('consultations')
-          .find({
-            date: { $gte: startDate, $lte: endDate },
-            chartNumber: { $in: groupChartNumbers }
-          })
-          .toArray();
-        
-        // 상담 금액 합계 (합의 + 비합의)
-        const consultationAmount = consultations.reduce((sum, c) => {
-          return sum + (c.amount || 0);
-        }, 0);
+        const stats = await getVisitPathGroupStats(db, group.visitPaths, startDate, endDate);
         
         return {
           groupName: group.name,
-          patientCount,
-          paymentAmount,
-          consultationAmount
+          patientCount: stats.totalPatientCount,
+          paymentAmount: stats.paymentAmount,
+          consultationAmount: stats.totalConsultationAmount
         };
       }));
       
@@ -106,4 +73,147 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+// 환자분석과 동일한 로직: 그룹별 데이터 집계 (일자별 중복 허용)
+async function getVisitPathGroupStats(db: any, visitPaths: string[], startUtc: Date, endUtc: Date) {
+  // 그룹 전체에 대해 한 번에 집계 (환자분석과 동일한 로직)
+  const pipeline = [
+    // 1. 기간별 트랜잭션 데이터 필터링
+    {
+      $match: {
+        date: { $gte: startUtc, $lte: endUtc }
+      }
+    },
+    // 2. 환자 정보와 조인
+    {
+      $lookup: {
+        from: 'patients',
+        localField: 'chartNumber',
+        foreignField: 'chartNumber',
+        as: 'patient'
+      }
+    },
+    // 3. 환자 정보 언와인드
+    {
+      $unwind: '$patient'
+    },
+    // 4. 해당 그룹의 내원경로들로 필터링
+    {
+      $match: {
+        'patient.visitPath': { $in: visitPaths }
+      }
+    },
+    // 5. 날짜별 환자 그룹핑 (환자분석과 동일한 로직)
+    {
+      $addFields: {
+        dateStr: {
+          $dateToString: {
+            format: "%Y-%m-%d",
+            date: "$date",
+            timezone: "UTC"
+          }
+        }
+      }
+    },
+    // 6. 날짜별, 환자별로 그룹핑 (같은 날 같은 환자는 1번만 카운트)
+    {
+      $group: {
+        _id: {
+          date: '$dateStr',
+          chartNumber: '$chartNumber'
+        },
+        isNew: { $first: '$isNew' },
+        paymentAmount: { $sum: { $ifNull: ['$paymentAmount', 0] } }
+      }
+    },
+    // 7. 날짜별로 그룹핑
+    {
+      $group: {
+        _id: '$_id.date',
+        dailyPatients: { $sum: 1 },
+        dailyNewPatients: {
+          $sum: {
+            $cond: [
+              { $eq: ['$isNew', true] },
+              1,
+              0
+            ]
+          }
+        },
+        dailyPaymentAmount: { $sum: '$paymentAmount' }
+      }
+    },
+    // 8. 최종 집계
+    {
+      $group: {
+        _id: null,
+        totalPatientCount: { $sum: '$dailyPatients' },
+        newPatientCount: { $sum: '$dailyNewPatients' },
+        paymentAmount: { $sum: '$dailyPaymentAmount' }
+      }
+    },
+    // 9. 재진 수 계산
+    {
+      $addFields: {
+        revisitCount: { $subtract: ['$totalPatientCount', '$newPatientCount'] }
+      }
+    }
+  ];
+
+  const result = await db.collection('transactions').aggregate(pipeline).toArray();
+  
+  // 상담금액을 별도로 조회 (consultations에서)
+  const consultationPipeline = [
+    {
+      $match: {
+        date: { $gte: startUtc, $lte: endUtc }
+      }
+    },
+    {
+      $lookup: {
+        from: 'patients',
+        localField: 'chartNumber',
+        foreignField: 'chartNumber',
+        as: 'patient'
+      }
+    },
+    {
+      $unwind: '$patient'
+    },
+    {
+      $match: {
+        'patient.visitPath': { $in: visitPaths }
+      }
+    },
+    {
+      $group: {
+        _id: null,
+        totalConsultationAmount: {
+          $sum: { $ifNull: ['$amount', 0] }
+        }
+      }
+    }
+  ];
+
+  const consultationResult = await db.collection('consultations').aggregate(consultationPipeline).toArray();
+  
+  if (result.length === 0) {
+    return {
+      totalPatientCount: 0,
+      newPatientCount: 0,
+      revisitCount: 0,
+      paymentAmount: 0,
+      totalConsultationAmount: consultationResult.length > 0 
+        ? consultationResult[0].totalConsultationAmount 
+        : 0
+    };
+  }
+
+  const finalResult = result[0];
+  finalResult.totalConsultationAmount = consultationResult.length > 0 
+    ? consultationResult[0].totalConsultationAmount 
+    : 0;
+
+  return finalResult;
 }
