@@ -32,6 +32,7 @@ import CashManagementModal from "./CashManagementModal";
 import SupplyModal from "./SupplyModal";
 import DentalProductInventoryModal from "./DentalProductInventoryModal";
 import ImplantInventoryModal from "./ImplantInventoryModal";
+import ReviewModal from "./ReviewModal";
 import { ExtraIncome, Expense } from "@/lib/types";
 import { toast } from "sonner";
 
@@ -45,6 +46,7 @@ export default function ClinicNavigation() {
   const [isSupplyModalOpen, setIsSupplyModalOpen] = useState(false);
   const [isDentalProductInventoryModalOpen, setIsDentalProductInventoryModalOpen] = useState(false);
   const [isImplantInventoryModalOpen, setIsImplantInventoryModalOpen] = useState(false);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
   const handleDateSelect = (date: Date | undefined) => {
@@ -120,6 +122,14 @@ export default function ClinicNavigation() {
 
   const handleImplantInventoryModalClose = () => {
     setIsImplantInventoryModalOpen(false);
+  };
+
+  const handleReviewModalOpen = () => {
+    setIsReviewModalOpen(true);
+  };
+
+  const handleReviewModalClose = () => {
+    setIsReviewModalOpen(false);
   };
 
   const handleExtraIncomeSuccess = (data: ExtraIncome) => {
@@ -221,7 +231,12 @@ export default function ClinicNavigation() {
             </DropdownMenuContent>
           </DropdownMenu>
           
-          <Button variant="outline" className="flex items-center gap-2 bg-white border-2 border-rose-200 hover:bg-rose-50 hover:border-rose-300 text-gray-700 hover:text-rose-700 transition-all duration-200 font-medium" title="병원리뷰">
+          <Button 
+            variant="outline" 
+            className="flex items-center gap-2 bg-white border-2 border-rose-200 hover:bg-rose-50 hover:border-rose-300 text-gray-700 hover:text-rose-700 transition-all duration-200 font-medium" 
+            onClick={handleReviewModalOpen}
+            title="병원리뷰"
+          >
             <Star className="w-4 h-4" />
             <span className="hidden lg:inline">병원리뷰</span>
           </Button>
@@ -342,6 +357,12 @@ export default function ClinicNavigation() {
       <ImplantInventoryModal
         isOpen={isImplantInventoryModalOpen}
         onClose={handleImplantInventoryModalClose}
+      />
+
+      {/* 병원리뷰 모달 */}
+      <ReviewModal
+        isOpen={isReviewModalOpen}
+        onClose={handleReviewModalClose}
       />
     </Card>
   );
