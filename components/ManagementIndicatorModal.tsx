@@ -224,31 +224,26 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
       // 매출 기록 데이터 가져오기
       const response = await fetch('/api/revenue-history');
       const data = await response.json();
-      console.log('Revenue history response:', data);
       
       if (data.revenueHistory) {
         setRevenueHistoricalData(data.revenueHistory);
-        console.log('Revenue historical data set:', data.revenueHistory);
         
         // 원장 이름 추출 (모든 월 데이터에서)
         if (data.revenueHistory.length > 0) {
           const doctors = new Set<string>();
           
           // 모든 월 데이터를 확인해서 원장 이름 추출
-          data.revenueHistory.forEach((monthData: any, index: number) => {
-            console.log(`Month ${index} data:`, monthData);
+          data.revenueHistory.forEach((monthData: any) => {
             Object.keys(monthData).forEach(key => {
               if (key.includes('_총매출')) {
                 const doctorName = key.replace('_총매출', '').trim();
                 if (doctorName && doctorName !== '미분류') {
                   doctors.add(doctorName);
-                  console.log(`Found doctor: "${doctorName}" in month ${monthData.month}`);
                 }
               }
             });
           });
           
-          console.log('All doctor names extracted:', Array.from(doctors));
           setDoctorNames(Array.from(doctors));
         }
       }
@@ -992,163 +987,216 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
                 </Card>
               </div>
 
-              {/* 통합 15개월 매출 트렌드 차트 */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>최근 15개월 매출 추이</CardTitle>
-                  <CardDescription>월별 총매출 및 현금/카드 매출 비중 (진료일 기준)</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-[400px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <ComposedChart data={revenueHistoricalData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                        <XAxis 
-                          dataKey="month" 
-                          tick={{ fontSize: 12 }}
-                          tickLine={{ stroke: '#d1d5db' }}
-                        />
-                        {/* 왼쪽 Y축 - 월별 총매출 */}
-                        <YAxis 
-                          yAxisId="monthly"
-                          tick={{ fontSize: 12 }}
-                          tickLine={{ stroke: '#d1d5db' }}
-                          tickFormatter={(value) => `${(value / 10000).toFixed(0)}만`}
-                          label={{ value: '월별 총매출 (만원)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }}
-                        />
-                        {/* 오른쪽 Y축 - 일평균 */}
-                        <YAxis 
-                          yAxisId="daily"
-                          orientation="right"
-                          tick={{ fontSize: 12 }}
-                          tickLine={{ stroke: '#d1d5db' }}
-                          tickFormatter={(value) => `${(value / 10000).toFixed(0)}만`}
-                          label={{ value: '일평균 (만원)', angle: 90, position: 'insideRight', style: { textAnchor: 'middle' } }}
-                        />
-                        <Tooltip 
-                          formatter={(value, name) => [
-                            `${Number(value).toLocaleString()}원`,
-                            name
-                          ]}
-                          labelFormatter={(label) => `${label}`}
-                          contentStyle={{
-                            backgroundColor: 'white',
-                            border: '1px solid #e5e7eb',
-                            borderRadius: '8px',
-                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                          }}
-                        />
-                        <Legend 
-                          wrapperStyle={{ paddingTop: '20px' }}
-                        />
-                        
-                        {/* 월별 총매출 라인 */}
-                        <Line 
-                          yAxisId="monthly"
-                          type="monotone" 
-                          dataKey="totalRevenue" 
-                          stroke="#3b82f6" 
-                          strokeWidth={3}
-                          name="월별 총매출"
-                          dot={{ fill: '#3b82f6', strokeWidth: 2, r: 5 }}
-                          activeDot={{ r: 7, stroke: '#3b82f6', strokeWidth: 2, fill: '#fff' }}
-                        >
-                          <LabelList 
-                            dataKey="totalRevenue" 
-                            position="top" 
-                            style={{ fontSize: '10px', fill: '#3b82f6', fontWeight: 'bold' }}
-                            formatter={(value: number) => `${(value / 10000).toFixed(0)}만`}
-                            offset={15}
+              {/* 15개월 매출 트렌드 차트 - 분리된 구성 */}
+              <div className="space-y-6">
+                {/* 1. 전체 매출 트렌드 */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>전체 매출 트렌드 (15개월)</CardTitle>
+                    <CardDescription>월별 총매출과 일평균 매출</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-[300px] w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <ComposedChart data={revenueHistoricalData}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                          <XAxis 
+                            dataKey="month" 
+                            tick={{ fontSize: 12 }}
+                            tickLine={{ stroke: '#d1d5db' }}
                           />
-                        </Line>
-                        
-                        {/* 원장별 총매출 라인 */}
-                        {doctorNames.map((doctor, index) => {
-                          const colors = ['#10b981', '#8b5cf6', '#f59e0b', '#ef4444', '#06b6d4'];
-                          const color = colors[index % colors.length];
-                          const dataKey = `${doctor}_총매출`;
+                          <YAxis 
+                            yAxisId="monthly"
+                            tick={{ fontSize: 12 }}
+                            tickLine={{ stroke: '#d1d5db' }}
+                            tickFormatter={(value) => `${(value / 10000).toFixed(0)}만`}
+                            label={{ value: '매출 (만원)', angle: -90, position: 'insideLeft' }}
+                          />
+                          <YAxis 
+                            yAxisId="daily"
+                            orientation="right"
+                            tick={{ fontSize: 12 }}
+                            tickLine={{ stroke: '#d1d5db' }}
+                            tickFormatter={(value) => `${(value / 10000).toFixed(0)}만`}
+                            label={{ value: '일평균 (만원)', angle: 90, position: 'insideRight' }}
+                          />
+                          <Tooltip 
+                            formatter={(value, name) => [
+                              `${Number(value).toLocaleString()}원`,
+                              name
+                            ]}
+                            contentStyle={{
+                              backgroundColor: 'white',
+                              border: '1px solid #e5e7eb',
+                              borderRadius: '8px',
+                              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                            }}
+                          />
+                          <Legend />
                           
-                          console.log(`Rendering doctor line for ${doctor}, dataKey: ${dataKey}, color: ${color}`);
-                          console.log('Sample data for this doctor:', revenueHistoricalData[0]?.[dataKey]);
+                          {/* 월별 총매출 - 굵은 실선 */}
+                          <Line 
+                            yAxisId="monthly"
+                            type="monotone" 
+                            dataKey="totalRevenue" 
+                            stroke="#3b82f6" 
+                            strokeWidth={4}
+                            name="월별 총매출"
+                            dot={{ fill: '#3b82f6', strokeWidth: 2, r: 6 }}
+                            activeDot={{ r: 8, stroke: '#3b82f6', strokeWidth: 2, fill: '#fff' }}
+                          />
                           
-                          return (
-                            <Line
-                              key={`${doctor}_total`}
-                              yAxisId="monthly"
-                              type="monotone"
-                              dataKey={dataKey}
-                              stroke={color}
-                              strokeWidth={2}
-                              strokeDasharray="5 5"
-                              name={`${doctor} 총매출`}
-                              dot={{ fill: color, strokeWidth: 2, r: 4 }}
-                              activeDot={{ r: 6, stroke: color, strokeWidth: 2, fill: '#fff' }}
-                            />
-                          );
-                        })}
-                        
-                        {/* 원장별 일평균매출 라인 */}
-                        {doctorNames.map((doctor, index) => {
-                          const colors = ['#22c55e', '#a855f7', '#fb923c', '#f87171', '#38bdf8'];
-                          const color = colors[index % colors.length];
-                          
-                          return (
-                            <Line
-                              key={`${doctor}_avg`}
-                              yAxisId="daily"
-                              type="monotone"
-                              dataKey={`${doctor}_일평균매출`}
-                              stroke={color}
-                              strokeWidth={1}
-                              strokeDasharray="2 2"
-                              name={`${doctor} 일평균`}
-                              dot={{ fill: color, strokeWidth: 1, r: 3 }}
-                              activeDot={{ r: 5, stroke: color, strokeWidth: 1, fill: '#fff' }}
-                            />
-                          );
-                        })}
-                        
-                        {/* 일평균 총매출 막대 그래프 */}
-                        <Bar 
-                          yAxisId="daily"
-                          dataKey="avgTotalRevenue" 
-                          fill="#f59e0b" 
-                          fillOpacity={0.6}
-                          name="일평균 총매출"
-                          stroke="#f59e0b"
-                          strokeWidth={1}
-                        />
-                      </ComposedChart>
-                    </ResponsiveContainer>
-                  </div>
-                  
-                  {/* 차트 설명 */}
-                  <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                    <div className="text-sm text-gray-600 space-y-2">
-                      <div className="flex items-center gap-6 flex-wrap">
-                        <div className="flex items-center gap-2">
-                          <div className="w-4 h-0.5 bg-blue-500"></div>
-                          <span>실선: 전체 월별 총매출 (왼쪽 축)</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-4 h-3 bg-orange-500 opacity-60"></div>
-                          <span>막대: 전체 일평균 총매출 (오른쪽 축)</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-6 flex-wrap">
-                        <div className="flex items-center gap-2">
-                          <div className="w-4 h-0.5 bg-green-500 border-dashed border-t-2"></div>
-                          <span>긴 점선: 원장별 월별 총매출 (왼쪽 축)</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-4 h-0.5 bg-green-400 border-dotted border-t-2"></div>
-                          <span>짧은 점선: 원장별 일평균 매출 (오른쪽 축)</span>
-                        </div>
-                      </div>
+                          {/* 일평균 총매출 - 라인 */}
+                          <Line 
+                            yAxisId="daily"
+                            type="monotone" 
+                            dataKey="avgTotalRevenue" 
+                            stroke="#f59e0b" 
+                            strokeWidth={2}
+                            strokeDasharray="8 4"
+                            name="일평균 총매출"
+                            dot={{ fill: '#f59e0b', strokeWidth: 2, r: 4 }}
+                            activeDot={{ r: 6, stroke: '#f59e0b', strokeWidth: 2, fill: '#fff' }}
+                          />
+                        </ComposedChart>
+                      </ResponsiveContainer>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+
+                {/* 2. 원장별 매출 비교 */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>원장별 매출 비교 (15개월)</CardTitle>
+                    <CardDescription>각 원장의 월별 매출 추이 비교</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-[350px] w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={revenueHistoricalData}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                          <XAxis 
+                            dataKey="month" 
+                            tick={{ fontSize: 12 }}
+                            tickLine={{ stroke: '#d1d5db' }}
+                          />
+                          <YAxis 
+                            tick={{ fontSize: 12 }}
+                            tickLine={{ stroke: '#d1d5db' }}
+                            tickFormatter={(value) => `${(value / 10000).toFixed(0)}만`}
+                            label={{ value: '매출 (만원)', angle: -90, position: 'insideLeft' }}
+                          />
+                          <Tooltip 
+                            formatter={(value, name) => [
+                              `${Number(value).toLocaleString()}원`,
+                              name
+                            ]}
+                            contentStyle={{
+                              backgroundColor: 'white',
+                              border: '1px solid #e5e7eb',
+                              borderRadius: '8px',
+                              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                            }}
+                          />
+                          <Legend />
+                          
+                          {/* 원장별 월별 총매출 */}
+                          {doctorNames.map((doctor, index) => {
+                            const colors = ['#10b981', '#8b5cf6', '#f59e0b', '#ef4444', '#06b6d4'];
+                            const color = colors[index % colors.length];
+                            const dataKey = `${doctor}_총매출`;
+                            
+                            return (
+                              <Line
+                                key={`${doctor}_monthly`}
+                                type="monotone"
+                                dataKey={dataKey}
+                                stroke={color}
+                                strokeWidth={3}
+                                name={`${doctor} 월별매출`}
+                                dot={{ fill: color, strokeWidth: 2, r: 5 }}
+                                activeDot={{ r: 7, stroke: color, strokeWidth: 2, fill: '#fff' }}
+                              />
+                            );
+                          })}
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* 3. 원장별 효율성 비교 (일평균) */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>원장별 일평균 매출 효율성 (15개월)</CardTitle>
+                    <CardDescription>실제 진료일 기준 일평균 매출 비교</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-[300px] w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={revenueHistoricalData}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                          <XAxis 
+                            dataKey="month" 
+                            tick={{ fontSize: 12 }}
+                            tickLine={{ stroke: '#d1d5db' }}
+                          />
+                          <YAxis 
+                            tick={{ fontSize: 12 }}
+                            tickLine={{ stroke: '#d1d5db' }}
+                            tickFormatter={(value) => `${(value / 10000).toFixed(0)}만`}
+                            label={{ value: '일평균 매출 (만원)', angle: -90, position: 'insideLeft' }}
+                          />
+                          <Tooltip 
+                            formatter={(value, name) => [
+                              `${Number(value).toLocaleString()}원`,
+                              name
+                            ]}
+                            contentStyle={{
+                              backgroundColor: 'white',
+                              border: '1px solid #e5e7eb',
+                              borderRadius: '8px',
+                              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                            }}
+                          />
+                          <Legend />
+                          
+                          {/* 전체 일평균 - 기준선 */}
+                          <Line 
+                            type="monotone" 
+                            dataKey="avgTotalRevenue" 
+                            stroke="#94a3b8" 
+                            strokeWidth={2}
+                            strokeDasharray="10 5"
+                            name="전체 일평균 (기준)"
+                            dot={{ fill: '#94a3b8', strokeWidth: 1, r: 3 }}
+                          />
+                          
+                          {/* 원장별 일평균 매출 */}
+                          {doctorNames.map((doctor, index) => {
+                            const colors = ['#22c55e', '#a855f7', '#fb923c', '#f87171', '#38bdf8'];
+                            const color = colors[index % colors.length];
+                            const dataKey = `${doctor}_일평균매출`;
+                            
+                            return (
+                              <Line
+                                key={`${doctor}_daily`}
+                                type="monotone"
+                                dataKey={dataKey}
+                                stroke={color}
+                                strokeWidth={3}
+                                name={`${doctor} 일평균`}
+                                dot={{ fill: color, strokeWidth: 2, r: 5 }}
+                                activeDot={{ r: 7, stroke: color, strokeWidth: 2, fill: '#fff' }}
+                              />
+                            );
+                          })}
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             </TabsContent>
 
             {/* 내원경로별 통계 탭 */}

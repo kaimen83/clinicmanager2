@@ -104,18 +104,15 @@ export async function GET(request: NextRequest) {
       
       // 원장별 매출 및 일평균 계산
       const doctorRevenues: any = {};
-      console.log(`[${key}] 원장별 매출 맵:`, Array.from(doctorRevenueMap.entries()));
       
       for (const [doctor, revenue] of doctorRevenueMap.entries()) {
         const doctorTreatmentDays = doctorDailyRevenueMap.get(doctor).size;
         doctorRevenues[`${doctor}_총매출`] = revenue;
         doctorRevenues[`${doctor}_일평균매출`] = doctorTreatmentDays > 0 ? Math.round(revenue / doctorTreatmentDays) : 0;
         doctorRevenues[`${doctor}_진료일수`] = doctorTreatmentDays;
-        
-        console.log(`[${key}] ${doctor}: 총매출=${revenue}, 일평균=${doctorRevenues[`${doctor}_일평균매출`]}, 진료일=${doctorTreatmentDays}`);
       }
       
-      const result = {
+      return {
         month: key,
         totalRevenue,
         cashRevenue,
@@ -126,9 +123,6 @@ export async function GET(request: NextRequest) {
         treatmentDays,
         ...doctorRevenues
       };
-      
-      console.log(`[${key}] 최종 결과:`, result);
-      return result;
     }));
     
     return NextResponse.json({
