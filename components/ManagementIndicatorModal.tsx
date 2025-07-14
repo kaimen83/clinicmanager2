@@ -81,6 +81,9 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
   const [visitPathGroupNames, setVisitPathGroupNames] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  
+  // 차트 하이라이트 상태 관리
+  const [highlightedGroup, setHighlightedGroup] = useState<string | null>(null);
 
   // 모달이 열릴 때 currentDate를 selectedDate로 초기화
   useEffect(() => {
@@ -199,6 +202,17 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
       setCurrentDate(date);
       setIsCalendarOpen(false);
     }
+  };
+
+  // 범례 클릭 핸들러
+  const handleLegendClick = (entry: any) => {
+    if (!entry || !entry.dataKey) return;
+    
+    // dataKey에서 그룹명 추출 (예: "센터치과 관련_환자수" -> "센터치과 관련")
+    const groupName = entry.dataKey.split('_')[0];
+    
+    // 같은 그룹을 클릭하면 하이라이트 해제, 다른 그룹을 클릭하면 해당 그룹 하이라이트
+    setHighlightedGroup(highlightedGroup === groupName ? null : groupName);
   };
 
   return (
@@ -685,19 +699,27 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
                                   boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                                 }}
                               />
-                              <Legend />
+                              <Legend 
+                                onClick={handleLegendClick}
+                                wrapperStyle={{ cursor: 'pointer' }}
+                              />
                               {visitPathGroupNames.map((groupName, index) => {
                                 const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#f97316'];
+                                const dataKey = `${groupName}_환자수`;
+                                const isHighlighted = highlightedGroup === null || highlightedGroup === groupName;
+                                const opacity = highlightedGroup === null ? 1 : (isHighlighted ? 1 : 0.15);
+                                
                                 return (
                                   <Line
                                     key={groupName}
                                     type="monotone"
-                                    dataKey={`${groupName}_환자수`}
+                                    dataKey={dataKey}
                                     stroke={colors[index % colors.length]}
                                     strokeWidth={3}
+                                    strokeOpacity={opacity}
                                     name={groupName}
-                                    dot={{ r: 4 }}
-                                    activeDot={{ r: 6 }}
+                                    dot={{ r: 4, fillOpacity: opacity }}
+                                    activeDot={{ r: 6, fillOpacity: opacity }}
                                   />
                                 );
                               })}
@@ -734,19 +756,27 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
                                   boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                                 }}
                               />
-                              <Legend />
+                              <Legend 
+                                onClick={handleLegendClick}
+                                wrapperStyle={{ cursor: 'pointer' }}
+                              />
                               {visitPathGroupNames.map((groupName, index) => {
-                                const colors = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#f97316'];
+                                const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#f97316'];
+                                const dataKey = `${groupName}_결제금액`;
+                                const isHighlighted = highlightedGroup === null || highlightedGroup === groupName;
+                                const opacity = highlightedGroup === null ? 1 : (isHighlighted ? 1 : 0.15);
+                                
                                 return (
                                   <Line
                                     key={groupName}
                                     type="monotone"
-                                    dataKey={`${groupName}_결제금액`}
+                                    dataKey={dataKey}
                                     stroke={colors[index % colors.length]}
                                     strokeWidth={3}
+                                    strokeOpacity={opacity}
                                     name={groupName}
-                                    dot={{ r: 4 }}
-                                    activeDot={{ r: 6 }}
+                                    dot={{ r: 4, fillOpacity: opacity }}
+                                    activeDot={{ r: 6, fillOpacity: opacity }}
                                   />
                                 );
                               })}
@@ -783,19 +813,27 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
                                   boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                                 }}
                               />
-                              <Legend />
+                              <Legend 
+                                onClick={handleLegendClick}
+                                wrapperStyle={{ cursor: 'pointer' }}
+                              />
                               {visitPathGroupNames.map((groupName, index) => {
-                                const colors = ['#f59e0b', '#ef4444', '#3b82f6', '#10b981', '#8b5cf6', '#06b6d4', '#84cc16', '#f97316'];
+                                const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#f97316'];
+                                const dataKey = `${groupName}_상담금액`;
+                                const isHighlighted = highlightedGroup === null || highlightedGroup === groupName;
+                                const opacity = highlightedGroup === null ? 1 : (isHighlighted ? 1 : 0.15);
+                                
                                 return (
                                   <Line
                                     key={groupName}
                                     type="monotone"
-                                    dataKey={`${groupName}_상담금액`}
+                                    dataKey={dataKey}
                                     stroke={colors[index % colors.length]}
                                     strokeWidth={3}
+                                    strokeOpacity={opacity}
                                     name={groupName}
-                                    dot={{ r: 4 }}
-                                    activeDot={{ r: 6 }}
+                                    dot={{ r: 4, fillOpacity: opacity }}
+                                    activeDot={{ r: 6, fillOpacity: opacity }}
                                   />
                                 );
                               })}
