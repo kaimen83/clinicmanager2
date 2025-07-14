@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { currentUser } from '@clerk/nextjs/server';
+import { IndexSpecification } from 'mongodb';
 
 // 인덱스 최적화를 위한 관리자 API
 export async function POST(request: NextRequest) {
@@ -27,7 +28,11 @@ export async function POST(request: NextRequest) {
     const results = [];
 
     // 1. transactions 컬렉션 인덱스
-    const transactionIndexes = [
+    const transactionIndexes: Array<{
+      name: string;
+      key: IndexSpecification;
+      background: boolean;
+    }> = [
       {
         name: 'date_1',
         key: { date: 1 },
@@ -67,7 +72,11 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. patient_analysis_summary 컬렉션 인덱스 (요약 데이터용)
-    const summaryIndexes = [
+    const summaryIndexes: Array<{
+      name: string;
+      key: IndexSpecification;
+      background: boolean;
+    }> = [
       {
         name: 'periodType_year_month_1',
         key: { periodType: 1, year: 1, month: 1 },
