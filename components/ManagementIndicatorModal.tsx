@@ -566,7 +566,7 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
         
         <div className="p-6">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-5 h-14 mb-6 bg-gray-100/50">
+            <TabsList className="grid w-full grid-cols-4 h-14 mb-6 bg-gray-100/50">
               <TabsTrigger 
                 value="visit" 
                 className="data-[state=active]:bg-white data-[state=active]:shadow-md flex items-center gap-2 text-sm font-medium"
@@ -594,13 +594,6 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
               >
                 <MessageSquare className="h-4 w-4" />
                 상담지표
-              </TabsTrigger>
-              <TabsTrigger 
-                value="expense" 
-                className="data-[state=active]:bg-white data-[state=active]:shadow-md flex items-center gap-2 text-sm font-medium"
-              >
-                <CreditCard className="h-4 w-4" />
-                지출지표
               </TabsTrigger>
             </TabsList>
 
@@ -2174,10 +2167,6 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
               </Card>
             </TabsContent>
 
-            {/* 지출지표 탭 */}
-            <TabsContent value="expense" className="space-y-4 mt-0">
-              {/* 지출지표 컨텐츠 */}
-            </TabsContent>
           </Tabs>
         </div>
       </DialogContent>
