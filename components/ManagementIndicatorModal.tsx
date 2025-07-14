@@ -677,7 +677,10 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
                         <h3 className="text-lg font-semibold mb-4 text-blue-700">환자 수 추이</h3>
                         <div className="h-[400px] w-full">
                           <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={visitPathHistoryData}>
+                            <LineChart 
+                              data={visitPathHistoryData}
+                              margin={{ top: 30, right: 30, left: 0, bottom: 0 }}
+                            >
                               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                               <XAxis 
                                 dataKey="month" 
@@ -720,7 +723,16 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
                                     name={groupName}
                                     dot={{ r: 4, fillOpacity: opacity }}
                                     activeDot={{ r: 6, fillOpacity: opacity }}
-                                  />
+                                  >
+                                    {highlightedGroup === groupName && (
+                                      <LabelList 
+                                        dataKey={dataKey}
+                                        position="top"
+                                        style={{ fontSize: '11px', fill: colors[index % colors.length] }}
+                                        formatter={(value: number) => value > 0 ? `${value}명` : ''}
+                                      />
+                                    )}
+                                  </Line>
                                 );
                               })}
                             </LineChart>
@@ -733,7 +745,10 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
                         <h3 className="text-lg font-semibold mb-4 text-green-700">결제 금액 추이</h3>
                         <div className="h-[400px] w-full">
                           <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={visitPathHistoryData}>
+                            <LineChart 
+                              data={visitPathHistoryData}
+                              margin={{ top: 30, right: 30, left: 0, bottom: 0 }}
+                            >
                               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                               <XAxis 
                                 dataKey="month" 
@@ -777,7 +792,16 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
                                     name={groupName}
                                     dot={{ r: 4, fillOpacity: opacity }}
                                     activeDot={{ r: 6, fillOpacity: opacity }}
-                                  />
+                                  >
+                                    {highlightedGroup === groupName && (
+                                      <LabelList 
+                                        dataKey={dataKey}
+                                        position="top"
+                                        style={{ fontSize: '11px', fill: colors[index % colors.length] }}
+                                        formatter={(value: number) => value > 0 ? `${(value / 10000).toFixed(0)}만` : ''}
+                                      />
+                                    )}
+                                  </Line>
                                 );
                               })}
                             </LineChart>
@@ -790,7 +814,10 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
                         <h3 className="text-lg font-semibold mb-4 text-orange-700">상담 금액 추이</h3>
                         <div className="h-[400px] w-full">
                           <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={visitPathHistoryData}>
+                            <LineChart 
+                              data={visitPathHistoryData}
+                              margin={{ top: 30, right: 30, left: 0, bottom: 0 }}
+                            >
                               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                               <XAxis 
                                 dataKey="month" 
@@ -834,7 +861,16 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
                                     name={groupName}
                                     dot={{ r: 4, fillOpacity: opacity }}
                                     activeDot={{ r: 6, fillOpacity: opacity }}
-                                  />
+                                  >
+                                    {highlightedGroup === groupName && (
+                                      <LabelList 
+                                        dataKey={dataKey}
+                                        position="top"
+                                        style={{ fontSize: '11px', fill: colors[index % colors.length] }}
+                                        formatter={(value: number) => value > 0 ? `${(value / 10000).toFixed(0)}만` : ''}
+                                      />
+                                    )}
+                                  </Line>
                                 );
                               })}
                             </LineChart>
