@@ -492,133 +492,138 @@ export default function ImplantInventoryModal({ isOpen, onClose }: ImplantInvent
             </TabsContent>
 
             <TabsContent value="statistics" className="space-y-4">
-              {/* 통계 필터 섹션 */}
+              {/* 컴팩트 통계 필터 섹션 */}
               <Card className="border-0 shadow-sm bg-white">
                 <CardContent className="p-4">
-                  <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
-                    <div className="flex space-x-2">
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap gap-2">
                       <Button
+                        size="sm"
                         variant={view === 'date' ? 'default' : 'outline'}
                         onClick={() => setView('date')}
+                        className="h-8 px-3 text-xs"
                       >
                         날짜별 보기
                       </Button>
                       <Button
+                        size="sm"
                         variant={view === 'product' ? 'default' : 'outline'}
                         onClick={() => setView('product')}
+                        className="h-8 px-3 text-xs"
                       >
                         품목별 보기
                       </Button>
                     </div>
-                    <Select value={statCategoryFilter} onValueChange={setStatCategoryFilter}>
-                      <SelectTrigger className="border-gray-200 hover:bg-gray-50">
-                        <SelectValue placeholder="전체 카테고리" />
-                      </SelectTrigger>
-                      <SelectContent className="border-0 shadow-lg">
-                        <SelectItem value="all">전체 카테고리</SelectItem>
-                        <SelectItem value="fixture">Fixture</SelectItem>
-                        <SelectItem value="이식재">이식재</SelectItem>
-                        <SelectItem value="소모품">소모품</SelectItem>
-                        <SelectItem value="기타">기타</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Input
-                      type="date"
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      className="border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
-                    />
-                    <Input
-                      type="date"
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      className="border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
-                    />
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <Select value={statCategoryFilter} onValueChange={setStatCategoryFilter}>
+                        <SelectTrigger className="h-9 border-gray-200 hover:bg-gray-50">
+                          <SelectValue placeholder="카테고리" />
+                        </SelectTrigger>
+                        <SelectContent className="border-0 shadow-lg">
+                          <SelectItem value="all">전체 카테고리</SelectItem>
+                          <SelectItem value="fixture">Fixture</SelectItem>
+                          <SelectItem value="이식재">이식재</SelectItem>
+                          <SelectItem value="소모품">소모품</SelectItem>
+                          <SelectItem value="기타">기타</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Input
+                        type="date"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                        className="h-9 border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
+                      />
+                      <Input
+                        type="date"
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                        className="h-9 border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
+                      />
+                    </div>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* 통계 요약 */}
+              {/* 컴팩트 통계 요약 */}
               {statistics && (
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <Card className="border-0 shadow-sm bg-white">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm">총 사용수량</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">{statistics.totalUsage.toLocaleString()}개</div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <Card className="border-0 shadow-sm bg-gradient-to-r from-purple-50 to-purple-100">
+                    <CardContent className="p-4">
+                      <div className="text-xs text-gray-600 mb-1">총 사용수량</div>
+                      <div className="text-xl font-bold text-purple-600">{statistics.totalUsage.toLocaleString()}</div>
                     </CardContent>
                   </Card>
-                  <Card className="border-0 shadow-sm bg-white">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm">총 사용금액</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">{statistics.totalAmount.toLocaleString()}원</div>
+                  <Card className="border-0 shadow-sm bg-gradient-to-r from-orange-50 to-orange-100">
+                    <CardContent className="p-4">
+                      <div className="text-xs text-gray-600 mb-1">총 사용금액</div>
+                      <div className="text-xl font-bold text-orange-600">{statistics.totalAmount.toLocaleString()}</div>
                     </CardContent>
                   </Card>
-                  <Card className="border-0 shadow-sm bg-white">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm">입고금액</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">{statistics.totalStockInAmount.toLocaleString()}원</div>
+                  <Card className="border-0 shadow-sm bg-gradient-to-r from-green-50 to-green-100">
+                    <CardContent className="p-4">
+                      <div className="text-xs text-gray-600 mb-1">입고금액</div>
+                      <div className="text-xl font-bold text-green-600">{statistics.totalStockInAmount.toLocaleString()}</div>
                     </CardContent>
                   </Card>
-                  <Card className="border-0 shadow-sm bg-white">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm">폐기수량</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">{statistics.totalDisposal.toLocaleString()}개</div>
+                  <Card className="border-0 shadow-sm bg-gradient-to-r from-red-50 to-red-100">
+                    <CardContent className="p-4">
+                      <div className="text-xs text-gray-600 mb-1">폐기수량</div>
+                      <div className="text-xl font-bold text-red-600">{statistics.totalDisposal.toLocaleString()}</div>
                     </CardContent>
                   </Card>
                 </div>
               )}
 
-              {/* 통계 테이블 */}
+              {/* 컴팩트 통계 테이블 */}
               {statistics && (
                 <Card className="border-0 shadow-sm bg-white">
                   <CardContent className="p-0">
                     <div className="overflow-x-auto">
                       {view === 'date' ? (
                         <table className="w-full">
-                          <thead className="bg-gray-50">
+                          <thead className="bg-gray-50 border-b">
                             <tr>
-                              <th className="px-3 py-1.5 text-left text-sm font-medium text-gray-700">날짜</th>
-                              <th className="px-3 py-1.5 text-left text-sm font-medium text-gray-700">유형</th>
-                              <th className="px-3 py-1.5 text-left text-sm font-medium text-gray-700">카테고리</th>
-                              <th className="px-3 py-1.5 text-left text-sm font-medium text-gray-700">품목명</th>
-                              <th className="px-3 py-1.5 text-left text-sm font-medium text-gray-700">규격</th>
-                              <th className="px-3 py-1.5 text-left text-sm font-medium text-gray-700">수량</th>
-                              <th className="px-3 py-1.5 text-left text-sm font-medium text-gray-700">환자명</th>
-                              <th className="px-3 py-1.5 text-left text-sm font-medium text-gray-700">담당의</th>
-                              <th className="px-3 py-1.5 text-left text-sm font-medium text-gray-700">사유</th>
-                              <th className="px-3 py-1.5 text-left text-sm font-medium text-gray-700">관리</th>
+                              <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">날짜</th>
+                              <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">유형</th>
+                              <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">카테고리</th>
+                              <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">품목명</th>
+                              <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">규격</th>
+                              <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">수량</th>
+                              <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">환자명</th>
+                              <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">담당의</th>
+                              <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">사유</th>
+                              <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">관리</th>
                             </tr>
                           </thead>
-                          <tbody>
+                          <tbody className="divide-y divide-gray-200">
                             {statistics.activities.map(activity => (
-                              <tr key={activity._id}>
-                                <td className="px-3 py-1.5 text-sm">{new Date(activity.date).toLocaleDateString()}</td>
-                                <td className="px-3 py-1.5">
-                                  <Badge variant={activity.type === 'IN' ? 'default' : 'secondary'} className="text-xs px-1 py-0">
+                              <tr key={activity._id} className="hover:bg-gray-50">
+                                <td className="px-3 py-2 text-sm text-gray-900">{new Date(activity.date).toLocaleDateString()}</td>
+                                <td className="px-3 py-2">
+                                  <Badge 
+                                    variant={activity.type === 'IN' ? 'default' : 'secondary'} 
+                                    className={`text-xs px-2 py-0.5 ${
+                                      activity.type === 'IN' 
+                                        ? 'bg-blue-100 text-blue-800' 
+                                        : 'bg-gray-100 text-gray-800'
+                                    }`}
+                                  >
                                     {activity.type === 'IN' ? '입고' : '출고'}
                                   </Badge>
                                 </td>
-                                <td className="px-3 py-1.5 text-sm">{activity.category}</td>
-                                <td className="px-3 py-1.5 text-sm">{activity.productName}</td>
-                                <td className="px-3 py-1.5 text-sm">{activity.specification || '-'}</td>
-                                <td className="px-3 py-1.5 text-sm">{activity.quantity}개</td>
-                                <td className="px-3 py-1.5 text-sm">{activity.patientName || '-'}</td>
-                                <td className="px-3 py-1.5 text-sm">{activity.doctor || '-'}</td>
-                                <td className="px-3 py-1.5 text-sm">{activity.outReason || '-'}</td>
-                                <td className="px-3 py-1.5">
+                                <td className="px-3 py-2 text-sm text-gray-600">{activity.category}</td>
+                                <td className="px-3 py-2 text-sm font-medium text-gray-900">{activity.productName}</td>
+                                <td className="px-3 py-2 text-sm text-gray-600">{activity.specification || '-'}</td>
+                                <td className="px-3 py-2 text-sm font-semibold text-gray-900">{activity.quantity}개</td>
+                                <td className="px-3 py-2 text-sm text-gray-600">{activity.patientName || '-'}</td>
+                                <td className="px-3 py-2 text-sm text-gray-600">{activity.doctor || '-'}</td>
+                                <td className="px-3 py-2 text-sm text-gray-600">{activity.outReason || '-'}</td>
+                                <td className="px-3 py-2">
                                   <Button
                                     size="sm"
                                     variant="ghost"
                                     onClick={() => handleActivityDelete(activity._id)}
-                                    className="h-6 w-6 p-0"
+                                    className="h-7 w-7 p-0 hover:bg-red-50 hover:text-red-600"
                                   >
                                     <Trash2 className="h-3 w-3" />
                                   </Button>
@@ -629,25 +634,25 @@ export default function ImplantInventoryModal({ isOpen, onClose }: ImplantInvent
                         </table>
                       ) : (
                         <table className="w-full">
-                          <thead className="bg-gray-50">
+                          <thead className="bg-gray-50 border-b">
                             <tr>
-                              <th className="px-3 py-1.5 text-left text-sm font-medium text-gray-700">카테고리</th>
-                              <th className="px-3 py-1.5 text-left text-sm font-medium text-gray-700">품목명</th>
-                              <th className="px-3 py-1.5 text-left text-sm font-medium text-gray-700">규격</th>
-                              <th className="px-3 py-1.5 text-left text-sm font-medium text-gray-700">사용처</th>
-                              <th className="px-3 py-1.5 text-left text-sm font-medium text-gray-700">총 사용량</th>
-                              <th className="px-3 py-1.5 text-left text-sm font-medium text-gray-700">총 금액</th>
+                              <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">카테고리</th>
+                              <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">품목명</th>
+                              <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">규격</th>
+                              <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">사용처</th>
+                              <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">총 사용량</th>
+                              <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">총 금액</th>
                             </tr>
                           </thead>
-                          <tbody>
+                          <tbody className="divide-y divide-gray-200">
                             {statistics.productStats.map(stat => (
-                              <tr key={stat._id}>
-                                <td className="px-3 py-1.5 text-sm">{stat.category}</td>
-                                <td className="px-3 py-1.5 text-sm">{stat.name}</td>
-                                <td className="px-3 py-1.5 text-sm">{stat.specification}</td>
-                                <td className="px-3 py-1.5 text-sm">{stat.usage}</td>
-                                <td className="px-3 py-1.5 text-sm">{stat.totalUsage}개</td>
-                                <td className="px-3 py-1.5 text-sm">{stat.totalAmount.toLocaleString()}원</td>
+                              <tr key={stat._id} className="hover:bg-gray-50">
+                                <td className="px-3 py-2 text-sm text-gray-900">{stat.category}</td>
+                                <td className="px-3 py-2 text-sm font-medium text-gray-900">{stat.name}</td>
+                                <td className="px-3 py-2 text-sm text-gray-600">{stat.specification}</td>
+                                <td className="px-3 py-2 text-sm text-gray-600">{stat.usage}</td>
+                                <td className="px-3 py-2 text-sm font-semibold text-gray-900">{stat.totalUsage}개</td>
+                                <td className="px-3 py-2 text-sm font-semibold text-gray-900">{stat.totalAmount.toLocaleString()}원</td>
                               </tr>
                             ))}
                           </tbody>

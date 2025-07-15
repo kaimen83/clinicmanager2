@@ -125,48 +125,53 @@ export default function ImplantContractList() {
 
   return (
     <div className="space-y-4">
-      {/* 헤더 및 필터 */}
+      {/* 컴팩트 헤더 및 필터 */}
       <Card className="border-0 shadow-sm">
-        <CardHeader className="pb-4">
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="w-5 h-5" />
-              임플란트 계약 관리
-            </CardTitle>
-            <Button onClick={() => {
-              setSelectedContract(null);
-              setIsFormOpen(true);
-            }}>
-              <Plus className="w-4 h-4 mr-1" /> 계약 등록
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Select value={searchCompany} onValueChange={setSearchCompany}>
-              <SelectTrigger>
-                <SelectValue placeholder="전체 회사" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">전체 회사</SelectItem>
-                {companies.map(company => (
-                  <SelectItem key={company._id} value={company.value}>
-                    {company.value}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            
-            <Select value={filterActive} onValueChange={setFilterActive}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">전체 상태</SelectItem>
-                <SelectItem value="true">활성 계약</SelectItem>
-                <SelectItem value="false">비활성 계약</SelectItem>
-              </SelectContent>
-            </Select>
+        <CardContent className="p-4">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-indigo-50 rounded-lg">
+                <FileText className="w-5 h-5 text-indigo-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900">임플란트 계약 관리</h3>
+            </div>
+            <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+              <div className="grid grid-cols-2 gap-2 md:flex md:gap-3">
+                <Select value={searchCompany} onValueChange={setSearchCompany}>
+                  <SelectTrigger className="h-9 border-gray-200 hover:bg-gray-50">
+                    <SelectValue placeholder="회사" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">전체 회사</SelectItem>
+                    {companies.map(company => (
+                      <SelectItem key={company._id} value={company.value}>
+                        {company.value}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                <Select value={filterActive} onValueChange={setFilterActive}>
+                  <SelectTrigger className="h-9 border-gray-200 hover:bg-gray-50">
+                    <SelectValue placeholder="상태" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">전체 상태</SelectItem>
+                    <SelectItem value="true">활성 계약</SelectItem>
+                    <SelectItem value="false">비활성 계약</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button 
+                onClick={() => {
+                  setSelectedContract(null);
+                  setIsFormOpen(true);
+                }}
+                className="h-9 px-4 bg-indigo-600 hover:bg-indigo-700 text-white"
+              >
+                <Plus className="w-4 h-4 mr-1" /> 계약 등록
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -186,127 +191,146 @@ export default function ImplantContractList() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {Object.entries(groupedContracts).map(([company, companyContracts]) => (
             <Card key={company} className="border-0 shadow-sm">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg">{company}</CardTitle>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base font-semibold text-gray-900">{company}</CardTitle>
+                  <Badge variant="outline" className="text-xs">
+                    {companyContracts.length}건
+                  </Badge>
+                </div>
               </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[120px]">계약일</TableHead>
-                      <TableHead>프로모션</TableHead>
-                      <TableHead>할증률</TableHead>
-                      <TableHead>결제방법</TableHead>
-                      <TableHead>결제조건</TableHead>
-                      <TableHead className="w-[100px]">상태</TableHead>
-                      <TableHead className="w-[120px]">관리</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {companyContracts.map(contract => (
-                      <React.Fragment key={contract._id}>
-                        <TableRow>
-                          <TableCell>
-                            {new Date(contract.contractDate).toLocaleDateString()}
-                          </TableCell>
-                          <TableCell>
-                            {contract.promotionAmount > 0 
-                              ? `${contract.promotionAmount.toLocaleString()}원` 
-                              : '-'}
-                          </TableCell>
-                          <TableCell>
-                            {contract.markupRate > 0 ? `${contract.markupRate}%` : '-'}
-                          </TableCell>
-                          <TableCell>{contract.paymentMethod || '-'}</TableCell>
-                          <TableCell>{contract.paymentTerms || '-'}</TableCell>
-                          <TableCell>
-                            <Badge variant={contract.isActive ? 'default' : 'secondary'}>
-                              {contract.isActive ? '활성' : '비활성'}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-1">
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                onClick={() => toggleRowExpansion(contract._id)}
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-b">
+                        <TableHead className="px-4 py-2 text-xs font-semibold text-gray-700 uppercase tracking-wider w-[100px]">계약일</TableHead>
+                        <TableHead className="px-4 py-2 text-xs font-semibold text-gray-700 uppercase tracking-wider">프로모션</TableHead>
+                        <TableHead className="px-4 py-2 text-xs font-semibold text-gray-700 uppercase tracking-wider">할증률</TableHead>
+                        <TableHead className="px-4 py-2 text-xs font-semibold text-gray-700 uppercase tracking-wider">결제방법</TableHead>
+                        <TableHead className="px-4 py-2 text-xs font-semibold text-gray-700 uppercase tracking-wider">결제조건</TableHead>
+                        <TableHead className="px-4 py-2 text-xs font-semibold text-gray-700 uppercase tracking-wider w-[80px]">상태</TableHead>
+                        <TableHead className="px-4 py-2 text-xs font-semibold text-gray-700 uppercase tracking-wider w-[100px]">관리</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody className="divide-y divide-gray-200">
+                      {companyContracts.map(contract => (
+                        <React.Fragment key={contract._id}>
+                          <TableRow className="hover:bg-gray-50">
+                            <TableCell className="px-4 py-3 text-sm text-gray-900">
+                              {new Date(contract.contractDate).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell className="px-4 py-3 text-sm text-gray-600">
+                              {contract.promotionAmount > 0 
+                                ? `${contract.promotionAmount.toLocaleString()}원` 
+                                : '-'}
+                            </TableCell>
+                            <TableCell className="px-4 py-3 text-sm text-gray-600">
+                              {contract.markupRate > 0 ? `${contract.markupRate}%` : '-'}
+                            </TableCell>
+                            <TableCell className="px-4 py-3 text-sm text-gray-600">{contract.paymentMethod || '-'}</TableCell>
+                            <TableCell className="px-4 py-3 text-sm text-gray-600">{contract.paymentTerms || '-'}</TableCell>
+                            <TableCell className="px-4 py-3">
+                              <Badge 
+                                variant={contract.isActive ? 'default' : 'secondary'}
+                                className={`text-xs px-2 py-1 ${
+                                  contract.isActive 
+                                    ? 'bg-green-100 text-green-800' 
+                                    : 'bg-gray-100 text-gray-800'
+                                }`}
                               >
-                                {expandedRows.has(contract._id) ? (
-                                  <ChevronUp className="w-4 h-4" />
-                                ) : (
-                                  <ChevronDown className="w-4 h-4" />
-                                )}
-                              </Button>
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                onClick={() => {
-                                  setSelectedContract(contract);
-                                  setIsFormOpen(true);
-                                }}
-                              >
-                                <Pencil className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                onClick={() => handleDelete(contract._id)}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                        
-                        {expandedRows.has(contract._id) && (
-                          <TableRow>
-                            <TableCell colSpan={7} className="bg-gray-50">
-                              <div className="p-4 space-y-4">
-                                {contract.benefits && (
-                                  <div>
-                                    <h4 className="font-medium mb-1">혜택</h4>
-                                    <p className="text-sm text-gray-600 whitespace-pre-wrap">
-                                      {contract.benefits}
-                                    </p>
-                                  </div>
-                                )}
-                                
-                                {contract.productPrices.length > 0 && (
-                                  <div>
-                                    <h4 className="font-medium mb-2">제품 단가</h4>
-                                    <Table>
-                                      <TableHeader>
-                                        <TableRow>
-                                          <TableHead>제품명</TableHead>
-                                          <TableHead>규격</TableHead>
-                                          <TableHead className="text-right">단가</TableHead>
-                                        </TableRow>
-                                      </TableHeader>
-                                      <TableBody>
-                                        {contract.productPrices.map((price, index) => (
-                                          <TableRow key={index}>
-                                            <TableCell>{price.productName}</TableCell>
-                                            <TableCell>{price.specification || '-'}</TableCell>
-                                            <TableCell className="text-right">
-                                              {price.price.toLocaleString()}원
-                                            </TableCell>
-                                          </TableRow>
-                                        ))}
-                                      </TableBody>
-                                    </Table>
-                                  </div>
-                                )}
+                                {contract.isActive ? '활성' : '비활성'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="px-4 py-3">
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => toggleRowExpansion(contract._id)}
+                                  className="h-7 w-7 p-0 hover:bg-blue-50"
+                                >
+                                  {expandedRows.has(contract._id) ? (
+                                    <ChevronUp className="w-3 h-3" />
+                                  ) : (
+                                    <ChevronDown className="w-3 h-3" />
+                                  )}
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => {
+                                    setSelectedContract(contract);
+                                    setIsFormOpen(true);
+                                  }}
+                                  className="h-7 w-7 p-0 hover:bg-blue-50"
+                                >
+                                  <Pencil className="w-3 h-3" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleDelete(contract._id)}
+                                  className="h-7 w-7 p-0 hover:bg-red-50 hover:text-red-600"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </Button>
                               </div>
                             </TableCell>
                           </TableRow>
-                        )}
-                      </React.Fragment>
-                    ))}
-                  </TableBody>
-                </Table>
+                          
+                          {expandedRows.has(contract._id) && (
+                            <TableRow>
+                              <TableCell colSpan={7} className="bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500">
+                                <div className="p-4 space-y-3">
+                                  {contract.benefits && (
+                                    <div className="bg-white rounded-lg p-3 shadow-sm">
+                                      <h4 className="font-semibold text-sm text-gray-900 mb-2">혜택 내용</h4>
+                                      <p className="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed">
+                                        {contract.benefits}
+                                      </p>
+                                    </div>
+                                  )}
+                                  
+                                  {contract.productPrices.length > 0 && (
+                                    <div className="bg-white rounded-lg p-3 shadow-sm">
+                                      <h4 className="font-semibold text-sm text-gray-900 mb-3">제품 단가 정보</h4>
+                                      <div className="overflow-x-auto">
+                                        <table className="w-full text-sm">
+                                          <thead>
+                                            <tr className="border-b border-gray-200">
+                                              <th className="text-left py-2 font-medium text-gray-700">제품명</th>
+                                              <th className="text-left py-2 font-medium text-gray-700">규격</th>
+                                              <th className="text-right py-2 font-medium text-gray-700">단가</th>
+                                            </tr>
+                                          </thead>
+                                          <tbody className="divide-y divide-gray-100">
+                                            {contract.productPrices.map((price, index) => (
+                                              <tr key={index} className="hover:bg-gray-50">
+                                                <td className="py-2 text-gray-900 font-medium">{price.productName}</td>
+                                                <td className="py-2 text-gray-600">{price.specification || '-'}</td>
+                                                <td className="py-2 text-right font-semibold text-gray-900">
+                                                  {price.price.toLocaleString()}원
+                                                </td>
+                                              </tr>
+                                            ))}
+                                          </tbody>
+                                        </table>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </React.Fragment>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               </CardContent>
             </Card>
           ))}
