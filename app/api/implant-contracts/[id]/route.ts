@@ -5,7 +5,7 @@ import { connectToDatabase } from '@/lib/mongodb';
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const { userId } = await auth();
@@ -14,8 +14,9 @@ export async function GET(
         }
 
         await connectToDatabase();
-
-        const contract = await ImplantContract.findById(params.id);
+        
+        const { id } = await params;
+        const contract = await ImplantContract.findById(id);
         
         if (!contract) {
             return NextResponse.json({ error: '계약을 찾을 수 없습니다.' }, { status: 404 });
@@ -30,7 +31,7 @@ export async function GET(
 
 export async function PUT(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const { userId } = await auth();
@@ -40,6 +41,7 @@ export async function PUT(
 
         await connectToDatabase();
         
+        const { id } = await params;
         const body = await request.json();
         const {
             companyName,
@@ -53,7 +55,7 @@ export async function PUT(
             isActive
         } = body;
 
-        const contract = await ImplantContract.findById(params.id);
+        const contract = await ImplantContract.findById(id);
         
         if (!contract) {
             return NextResponse.json({ error: '계약을 찾을 수 없습니다.' }, { status: 404 });
@@ -64,7 +66,7 @@ export async function PUT(
             const existingActiveContract = await ImplantContract.findOne({
                 companyName,
                 isActive: true,
-                _id: { $ne: params.id }
+                _id: { $ne: id }
             });
 
             if (existingActiveContract) {
@@ -75,7 +77,7 @@ export async function PUT(
         }
 
         const updatedContract = await ImplantContract.findByIdAndUpdate(
-            params.id,
+            id,
             {
                 companyName,
                 contractDate: new Date(contractDate),
@@ -99,7 +101,7 @@ export async function PUT(
 
 export async function DELETE(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const { userId } = await auth();
@@ -109,13 +111,14 @@ export async function DELETE(
 
         await connectToDatabase();
 
-        const contract = await ImplantContract.findById(params.id);
+        const { id } = await params;
+        const contract = await ImplantContract.findById(id);
         
         if (!contract) {
             return NextResponse.json({ error: '계약을 찾을 수 없습니다.' }, { status: 404 });
         }
 
-        await ImplantContract.findByIdAndDelete(params.id);
+        await ImplantContract.findByIdAndDelete(id);
         
         return NextResponse.json({ message: '계약이 삭제되었습니다.' });
     } catch (error) {
