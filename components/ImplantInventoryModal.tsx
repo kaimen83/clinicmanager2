@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Trash2, Package, Minus, Plus } from 'lucide-react';
 import { safeRestorePointerEvents, createSafeOnOpenChange } from '@/lib/pointer-events-fix';
+import ImplantContractList from './ImplantContractList';
 
 interface ImplantProduct {
   _id: string;
@@ -331,25 +332,48 @@ export default function ImplantInventoryModal({ isOpen, onClose }: ImplantInvent
           </DialogHeader>
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-2 bg-gray-50 border-0">
+            <TabsList className="grid w-full grid-cols-3 bg-gray-50 border-0">
               <TabsTrigger value="inventory" className="data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm">재고관리</TabsTrigger>
               <TabsTrigger value="statistics" className="data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm">사용통계</TabsTrigger>
+              <TabsTrigger value="contract" className="data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm">임플란트 계약</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="inventory" className="space-y-6">
-              {/* 필터 섹션 */}
+            <TabsContent value="inventory" className="space-y-4">
+              {/* 요약 정보 */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Card className="border-0 shadow-sm bg-gradient-to-r from-blue-50 to-blue-100">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm text-gray-600">총 품목 수</div>
+                      <div className="text-2xl font-bold text-blue-600">{filteredProducts.length}</div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="border-0 shadow-sm bg-gradient-to-r from-green-50 to-green-100">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm text-gray-600">총 재고가액</div>
+                      <div className="text-2xl font-bold text-green-600">
+                        {filteredProducts.reduce((sum, p) => sum + (p.stock * p.price), 0).toLocaleString()}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* 컴팩트 필터 섹션 */}
               <Card className="border-0 shadow-sm bg-white">
-                <CardContent className="p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+                <CardContent className="p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
                     <Input
                       placeholder="품목명 검색"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
+                      className="h-9 border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
                     />
                     <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                      <SelectTrigger className="border-gray-200 hover:bg-gray-50">
-                        <SelectValue placeholder="전체 카테고리" />
+                      <SelectTrigger className="h-9 border-gray-200 hover:bg-gray-50">
+                        <SelectValue placeholder="카테고리" />
                       </SelectTrigger>
                       <SelectContent className="border-0 shadow-lg">
                         <SelectItem value="all">전체 카테고리</SelectItem>
@@ -360,8 +384,8 @@ export default function ImplantInventoryModal({ isOpen, onClose }: ImplantInvent
                       </SelectContent>
                     </Select>
                     <Select value={nameFilter} onValueChange={setNameFilter}>
-                      <SelectTrigger className="border-gray-200 hover:bg-gray-50">
-                        <SelectValue placeholder="전체 품목" />
+                      <SelectTrigger className="h-9 border-gray-200 hover:bg-gray-50">
+                        <SelectValue placeholder="품목" />
                       </SelectTrigger>
                       <SelectContent className="border-0 shadow-lg">
                         <SelectItem value="all">전체 품목</SelectItem>
@@ -371,8 +395,8 @@ export default function ImplantInventoryModal({ isOpen, onClose }: ImplantInvent
                       </SelectContent>
                     </Select>
                     <Select value={usageFilter} onValueChange={setUsageFilter}>
-                      <SelectTrigger className="border-gray-200 hover:bg-gray-50">
-                        <SelectValue placeholder="전체 사용처" />
+                      <SelectTrigger className="h-9 border-gray-200 hover:bg-gray-50">
+                        <SelectValue placeholder="사용처" />
                       </SelectTrigger>
                       <SelectContent className="border-0 shadow-lg">
                         <SelectItem value="all">전체 사용처</SelectItem>
@@ -386,47 +410,52 @@ export default function ImplantInventoryModal({ isOpen, onClose }: ImplantInvent
                         id="lowStockFilter"
                         checked={lowStockFilter}
                         onChange={(e) => setLowStockFilter(e.target.checked)}
+                        className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                       />
-                      <label htmlFor="lowStockFilter" className="text-sm">재고 부족</label>
+                      <label htmlFor="lowStockFilter" className="text-sm text-gray-700">재고 부족</label>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* 재고 테이블 */}
+              {/* 컴팩트 재고 테이블 */}
               <Card className="border-0 shadow-sm bg-white">
                 <CardContent className="p-0">
                   <div className="overflow-x-auto">
                     <table className="w-full">
-                      <thead className="bg-gray-50">
+                      <thead className="bg-gray-50 border-b">
                         <tr>
-                          <th className="px-3 py-1.5 text-left text-sm font-medium text-gray-700">카테고리</th>
-                          <th className="px-3 py-1.5 text-left text-sm font-medium text-gray-700">품목명</th>
-                          <th className="px-3 py-1.5 text-left text-sm font-medium text-gray-700">규격</th>
-                          <th className="px-3 py-1.5 text-left text-sm font-medium text-gray-700">사용처</th>
-                          <th className="px-3 py-1.5 text-left text-sm font-medium text-gray-700">현재재고</th>
-                          <th className="px-3 py-1.5 text-left text-sm font-medium text-gray-700">가격</th>
-                          <th className="px-3 py-1.5 text-left text-sm font-medium text-gray-700">재고가액</th>
-                          <th className="px-3 py-1.5 text-left text-sm font-medium text-gray-700">관리</th>
+                          <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">카테고리</th>
+                          <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">품목명</th>
+                          <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">규격</th>
+                          <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">사용처</th>
+                          <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">재고</th>
+                          <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">가격</th>
+                          <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">재고가액</th>
+                          <th className="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">관리</th>
                         </tr>
                       </thead>
-                      <tbody>
+                      <tbody className="divide-y divide-gray-200">
                         {filteredProducts.map(product => (
-                          <tr key={product._id} className={product.stock <= 4 ? 'bg-red-50' : ''}>
-                            <td className="px-3 py-1.5 text-sm">{product.category}</td>
-                            <td className="px-3 py-1.5 text-sm">{product.name}</td>
-                            <td className="px-3 py-1.5 text-sm">{product.specification}</td>
-                            <td className="px-3 py-1.5 text-sm">{product.usage}</td>
-                            <td className="px-3 py-1.5 text-sm">
-                              {product.stock}
-                              {product.stock <= 4 && (
-                                <Badge variant="destructive" className="ml-1 text-xs px-1 py-0">부족</Badge>
-                              )}
+                          <tr key={product._id} className={`hover:bg-gray-50 ${product.stock <= 4 ? 'bg-red-50' : ''}`}>
+                            <td className="px-3 py-2 text-sm text-gray-900">{product.category}</td>
+                            <td className="px-3 py-2 text-sm font-medium text-gray-900">{product.name}</td>
+                            <td className="px-3 py-2 text-sm text-gray-600">{product.specification}</td>
+                            <td className="px-3 py-2 text-sm text-gray-600">{product.usage}</td>
+                            <td className="px-3 py-2 text-sm">
+                              <div className="flex items-center">
+                                <span className={`font-semibold ${product.stock <= 4 ? 'text-red-600' : 'text-gray-900'}`}>
+                                  {product.stock}
+                                </span>
+                                {product.stock <= 4 && (
+                                  <Badge variant="destructive" className="ml-2 text-xs px-1.5 py-0.5">부족</Badge>
+                                )}
+                              </div>
                             </td>
-                            <td className="px-3 py-1.5 text-sm">{product.price.toLocaleString()}원</td>
-                            <td className="px-3 py-1.5 text-sm">{(product.stock * product.price).toLocaleString()}원</td>
-                            <td className="px-3 py-1.5">
-                              <div className="space-x-1">
+                            <td className="px-3 py-2 text-sm text-gray-600">{product.price.toLocaleString()}원</td>
+                            <td className="px-3 py-2 text-sm font-medium text-gray-900">{(product.stock * product.price).toLocaleString()}원</td>
+                            <td className="px-3 py-2">
+                              <div className="flex space-x-1">
                                 <Button
                                   size="sm"
                                   variant="outline"
@@ -434,7 +463,7 @@ export default function ImplantInventoryModal({ isOpen, onClose }: ImplantInvent
                                     setSelectedProduct(product._id);
                                     setStockInModal(true);
                                   }}
-                                  className="border-blue-300 text-blue-600 hover:bg-blue-50 hover:border-blue-400 hover:text-blue-700"
+                                  className="h-7 px-2 text-xs border-blue-300 text-blue-600 hover:bg-blue-50 hover:border-blue-400 hover:text-blue-700"
                                 >
                                   <Plus className="w-3 h-3 mr-1" />
                                   입고
@@ -446,7 +475,7 @@ export default function ImplantInventoryModal({ isOpen, onClose }: ImplantInvent
                                     setSelectedProduct(product._id);
                                     setStockOutModal(true);
                                   }}
-                                  className="border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400 hover:text-red-700"
+                                  className="h-7 px-2 text-xs border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400 hover:text-red-700"
                                 >
                                   <Minus className="w-3 h-3 mr-1" />
                                   출고
@@ -457,18 +486,6 @@ export default function ImplantInventoryModal({ isOpen, onClose }: ImplantInvent
                         ))}
                       </tbody>
                     </table>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* 요약 정보 */}
-              <Card className="border-0 shadow-sm bg-white">
-                <CardContent className="p-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>총 품목 수: <span className="font-bold">{filteredProducts.length}개</span></div>
-                    <div>총 재고가액: <span className="font-bold">
-                      {filteredProducts.reduce((sum, p) => sum + (p.stock * p.price), 0).toLocaleString()}원
-                    </span></div>
                   </div>
                 </CardContent>
               </Card>
@@ -640,6 +657,10 @@ export default function ImplantInventoryModal({ isOpen, onClose }: ImplantInvent
                   </CardContent>
                 </Card>
               )}
+            </TabsContent>
+
+            <TabsContent value="contract" className="space-y-4">
+              <ImplantContractList />
             </TabsContent>
           </Tabs>
         </DialogContent>
