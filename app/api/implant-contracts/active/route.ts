@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import ImplantContract from '@/lib/models/ImplantContract';
 import { connectToDatabase } from '@/lib/mongodb';
 
 export async function GET(request: NextRequest) {
@@ -10,7 +9,7 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        await connectToDatabase();
+        const { client, db } = await connectToDatabase();
 
         const searchParams = request.nextUrl.searchParams;
         const companyName = searchParams.get('companyName');
@@ -18,7 +17,7 @@ export async function GET(request: NextRequest) {
         const query: any = { isActive: true };
         if (companyName) query.companyName = companyName;
 
-        const contracts = await ImplantContract.find(query).sort({ contractDate: -1 });
+        const contracts = await db.collection('implantcontracts').find(query).sort({ contractDate: -1 }).toArray();
         
         return NextResponse.json(contracts);
     } catch (error) {

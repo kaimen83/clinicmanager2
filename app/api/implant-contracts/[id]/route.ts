@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import ImplantContract from '@/lib/models/ImplantContract';
 import { connectToDatabase } from '@/lib/mongodb';
+import { ObjectId } from 'mongodb';
 
 export async function GET(
     request: NextRequest,
@@ -13,10 +13,10 @@ export async function GET(
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        await connectToDatabase();
+        const { client, db } = await connectToDatabase();
         
         const { id } = await params;
-        const contract = await ImplantContract.findById(id);
+        const contract = await db.collection('implantcontracts').findOne({ _id: new ObjectId(id) });
         
         if (!contract) {
             return NextResponse.json({ error: '계약을 찾을 수 없습니다.' }, { status: 404 });
@@ -39,7 +39,7 @@ export async function PUT(
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        await connectToDatabase();
+        const { client, db } = await connectToDatabase();
         
         const { id } = await params;
         const body = await request.json();
@@ -55,7 +55,7 @@ export async function PUT(
             isActive
         } = body;
 
-        const contract = await ImplantContract.findById(id);
+        const contract = await db.collection('implantcontracts').findOne({ _id: new ObjectId(id) });
         
         if (!contract) {
             return NextResponse.json({ error: '계약을 찾을 수 없습니다.' }, { status: 404 });
@@ -63,10 +63,10 @@ export async function PUT(
 
         // 동일 회사의 다른 활성 계약이 있는지 확인
         if (isActive && companyName !== contract.companyName) {
-            const existingActiveContract = await ImplantContract.findOne({
+            const existingActiveContract = await db.collection('implantcontracts').findOne({
                 companyName,
                 isActive: true,
-                _id: { $ne: id }
+                _id: { $ne: new ObjectId(id) }
             });
 
             if (existingActiveContract) {
@@ -76,21 +76,25 @@ export async function PUT(
             }
         }
 
-        const updatedContract = await ImplantContract.findByIdAndUpdate(
-            id,
-            {
-                companyName,
-                contractDate: new Date(contractDate),
-                promotionAmount: promotionAmount || 0,
-                markupRate: markupRate || 0,
-                paymentMethod: paymentMethod || '',
-                paymentTerms: paymentTerms || '',
-                benefits: benefits || '',
-                productPrices: productPrices || [],
-                isActive
-            },
-            { new: true }
+        const updateData = {
+            companyName,
+            contractDate: new Date(contractDate),
+            promotionAmount: promotionAmount || 0,
+            markupRate: markupRate || 0,
+            paymentMethod: paymentMethod || '',
+            paymentTerms: paymentTerms || '',
+            benefits: benefits || '',
+            productPrices: productPrices || [],
+            isActive,
+            updatedAt: new Date()
+        };
+
+        await db.collection('implantcontracts').updateOne(
+            { _id: new ObjectId(id) },
+            { $set: updateData }
         );
+
+        const updatedContract = await db.collection('implantcontracts').findOne({ _id: new ObjectId(id) });
         
         return NextResponse.json(updatedContract);
     } catch (error) {
@@ -109,16 +113,16 @@ export async function DELETE(
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        await connectToDatabase();
+        const { client, db } = await connectToDatabase();
 
         const { id } = await params;
-        const contract = await ImplantContract.findById(id);
+        const contract = await db.collection('implantcontracts').findOne({ _id: new ObjectId(id) });
         
         if (!contract) {
             return NextResponse.json({ error: '계약을 찾을 수 없습니다.' }, { status: 404 });
         }
 
-        await ImplantContract.findByIdAndDelete(id);
+        await db.collection('implantcontracts').deleteOne({ _id: new ObjectId(id) });
         
         return NextResponse.json({ message: '계약이 삭제되었습니다.' });
     } catch (error) {

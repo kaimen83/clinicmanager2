@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import ImplantContract from '@/lib/models/ImplantContract';
 import { connectToDatabase } from '@/lib/mongodb';
 
 export async function GET(request: NextRequest) {
@@ -10,7 +9,7 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        await connectToDatabase();
+        const { client, db } = await connectToDatabase();
 
         const searchParams = request.nextUrl.searchParams;
         const companyName = searchParams.get('companyName');
@@ -20,7 +19,7 @@ export async function GET(request: NextRequest) {
         if (companyName) query.companyName = companyName;
         if (isActive !== null) query.isActive = isActive === 'true';
 
-        const contracts = await ImplantContract.find(query).sort({ contractDate: -1 });
+        const contracts = await db.collection('implantcontracts').find(query).sort({ contractDate: -1 }).toArray();
         
         return NextResponse.json(contracts);
     } catch (error) {
@@ -36,7 +35,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        await connectToDatabase();
+        const { client, db } = await connectToDatabase();
         
         const body = await request.json();
         const {
@@ -54,7 +53,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: '회사명과 계약일은 필수입니다.' }, { status: 400 });
         }
 
-        const contract = new ImplantContract({
+        const contract = {
             companyName,
             contractDate: new Date(contractDate),
             promotionAmount: promotionAmount || 0,
@@ -64,12 +63,14 @@ export async function POST(request: NextRequest) {
             benefits: benefits || '',
             productPrices: productPrices || [],
             isActive: true,
-            userId
-        });
+            userId,
+            createdAt: new Date(),
+            updatedAt: new Date()
+        };
 
-        await contract.save();
+        const result = await db.collection('implantcontracts').insertOne(contract);
         
-        return NextResponse.json(contract, { status: 201 });
+        return NextResponse.json({ ...contract, _id: result.insertedId }, { status: 201 });
     } catch (error) {
         console.error('Error creating implant contract:', error);
         return NextResponse.json({ error: '계약 생성에 실패했습니다.' }, { status: 500 });
