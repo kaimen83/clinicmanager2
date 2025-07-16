@@ -10,17 +10,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: '시작일과 종료일이 필요합니다.' }, { status: 400 });
     }
 
-    // 날짜 필터 설정 (한국 시간 기준)
-    const startParts = startDate.split('-').map(Number);
-    const endParts = endDate.split('-').map(Number);
-    
-    const startDateObj = new Date(startParts[0], startParts[1] - 1, startParts[2], 0, 0, 0, 0);
-    const endDateObj = new Date(endParts[0], endParts[1] - 1, endParts[2], 23, 59, 59, 999);
-    
-    // 한국 시간과 UTC 간의 시차 조정 (9시간)
-    const kstOffset = 9 * 60 * 60 * 1000;
-    const startUtc = new Date(startDateObj.getTime() - kstOffset);
-    const endUtc = new Date(endDateObj.getTime() - kstOffset);
+    // 날짜 필터 설정 (UTC 기준으로 직접 생성)
+    // MongoDB에 저장된 날짜가 UTC 00:00:00이므로 직접 UTC Date 객체 생성
+    const startUtc = new Date(`${startDate}T00:00:00.000Z`);
+    const endUtc = new Date(`${endDate}T23:59:59.999Z`);
 
     // MongoDB 연결 및 조회
     const { MongoClient } = require('mongodb');

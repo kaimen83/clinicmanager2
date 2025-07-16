@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { connectToDatabase } from '@/lib/mongodb';
+import { connectToMongoose } from '@/lib/mongoose';
 import { Notice, NoticeReadStatus } from '@/lib/models/notice';
 import { createNewDate, getCurrentKstDate, toKstDate } from '@/lib/utils';
 
@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    await connectToDatabase();
+    await connectToMongoose();
 
     const now = getCurrentKstDate();
     
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Content is required' }, { status: 400 });
     }
 
-    await connectToDatabase();
+    await connectToMongoose();
     
     // Clerk의 currentUser를 사용하여 사용자 정보 가져오기
     const { currentUser } = await import('@clerk/nextjs/server');
