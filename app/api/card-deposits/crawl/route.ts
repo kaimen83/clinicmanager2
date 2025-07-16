@@ -269,16 +269,83 @@ class CardSalesCrawler {
           // 카드사 이름 매핑
           const cardCompany = cardCompanyMapping[deposit.카드사] || deposit.카드사;
 
-          // 미입금 상태인 데이터 찾기
-          const existingDeposit = await db.collection('carddeposits').findOne({
-            cardCompany: cardCompany,
-            saleAmount: saleAmount,
-            status: '미입금',
-            $or: [
-              { actualDepositAmount: { $exists: false } },
-              { actualDepositAmount: null }
-            ]
-          });
+          // 크롤링 데이터의 날짜는 실제로는 입금예정일임
+          // 매출일을 역산하여 찾아야 함
+          const depositDate = new Date(deposit.날짜);
+          
+          // 입금예정일로부터 매출일 범위 계산 (보통 매출일 + 2~3 영업일)
+          // 매출일 후보 날짜들을 생성 (입금예정일 - 1~5일)
+          const candidateSaleDates = [];
+          for (let i = 1; i <= 5; i++) {
+            const candidateDate = new Date(depositDate);
+            candidateDate.setDate(candidateDate.getDate() - i);
+            candidateSaleDates.push(candidateDate);
+          }
+
+          let existingDeposit = null;
+          let matchedSaleDate = null;
+
+          // 각 후보 매출일에 대해 매칭 시도
+          for (const candidateSaleDate of candidateSaleDates) {
+            const saleDateStart = new Date(candidateSaleDate);
+            saleDateStart.setHours(0, 0, 0, 0);
+            const saleDateEnd = new Date(candidateSaleDate);
+            saleDateEnd.setHours(23, 59, 59, 999);
+
+            // transactions에서 카드사별 매출 집계
+            const transactionAggregation = await db.collection('transactions')
+              .aggregate([
+                {
+                  $match: {
+                    date: { $gte: saleDateStart, $lte: saleDateEnd },
+                    paymentMethod: '카드',
+                    cardCompany: cardCompany
+                  }
+                },
+                {
+                  $group: {
+                    _id: null,
+                    totalAmount: { $sum: '$paymentAmount' },
+                    transactionIds: { $push: '$_id' },
+                    count: { $sum: 1 }
+                  }
+                }
+              ])
+              .toArray();
+
+            if (transactionAggregation.length > 0 && transactionAggregation[0].totalAmount === saleAmount) {
+              // 매칭되는 매출 데이터 발견
+              matchedSaleDate = candidateSaleDate;
+              
+              // 기존 carddeposits에서 해당 데이터 확인 (상태에 상관없이 조회)
+              existingDeposit = await db.collection('carddeposits').findOne({
+                cardCompany: cardCompany,
+                saleDate: { $gte: saleDateStart, $lte: saleDateEnd },
+                saleAmount: saleAmount
+              });
+
+              // carddeposits에 없으면 새로운 엔트리 생성
+              if (!existingDeposit) {
+                const expectedDepositDate = calculateExpectedDepositDate(candidateSaleDate);
+                
+                const newCardDeposit = {
+                  cardCompany: cardCompany,
+                  saleDate: saleDateStart,
+                  saleAmount: saleAmount,
+                  expectedDepositDate: expectedDepositDate,
+                  status: '미입금',
+                  transactionIds: transactionAggregation[0].transactionIds,
+                  createdBy: userId,
+                  createdAt: new Date(),
+                  updatedAt: new Date()
+                };
+                
+                const insertResult = await db.collection('carddeposits').insertOne(newCardDeposit);
+                existingDeposit = { ...newCardDeposit, _id: insertResult.insertedId };
+              }
+              break; // 매칭되면 루프 종료
+            }
+          }
 
           if (existingDeposit) {
             // 실제 입금액이 있는 경우에만 입금 처리
@@ -290,12 +357,21 @@ class CardSalesCrawler {
               const depositDate = new Date(deposit.날짜);
               depositDate.setHours(0, 0, 0, 0); // 시간을 00:00:00으로 설정
 
-              // 해당 날짜에 이미 처리된 입금이 있는지 확인
-              const existingDailyDeposit = await db.collection('dailyactualcarddeposits').findOne({
-                'deposits.cardDepositId': existingDeposit._id
-              });
-
-              if (existingDailyDeposit) {
+              // 해당 카드매출이 이미 입금완료 상태인지 확인
+              if (existingDeposit.status === '입금완료') {
+                // 이미 입금 처리된 경우 처리 결과에 추가하고 건너뛰기
+                processedResults.push({
+                  id: existingDeposit._id,
+                  status: 'already_processed',
+                  message: '이미 입금 처리 완료',
+                  data: {
+                    originalCardCompany: deposit.카드사,
+                    mappedCardCompany: cardCompany,
+                    saleAmount: existingDeposit.saleAmount,
+                    actualAmount: existingDeposit.actualDepositAmount,
+                    fee: existingDeposit.fee
+                  }
+                });
                 continue;
               }
 
@@ -380,7 +456,9 @@ class CardSalesCrawler {
                   mappedCardCompany: cardCompany,
                   saleAmount: existingDeposit.saleAmount,
                   actualAmount: actualAmount,
-                  fee: fee
+                  fee: fee,
+                  depositDate: depositDate.toISOString().split('T')[0],
+                  matchedSaleDate: matchedSaleDate ? matchedSaleDate.toISOString().split('T')[0] : null
                 }
               });
             } else {
@@ -398,37 +476,40 @@ class CardSalesCrawler {
             }
           } else {
             // 매칭 실패 원인을 더 자세히 분석
-            const sameCardCompany = await db.collection('carddeposits').find({
-              cardCompany: cardCompany
-            }).limit(5).toArray();
+            let detailedError = '매칭되는 매출 데이터를 찾을 수 없습니다.';
             
-            const sameAmount = await db.collection('carddeposits').find({
-              saleAmount: saleAmount
-            }).limit(5).toArray();
-            
-            let detailedError = '매칭되는 미입금 데이터를 찾을 수 없습니다.';
-            
-            if (sameCardCompany.length === 0) {
-              detailedError += ` (${cardCompany} 카드사 데이터 없음)`;
-            } else if (sameAmount.length === 0) {
-              detailedError += ` (${saleAmount.toLocaleString()}원 매출액 데이터 없음)`;
-            } else {
-              const unpaidSameCard = await db.collection('carddeposits').countDocuments({
-                cardCompany: cardCompany,
-                status: '미입금'
-              });
-              const unpaidSameAmount = await db.collection('carddeposits').countDocuments({
-                saleAmount: saleAmount,
-                status: '미입금'
-              });
+            // 모든 후보 매출일에 대한 분석 정보 수집
+            const analysisInfo = [];
+            for (const candidateSaleDate of candidateSaleDates) {
+              const saleDateStart = new Date(candidateSaleDate);
+              saleDateStart.setHours(0, 0, 0, 0);
+              const saleDateEnd = new Date(candidateSaleDate);
+              saleDateEnd.setHours(23, 59, 59, 999);
               
-              if (unpaidSameCard === 0) {
-                detailedError += ` (${cardCompany}의 미입금 데이터 없음)`;
-              } else if (unpaidSameAmount === 0) {
-                detailedError += ` (${saleAmount.toLocaleString()}원의 미입금 데이터 없음)`;
-              } else {
-                detailedError += ' (이미 처리되었거나 다른 조건 불일치)';
+              const transactionsOnDate = await db.collection('transactions').find({
+                date: { $gte: saleDateStart, $lte: saleDateEnd },
+                paymentMethod: '카드',
+                cardCompany: cardCompany
+              }).toArray();
+              
+              if (transactionsOnDate.length > 0) {
+                const totalAmount = transactionsOnDate.reduce((sum, t) => sum + t.paymentAmount, 0);
+                analysisInfo.push({
+                  date: candidateSaleDate.toISOString().split('T')[0],
+                  amount: totalAmount,
+                  transactions: transactionsOnDate.length
+                });
               }
+            }
+            
+            if (analysisInfo.length === 0) {
+              detailedError += ` (${cardCompany} 카드사의 입금예정일 ${deposit.날짜} 전 5일간 매출 데이터 없음)`;
+            } else {
+              detailedError += ` (입금예정일 ${deposit.날짜} 기준 매출 후보들: `;
+              detailedError += analysisInfo.map(info => 
+                `${info.date}(${info.amount.toLocaleString()}원)`
+              ).join(', ');
+              detailedError += `)`;
             }
             
             errors.push({
@@ -437,7 +518,8 @@ class CardSalesCrawler {
                 mappedCardCompany: cardCompany,
                 saleAmount: saleAmount,
                 date: deposit.날짜,
-                actualAmount: deposit.실입금액
+                actualAmount: deposit.실입금액,
+                analysisInfo: analysisInfo
               },
               error: detailedError
             });

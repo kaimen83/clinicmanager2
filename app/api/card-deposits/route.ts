@@ -62,23 +62,33 @@ export async function GET(request: NextRequest) {
       ])
       .toArray();
 
-    // 기존 carddeposits 컬렉션에서 입금 상태 정보 조회
+    // 기존 carddeposits 컬렉션에서 입금 상태 정보 조회 (최신 상태 우선)
+    // 날짜 범위를 더 넓게 잡아서 크롤링으로 생성된 데이터도 포함
+    const extendedStartUtc = new Date(startUtc);
+    extendedStartUtc.setDate(extendedStartUtc.getDate() - 5); // 5일 전까지 확장
+    const extendedEndUtc = new Date(endUtc);
+    extendedEndUtc.setDate(extendedEndUtc.getDate() + 5); // 5일 후까지 확장
+    
     const existingDeposits = await db.collection('carddeposits')
       .find({
-        saleDate: { $gte: startUtc, $lte: endUtc }
+        saleDate: { $gte: extendedStartUtc, $lte: extendedEndUtc }
       })
+      .sort({ updatedAt: -1 })
       .toArray();
 
-    // 기존 입금 정보를 키로 매핑 (cardCompany + saleDate)
+    // 입금 정보를 카드사+금액으로 매핑 (날짜 오차를 고려한 유연한 매칭)
     const existingDepositsMap = new Map();
     existingDeposits.forEach(deposit => {
-      const key = `${deposit.cardCompany}_${deposit.saleDate.toISOString().split('T')[0]}`;
-      existingDepositsMap.set(key, deposit);
+      const key = `${deposit.cardCompany}_${deposit.saleAmount}`;
+      if (!existingDepositsMap.has(key)) {
+        existingDepositsMap.set(key, deposit);
+      }
     });
 
     // transactions 기반 데이터와 기존 입금 정보 병합
     const cardDeposits = cardSalesAggregation.map(sale => {
-      const key = `${sale.cardCompany}_${sale.saleDate.toISOString().split('T')[0]}`;
+      // 카드사+금액으로 매칭 시도
+      const key = `${sale.cardCompany}_${sale.saleAmount}`;
       const existingDeposit = existingDepositsMap.get(key);
       
       // 입금 예정일 계산 (매출일 + 2 영업일, 기본값)
