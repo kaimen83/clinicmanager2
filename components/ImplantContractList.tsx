@@ -207,7 +207,7 @@ export default function ImplantContractList() {
                   <Table>
                     <TableHeader>
                       <TableRow className="border-b">
-                        <TableHead className="px-4 py-2 text-xs font-semibold text-gray-700 uppercase tracking-wider w-[100px]">계약일</TableHead>
+                        <TableHead className="px-4 py-2 text-xs font-semibold text-gray-700 uppercase tracking-wider w-[140px]">계약일</TableHead>
                         <TableHead className="px-4 py-2 text-xs font-semibold text-gray-700 uppercase tracking-wider">프로모션</TableHead>
                         <TableHead className="px-4 py-2 text-xs font-semibold text-gray-700 uppercase tracking-wider">할증률</TableHead>
                         <TableHead className="px-4 py-2 text-xs font-semibold text-gray-700 uppercase tracking-wider">결제방법</TableHead>
