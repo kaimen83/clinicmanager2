@@ -493,7 +493,7 @@ class CardSalesCrawler {
               }).toArray();
               
               if (transactionsOnDate.length > 0) {
-                const totalAmount = transactionsOnDate.reduce((sum, t) => sum + t.paymentAmount, 0);
+                const totalAmount = transactionsOnDate.reduce((sum: number, t: any) => sum + t.paymentAmount, 0);
                 analysisInfo.push({
                   date: candidateSaleDate.toISOString().split('T')[0],
                   amount: totalAmount,

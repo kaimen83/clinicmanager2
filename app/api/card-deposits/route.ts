@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
 
     // 입금 정보를 카드사+금액으로 매핑 (날짜 오차를 고려한 유연한 매칭)
     const existingDepositsMap = new Map();
-    existingDeposits.forEach(deposit => {
+    existingDeposits.forEach((deposit: any) => {
       const key = `${deposit.cardCompany}_${deposit.saleAmount}`;
       if (!existingDepositsMap.has(key)) {
         existingDepositsMap.set(key, deposit);
@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
     });
 
     // transactions 기반 데이터와 기존 입금 정보 병합
-    const cardDeposits = cardSalesAggregation.map(sale => {
+    const cardDeposits = cardSalesAggregation.map((sale: any) => {
       // 카드사+금액으로 매칭 시도
       const key = `${sale.cardCompany}_${sale.saleAmount}`;
       const existingDeposit = existingDepositsMap.get(key);
