@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -239,37 +238,17 @@ export default function DisagreementReasonStats({ selectedDate, onInsightsUpdate
 
   if (loading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-orange-500" />
-            미동의 사유 분석
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex justify-center items-center py-8">
-            <div className="text-gray-500">데이터를 불러오는 중...</div>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex justify-center items-center py-8">
+        <div className="text-gray-500">데이터를 불러오는 중...</div>
+      </div>
     );
   }
 
   if (!currentStats || !trendData || currentStats.stats.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-orange-500" />
-            미동의 사유 분석
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8 text-gray-500">
-            해당 기간에 미동의 사유 데이터가 없습니다.
-          </div>
-        </CardContent>
-      </Card>
+      <div className="text-center py-8 text-gray-500">
+        해당 기간에 미동의 사유 데이터가 없습니다.
+      </div>
     );
   }
 
@@ -287,17 +266,9 @@ export default function DisagreementReasonStats({ selectedDate, onInsightsUpdate
     .map(r => r.reason);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <AlertTriangle className="h-5 w-5 text-orange-500" />
-          미동의 사유 분석
-        </CardTitle>
-        <CardDescription>상담 미동의 패턴 분석 및 개선점 도출</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {/* 날짜 범위 선택 */}
-        <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+    <>
+      {/* 날짜 범위 선택 */}
+      <div className="mb-6 p-4 bg-gray-50 rounded-lg">
           <div className="flex items-center gap-4 flex-wrap">
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4 text-gray-600" />
@@ -482,8 +453,6 @@ export default function DisagreementReasonStats({ selectedDate, onInsightsUpdate
             </LineChart>
           </ResponsiveContainer>
         </div>
-
-      </CardContent>
-    </Card>
+    </>
   );
 }
