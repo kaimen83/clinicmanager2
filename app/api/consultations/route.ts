@@ -16,6 +16,7 @@ export async function GET(request: NextRequest) {
     const agreed = searchParams.get('agreed');
     const chartNumber = searchParams.get('chartNumber') || '';
     const patientName = searchParams.get('patientName') || '';
+    const disagreementReason = searchParams.get('disagreementReason');
     
     const { db } = await connectToDatabase();
     
@@ -43,6 +44,11 @@ export async function GET(request: NextRequest) {
     // 동의 여부 필터 추가
     if (agreed) {
       searchQuery['agreed'] = agreed === 'true';
+    }
+    
+    // 미동의 사유 필터 추가
+    if (disagreementReason) {
+      searchQuery['disagreementReason'] = disagreementReason;
     }
     
     // 날짜 필터 추가 (동의한 상담은 confirmedDate, 미동의 상담은 date 기준)

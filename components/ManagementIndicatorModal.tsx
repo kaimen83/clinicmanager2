@@ -7,12 +7,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Users, TrendingUp, MessageSquare, CreditCard, Calendar, Activity, Target, PieChart, Stethoscope, Award, ChevronLeft, ChevronRight, MapPin } from 'lucide-react';
+import { Users, TrendingUp, MessageSquare, CreditCard, Calendar, Activity, Target, PieChart, Stethoscope, Award, ChevronLeft, ChevronRight, MapPin, AlertTriangle } from 'lucide-react';
 import { DayPicker } from 'react-day-picker';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LabelList, ComposedChart, Bar } from 'recharts';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { useDateContext } from '@/lib/context/dateContext';
+import DisagreementReasonStats, { DisagreementInsights } from './DisagreementReasonStats';
 
 interface ManagementIndicatorModalProps {
   isOpen: boolean;
@@ -162,6 +163,9 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
   const [doctorConsultationStats, setDoctorConsultationStats] = useState<DoctorConsultationStats[]>([]);
   const [staffConsultationStats, setStaffConsultationStats] = useState<StaffConsultationStats[]>([]);
   const [consultationDoctorNames, setConsultationDoctorNames] = useState<string[]>([]);
+  
+  // 미동의 사유 인사이트 상태
+  const [disagreementInsights, setDisagreementInsights] = useState<DisagreementInsights | null>(null);
   const [allStaffs, setAllStaffs] = useState<string[]>([]);
   const [highlightedStaff, setHighlightedStaff] = useState<string | null>(null);
   const [doctorAgreementType, setDoctorAgreementType] = useState<'count' | 'amount'>('count');
@@ -2106,6 +2110,12 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
                 </CardContent>
               </Card>
 
+              {/* 미동의 사유 통계 */}
+              <DisagreementReasonStats 
+                selectedDate={selectedDate.toISOString().split('T')[0]} 
+                onInsightsUpdate={setDisagreementInsights}
+              />
+
               {/* 상담 인사이트 분석 */}
               <Card>
                 <CardHeader>
@@ -2160,6 +2170,38 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
                           {consultationStats.totalConsultationCount > 0 && consultationStats.totalConsultationAmount > 0 ? 
                             Math.round((consultationStats.totalConsultationAmount / consultationStats.totalConsultationCount) / 10000) : 0}만원
                         </p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* 미동의 사유 인사이트 */}
+                  {disagreementInsights && (
+                    <div className="mt-6 p-4 bg-gradient-to-br from-red-50 to-rose-50 rounded-lg border border-red-200">
+                      <div className="flex items-center gap-2 mb-3">
+                        <AlertTriangle className="h-5 w-5 text-red-600" />
+                        <h4 className="font-semibold text-red-800">미동의 사유 개선점</h4>
+                      </div>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex items-center justify-between p-2 bg-white rounded border border-red-100">
+                          <span className="text-red-700">
+                            <strong>최대 손실 사유:</strong> {disagreementInsights.topLossReason.reason}
+                          </span>
+                          <span className="font-bold text-red-600">
+                            ₩{disagreementInsights.topLossReason.totalAmount.toLocaleString()}
+                          </span>
+                        </div>
+                        {disagreementInsights.increasingReasons.length > 0 && (
+                          <div className="p-2 bg-white rounded border border-red-100">
+                            <span className="text-red-700">
+                              <strong>증가 추세 사유:</strong> {disagreementInsights.increasingReasons.join(', ')}
+                            </span>
+                          </div>
+                        )}
+                        <div className="p-2 bg-white rounded border border-red-100">
+                          <span className="text-red-700">
+                            <strong>총 미동의 사유:</strong> {disagreementInsights.reasonCount}가지 확인됨
+                          </span>
+                        </div>
                       </div>
                     </div>
                   )}
