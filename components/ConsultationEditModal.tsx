@@ -12,7 +12,7 @@ import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { toISODateString, getCurrentKstDate } from '@/lib/utils';
+import { toISODateString } from '@/lib/utils';
 import { useUserRole } from './UserRoleProvider';
 import { 
   Loader2, 
@@ -24,14 +24,14 @@ import {
   CheckCircle2, 
   FileText,
   Stethoscope,
-  Users
+  Users,
+  Edit
 } from 'lucide-react';
 
-interface ConsultationAddModalProps {
+interface ConsultationEditModalProps {
   isOpen: boolean;
   onClose: () => void;
-  chartNumber: string;
-  patientName: string;
+  consultation: any;
   onSuccess: () => void;
 }
 
@@ -41,19 +41,18 @@ interface Settings {
   consultationDisagreementReasons: Array<{ value: string }>;
 }
 
-export default function ConsultationAddModal({
+export default function ConsultationEditModal({
   isOpen,
   onClose,
-  chartNumber,
-  patientName,
+  consultation,
   onSuccess
-}: ConsultationAddModalProps) {
+}: ConsultationEditModalProps) {
   const { toast } = useToast();
   const { userWithRole } = useUserRole();
   const [formData, setFormData] = useState({
-    date: toISODateString(getCurrentKstDate()),
-    chartNumber: chartNumber,
-    patientName: patientName,
+    date: '',
+    chartNumber: '',
+    patientName: '',
     doctor: '',
     staff: '',
     amount: '',
@@ -66,29 +65,27 @@ export default function ConsultationAddModal({
   const [isLoadingSettings, setIsLoadingSettings] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // 설정 로드
+  // 상담 정보 로드 및 폼 초기화
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && consultation) {
       loadSettings();
-      // 폼 초기화 - STAFF 권한일 때는 오늘 날짜로 고정
-      const dateToUse = userWithRole?.role === 'STAFF' 
-        ? toISODateString(getCurrentKstDate())
-        : toISODateString(getCurrentKstDate());
-        
+      
+      // 기존 상담 정보로 폼 초기화
+      const consultationDate = consultation.date ? new Date(consultation.date) : new Date();
       setFormData({
-        date: dateToUse,
-        chartNumber,
-        patientName,
-        doctor: '',
-        staff: '',
-        amount: '',
-        agreed: false,
-        disagreementReason: '',
-        notes: ''
+        date: toISODateString(consultationDate),
+        chartNumber: consultation.chartNumber || '',
+        patientName: consultation.patientName || '',
+        doctor: consultation.doctor || '',
+        staff: consultation.staff || '',
+        amount: consultation.amount ? consultation.amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '',
+        agreed: Boolean(consultation.agreed),
+        disagreementReason: consultation.disagreementReason || '',
+        notes: consultation.notes || ''
       });
       setErrors({});
     }
-  }, [isOpen, chartNumber, patientName, userWithRole]);
+  }, [isOpen, consultation]);
 
   const loadSettings = async () => {
     try {
@@ -184,8 +181,20 @@ export default function ConsultationAddModal({
   const handleSwitchChange = (checked: boolean) => {
     setFormData(prev => ({
       ...prev,
-      agreed: checked
+      agreed: checked,
+      // 동의함으로 바뀔 때 동의 거부 이유 초기화
+      disagreementReason: checked ? '' : prev.disagreementReason
     }));
+
+    // 동의함으로 바뀔 때 관련 오류 메시지 삭제
+    if (checked) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.disagreementReason;
+        delete newErrors.notes;
+        return newErrors;
+      });
+    }
   };
 
   // 폼 유효성 검사
@@ -228,10 +237,10 @@ export default function ConsultationAddModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!chartNumber || !patientName) {
+    if (!consultation?._id) {
       toast({
         title: "오류",
-        description: "차트번호와 환자 이름을 먼저 입력해주세요.",
+        description: "상담 정보를 찾을 수 없습니다.",
         variant: "destructive",
       });
       return;
@@ -244,7 +253,7 @@ export default function ConsultationAddModal({
     setLoading(true);
     
     try {
-      const consultationData = {
+      const updateData = {
         date: formData.date,
         chartNumber: formData.chartNumber,
         patientName: formData.patientName,
@@ -253,35 +262,34 @@ export default function ConsultationAddModal({
         amount: Number(formData.amount.replace(/,/g, '')),
         agreed: formData.agreed,
         disagreementReason: formData.agreed ? null : formData.disagreementReason,
-        notes: formData.notes || '',
-        confirmedDate: formData.agreed ? new Date().toISOString() : null
+        notes: formData.notes || ''
       };
 
-      const response = await fetch('/api/consultations', {
-        method: 'POST',
+      const response = await fetch(`/api/consultations/${consultation._id}`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(consultationData)
+        body: JSON.stringify(updateData)
       });
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || '상담 정보 저장에 실패했습니다.');
+        throw new Error(error.message || '상담 정보 수정에 실패했습니다.');
       }
 
       toast({
         title: "성공",
-        description: "상담 정보가 저장되었습니다.",
+        description: "상담 정보가 수정되었습니다.",
       });
       onSuccess();
       onClose();
 
     } catch (error: any) {
-      console.error('상담 정보 저장 중 오류:', error);
+      console.error('상담 정보 수정 중 오류:', error);
       toast({
         title: "오류",
-        description: error.message || "상담 정보 저장에 실패했습니다.",
+        description: error.message || "상담 정보 수정에 실패했습니다.",
         variant: "destructive",
       });
     } finally {
@@ -289,24 +297,26 @@ export default function ConsultationAddModal({
     }
   };
 
+  if (!consultation) return null;
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px] p-0 gap-0 max-h-[90vh] overflow-y-auto">
-        <DialogHeader className="px-6 py-4 border-b bg-gradient-to-r from-green-50 to-emerald-50">
+        <DialogHeader className="px-6 py-4 border-b bg-gradient-to-r from-blue-50 to-indigo-50">
           <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-10 h-10 bg-green-100 rounded-full">
-              <MessageSquare className="w-5 h-5 text-green-600" />
+            <div className="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-full">
+              <Edit className="w-5 h-5 text-blue-600" />
             </div>
             <div>
-              <DialogTitle className="text-xl font-semibold text-gray-900">상담 정보 입력</DialogTitle>
-              <p className="text-sm text-gray-600 mt-1">환자의 상담 정보를 입력하고 관리하세요</p>
+              <DialogTitle className="text-xl font-semibold text-gray-900">상담 정보 수정</DialogTitle>
+              <p className="text-sm text-gray-600 mt-1">기존 상담 정보를 수정하고 관리하세요</p>
             </div>
           </div>
         </DialogHeader>
 
         {isLoadingSettings ? (
           <div className="py-12 flex flex-col items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-green-600 mb-3" />
+            <Loader2 className="h-8 w-8 animate-spin text-blue-600 mb-3" />
             <p className="text-gray-600">설정을 불러오는 중입니다...</p>
           </div>
         ) : (
@@ -338,7 +348,7 @@ export default function ConsultationAddModal({
                         className={`${
                           userWithRole?.role === 'STAFF' 
                             ? "bg-gray-100 border-gray-200 text-gray-600 cursor-not-allowed"
-                            : "border-gray-300 focus:border-green-500 focus:ring-green-200"
+                            : "border-gray-300 focus:border-blue-500 focus:ring-blue-200"
                         }`}
                         title={userWithRole?.role === 'STAFF' ? "일반직원은 오늘 날짜로만 등록 가능합니다" : ""}
                       />
@@ -398,7 +408,7 @@ export default function ConsultationAddModal({
                         <SelectTrigger className={`transition-all duration-200 ${
                           errors.doctor 
                             ? "border-red-300 focus:border-red-500 focus:ring-red-200" 
-                            : "border-gray-300 focus:border-green-500 focus:ring-green-200"
+                            : "border-gray-300 focus:border-blue-500 focus:ring-blue-200"
                         }`}>
                           <SelectValue placeholder="담당의사를 선택하세요" />
                         </SelectTrigger>
@@ -429,7 +439,7 @@ export default function ConsultationAddModal({
                         <SelectTrigger className={`transition-all duration-200 ${
                           errors.staff 
                             ? "border-red-300 focus:border-red-500 focus:ring-red-200" 
-                            : "border-gray-300 focus:border-green-500 focus:ring-green-200"
+                            : "border-gray-300 focus:border-blue-500 focus:ring-blue-200"
                         }`}>
                           <SelectValue placeholder="상담직원을 선택하세요" />
                         </SelectTrigger>
@@ -482,7 +492,7 @@ export default function ConsultationAddModal({
                           className={`transition-all duration-200 ${
                             errors.amount 
                               ? "border-red-300 focus:border-red-500 focus:ring-red-200" 
-                              : "border-gray-300 focus:border-green-500 focus:ring-green-200"
+                              : "border-gray-300 focus:border-blue-500 focus:ring-blue-200"
                           }`}
                           placeholder="금액을 입력하세요"
                         />
@@ -540,7 +550,7 @@ export default function ConsultationAddModal({
                           <SelectTrigger className={`transition-all duration-200 ${
                             errors.disagreementReason 
                               ? "border-red-300 focus:border-red-500 focus:ring-red-200" 
-                              : "border-gray-300 focus:border-green-500 focus:ring-green-200"
+                              : "border-gray-300 focus:border-blue-500 focus:ring-blue-200"
                           }`}>
                             <SelectValue placeholder="동의 거부 이유를 선택하세요" />
                           </SelectTrigger>
@@ -574,10 +584,10 @@ export default function ConsultationAddModal({
                         value={formData.notes}
                         onChange={handleInputChange}
                         rows={3}
-                        className={`border-gray-300 focus:border-green-500 focus:ring-green-200 resize-none transition-all duration-200 ${
+                        className={`border-gray-300 focus:border-blue-500 focus:ring-blue-200 resize-none transition-all duration-200 ${
                           errors.notes 
                             ? "border-red-300 focus:border-red-500 focus:ring-red-200" 
-                            : "border-gray-300 focus:border-green-500 focus:ring-green-200"
+                            : "border-gray-300 focus:border-blue-500 focus:ring-blue-200"
                         }`}
                         placeholder={
                           formData.agreed 
@@ -615,17 +625,17 @@ export default function ConsultationAddModal({
               <Button
                 type="submit"
                 disabled={loading}
-                className="px-6 bg-green-600 hover:bg-green-700"
+                className="px-6 bg-blue-600 hover:bg-blue-700"
               >
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    저장 중...
+                    수정 중...
                   </>
                 ) : (
                   <>
                     <CheckCircle2 className="mr-2 h-4 w-4" />
-                    저장
+                    수정
                   </>
                 )}
               </Button>
@@ -635,4 +645,4 @@ export default function ConsultationAddModal({
       </DialogContent>
     </Dialog>
   );
-} 
+}

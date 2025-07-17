@@ -55,6 +55,23 @@ export async function PUT(
       );
     }
 
+    // 동의 안함일 때 추가 검증
+    if (!body.agreed) {
+      if (!body.disagreementReason) {
+        return NextResponse.json(
+          { error: "동의 거부 이유는 필수입니다." },
+          { status: 400 }
+        );
+      }
+      // 동의 거부 이유가 "기타"일 경우에만 비고 필수
+      if (body.disagreementReason === '기타' && (!body.notes || body.notes.trim() === '')) {
+        return NextResponse.json(
+          { error: "동의 거부 이유가 '기타'일 경우 상세 내용(비고)은 필수입니다." },
+          { status: 400 }
+        );
+      }
+    }
+
     // 상담 정보 업데이트
     const result = await db
       .collection('consultations')
@@ -69,6 +86,7 @@ export async function PUT(
             staff: body.staff,
             amount: body.amount,
             agreed: body.agreed,
+            disagreementReason: body.agreed ? null : (body.disagreementReason || null),
             notes: body.notes,
             updatedAt: new Date()
           }

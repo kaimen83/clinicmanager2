@@ -11,6 +11,7 @@ import { TrendingUp, CheckCircle, XCircle, DollarSign, Users, Edit, Trash2, Cale
 import { toast } from '@/hooks/use-toast';
 import { useUserRole } from './UserRoleProvider';
 import { toISODateString, getCurrentKstDate } from '@/lib/utils';
+import ConsultationEditModal from './ConsultationEditModal';
 
 interface ConsultationStatsModalProps {
   isOpen: boolean;
@@ -58,6 +59,7 @@ interface Consultation {
   amount: number;
   agreed: boolean;
   confirmedDate?: string | null;
+  disagreementReason?: string | null;
   notes?: string;
   createdAt: string;
   updatedAt: string;
@@ -75,6 +77,8 @@ export default function ConsultationStatsModal({
   const [consultationsLoading, setConsultationsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'agreed' | 'non-agreed'>('agreed');
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [selectedConsultation, setSelectedConsultation] = useState<Consultation | null>(null);
 
   // 통계 데이터 조회
   const fetchStats = async () => {
@@ -222,11 +226,17 @@ export default function ConsultationStatsModal({
       return;
     }
     
-    // TODO: 상담 수정 모달 열기
-    toast({
-      title: "알림",
-      description: "상담 수정 기능은 추후 구현 예정입니다."
-    });
+    setSelectedConsultation(consultation);
+    setEditModalOpen(true);
+  };
+
+  // 수정 완료 처리
+  const handleEditSuccess = () => {
+    // 통계 및 상담내역 다시 로드
+    fetchStats();
+    fetchConsultations();
+    setEditModalOpen(false);
+    setSelectedConsultation(null);
   };
 
   // 상담 삭제
@@ -533,7 +543,7 @@ export default function ConsultationStatsModal({
                               <TableHead>상담직원</TableHead>
                               <TableHead className="text-right">상담금액</TableHead>
                               <TableHead>상담날짜</TableHead>
-                              <TableHead>확정날짜</TableHead>
+                              <TableHead>미동의 이유</TableHead>
                               <TableHead className="text-center">관리</TableHead>
                             </TableRow>
                           </TableHeader>
@@ -549,7 +559,13 @@ export default function ConsultationStatsModal({
                                 </TableCell>
                                 <TableCell>{formatDateShort(consultation.date)}</TableCell>
                                 <TableCell>
-                                  <span className="text-gray-400">-</span>
+                                  {consultation.disagreementReason ? (
+                                    <Badge variant="outline" className="text-red-600 border-red-600">
+                                      {consultation.disagreementReason}
+                                    </Badge>
+                                  ) : (
+                                    <span className="text-gray-400">-</span>
+                                  )}
                                 </TableCell>
                                 <TableCell>
                                   <div className="flex items-center justify-center gap-1">
@@ -608,6 +624,17 @@ export default function ConsultationStatsModal({
           </div>
         )}
       </DialogContent>
+
+      {/* 상담 수정 모달 */}
+      <ConsultationEditModal
+        isOpen={editModalOpen}
+        onClose={() => {
+          setEditModalOpen(false);
+          setSelectedConsultation(null);
+        }}
+        consultation={selectedConsultation}
+        onSuccess={handleEditSuccess}
+      />
     </Dialog>
   );
 } 

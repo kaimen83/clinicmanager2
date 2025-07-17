@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, UserRound, Stethoscope, ClipboardList, CreditCard, DollarSign, Package, FileSpreadsheet, Users, ReceiptText, ShoppingBag, HardDrive, FileUp } from "lucide-react";
+import { Settings, UserRound, Stethoscope, ClipboardList, CreditCard, DollarSign, Package, FileSpreadsheet, Users, ReceiptText, ShoppingBag, HardDrive, FileUp, MessageSquare } from "lucide-react";
 import { Button } from "./ui/button";
 import SettingsList from "./SettingsList";
 import { Badge } from "./ui/badge";
@@ -75,6 +75,12 @@ export default function SystemSettingsModal() {
       label: "직원",
       icon: <Users className="h-4 w-4" />,
       settingType: "staff"
+    },
+    {
+      id: "consultation",
+      label: "상담관련",
+      icon: <MessageSquare className="h-4 w-4" />,
+      settingType: "consultationDisagreementReason"
     },
     {
       id: "expenses",
