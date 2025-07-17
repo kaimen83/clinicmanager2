@@ -262,12 +262,90 @@ export async function GET(request: NextRequest) {
     const totalPatients = uniqueChartNumbers.size;
     const newPatients = uniqueNewPatientChartNumbers.size;
     
-    // 8. 카드매출 입금 데이터 (선택된 날짜에 입금예정인 데이터)
-    const cardDeposits = await db.collection('carddeposits')
+    // 8. 카드매출 입금 데이터
+    // 선택된 날짜의 카드 매출에 대한 입금 상황 조회 (매출일 기준)
+    const cardSalesForDeposit = await db.collection('transactions')
+      .aggregate([
+        {
+          $match: {
+            paymentMethod: '카드',
+            date: { 
+              $gte: startDate, 
+              $lte: endDate
+            }
+          }
+        },
+        {
+          $group: {
+            _id: {
+              cardCompany: '$cardCompany',
+              saleDate: {
+                $dateToString: {
+                  format: '%Y-%m-%d',
+                  date: '$date'
+                }
+              }
+            },
+            saleAmount: { $sum: '$paymentAmount' },
+            transactionCount: { $sum: 1 },
+            transactionIds: { $push: '$_id' }
+          }
+        },
+        {
+          $project: {
+            cardCompany: '$_id.cardCompany',
+            saleDate: { $dateFromString: { dateString: '$_id.saleDate' } },
+            saleAmount: 1,
+            transactionCount: 1,
+            transactionIds: 1,
+            _id: 0
+          }
+        }
+      ])
+      .toArray();
+
+    // 기존 carddeposits 컬렉션에서 입금 상태 정보 조회 (매출일 기준)
+    const existingDeposits = await db.collection('carddeposits')
       .find({
-        expectedDepositDate: { $gte: startDate, $lte: endDate }
+        saleDate: { 
+          $gte: startDate, 
+          $lte: endDate
+        }
       })
       .toArray();
+
+    // 입금 정보를 카드사+금액으로 매핑
+    const existingDepositsMap = new Map();
+    existingDeposits.forEach((deposit: any) => {
+      const key = `${deposit.cardCompany}_${deposit.saleAmount}`;
+      if (!existingDepositsMap.has(key)) {
+        existingDepositsMap.set(key, deposit);
+      }
+    });
+
+    // transactions 기반 데이터와 기존 입금 정보 병합
+    const cardDeposits = cardSalesForDeposit.map((sale: any) => {
+      const key = `${sale.cardCompany}_${sale.saleAmount}`;
+      const existingDeposit = existingDepositsMap.get(key);
+      
+      // 입금 예정일 계산 (매출일 + 2일)
+      const expectedDepositDate = new Date(sale.saleDate);
+      expectedDepositDate.setDate(expectedDepositDate.getDate() + 2);
+      
+      return {
+        _id: existingDeposit?._id || `temp_${Date.now()}_${Math.random()}`,
+        cardCompany: sale.cardCompany,
+        saleDate: sale.saleDate,
+        saleAmount: sale.saleAmount,
+        expectedDepositDate: existingDeposit?.expectedDepositDate || expectedDepositDate,
+        actualDepositDate: existingDeposit?.actualDepositDate || null,
+        actualDepositAmount: existingDeposit?.actualDepositAmount || null,
+        fee: existingDeposit?.fee || null,
+        status: existingDeposit?.status || '미입금',
+        transactionCount: sale.transactionCount,
+        transactionIds: sale.transactionIds
+      };
+    });
     
     const cardDepositSummary = cardDeposits.length > 0 ? {
       pending: cardDeposits,

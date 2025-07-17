@@ -836,7 +836,7 @@ export default function DailySettlementModal({ isOpen, onClose, date, onDateChan
                             acc[company].totalSaleAmount += deposit.saleAmount || 0;
                             acc[company].totalActualAmount += deposit.actualDepositAmount || 0;
                             acc[company].totalFee += deposit.fee || 0;
-                            acc[company].totalCount++;
+                            acc[company].totalCount += deposit.transactionCount || 1;
                             
                             if (deposit.status === '입금완료') {
                               acc[company].completedCount++;
