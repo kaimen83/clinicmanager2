@@ -43,6 +43,7 @@ export function useManagementData(currentDate: Date, activeTab: string, isOpen: 
     const [consultationDoctorNames, setConsultationDoctorNames] = useState<string[]>([]);
 
     const [allStaffs, setAllStaffs] = useState<string[]>([]);
+    const [totalConsultationAmount, setTotalConsultationAmount] = useState<number>(0);
 
     const fetchMonthlyStats = async () => {
         setLoading(true);
@@ -174,7 +175,25 @@ export function useManagementData(currentDate: Date, activeTab: string, isOpen: 
                 setAllStaffs(trendData.allStaffs);
             }
 
-
+            // 전체 상담 잔액 조회 (동의금액 - 수납금액)
+            const totalConsultationResponse = await fetch('/api/consultations?limit=10000');
+            const totalConsultationData = await totalConsultationResponse.json();
+            
+            const totalTransactionResponse = await fetch('/api/transactions?limit=10000');
+            const totalTransactionData = await totalTransactionResponse.json();
+            
+            if (totalConsultationData.consultations && totalTransactionData.transactions) {
+                const totalAgreedAmount = totalConsultationData.consultations
+                    .filter((consultation: any) => consultation.agreed)
+                    .reduce((sum: number, consultation: any) => sum + (consultation.amount || 0), 0);
+                
+                const totalPaidAmount = totalTransactionData.transactions
+                    .filter((transaction: any) => transaction.isConsultation)
+                    .reduce((sum: number, transaction: any) => sum + (transaction.paymentAmount || 0), 0);
+                
+                const totalRemaining = totalAgreedAmount - totalPaidAmount;
+                setTotalConsultationAmount(totalRemaining);
+            }
 
         } catch (error) {
             console.error('상담 데이터 조회 실패:', error);
@@ -324,7 +343,7 @@ export function useManagementData(currentDate: Date, activeTab: string, isOpen: 
         doctorConsultationStats,
         staffConsultationStats,
         consultationDoctorNames,
-
+        totalConsultationAmount,
         allStaffs
     };
 }

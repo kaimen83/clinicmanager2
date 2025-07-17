@@ -12,6 +12,7 @@ interface ConsultationIndicatorTabProps {
   consultationTrendData: ConsultationTrendData[];
   doctorConsultationStats: DoctorConsultationStats[];
   consultationDoctorNames: string[];
+  totalConsultationAmount: number;
   allStaffs: string[];
   currentDate: Date;
 }
@@ -22,6 +23,7 @@ export default function ConsultationIndicatorTab({
   consultationTrendData,
   doctorConsultationStats,
   consultationDoctorNames,
+  totalConsultationAmount,
   allStaffs,
   currentDate
 }: ConsultationIndicatorTabProps) {
@@ -43,43 +45,38 @@ export default function ConsultationIndicatorTab({
         <Card className="p-3 border-l-4 border-l-green-500">
           <div className="flex items-center gap-2 mb-1">
             <MessageSquare className="h-4 w-4 text-green-500" />
-            <span className="text-xs font-medium text-gray-600">총 상담건수</span>
+            <span className="text-xs font-medium text-gray-600">총 상담건수 / 동의건수</span>
           </div>
           <div className="text-xl font-bold text-green-600">
             {loading ? '...' : (consultationStats?.totalConsultationCount || 0).toLocaleString()}
+            <span className="text-sm font-normal text-gray-500 ml-1">
+              / {loading ? '...' : (consultationStats?.agreedCount || 0).toLocaleString()}
+            </span>
           </div>
         </Card>
 
         <Card className="p-3 border-l-4 border-l-blue-500">
           <div className="flex items-center gap-2 mb-1">
             <TrendingUp className="h-4 w-4 text-blue-500" />
-            <span className="text-xs font-medium text-gray-600">상담 총금액</span>
+            <span className="text-xs font-medium text-gray-600">전체 진료잔액</span>
           </div>
           <div className="text-xl font-bold text-blue-600">
+            {loading ? '...' : totalConsultationAmount.toLocaleString()}원
+          </div>
+        </Card>
+
+        <Card className="p-3 border-l-4 border-l-purple-500">
+          <div className="flex items-center gap-2 mb-1">
+            <TrendingUp className="h-4 w-4 text-purple-500" />
+            <span className="text-xs font-medium text-gray-600">상담 총금액</span>
+          </div>
+          <div className="text-xl font-bold text-purple-600">
             {loading ? '...' : (consultationStats?.totalConsultationAmount || 0).toLocaleString()}원
             {!loading && consultationStats && consultationStats.totalConsultationAmount > 0 && consultationStats.totalConsultationCount > 0 ? (
               <span className="text-sm font-normal text-gray-500 ml-1">
                 (평균 {Math.round((consultationStats.totalConsultationAmount / consultationStats.totalConsultationCount) / 10000)}만원)
               </span>
             ) : null}
-          </div>
-        </Card>
-
-        <Card className="p-3 border-l-4 border-l-purple-500">
-          <div className="flex items-center justify-between mb-1">
-            <div className="flex items-center gap-2">
-              <Users className="h-4 w-4 text-purple-500" />
-              <span className="text-xs font-medium text-gray-600">동의 건수</span>
-            </div>
-            {!loading && consultationStats && consultationStats.totalConsultationCount > 0 && consultationStats.totalConsultationAmount > 0 ? (
-              <div className="flex items-center gap-2 text-xs">
-                <span className="text-gray-500">건별: <span className="font-semibold text-purple-600">{consultationStats.agreedPercentage}%</span></span>
-                <span className="text-gray-500">금액별: <span className="font-semibold text-purple-600">{consultationStats.agreedAmountPercentage}%</span></span>
-              </div>
-            ) : null}
-          </div>
-          <div className="text-xl font-bold text-purple-600">
-            {loading ? '...' : (consultationStats?.agreedCount || 0).toLocaleString()}
           </div>
         </Card>
 

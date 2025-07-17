@@ -37,6 +37,7 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
     consultationTrendData,
     doctorConsultationStats,
     consultationDoctorNames,
+    totalConsultationAmount,
     allStaffs
   } = useManagementData(currentDate, activeTab, isOpen);
 
@@ -134,6 +135,7 @@ export default function ManagementIndicatorModal({ isOpen, onClose }: Management
                 consultationTrendData={consultationTrendData}
                 doctorConsultationStats={doctorConsultationStats}
                 consultationDoctorNames={consultationDoctorNames}
+                totalConsultationAmount={totalConsultationAmount}
                 allStaffs={allStaffs}
                 currentDate={currentDate}
               />
