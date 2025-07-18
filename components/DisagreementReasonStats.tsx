@@ -351,7 +351,7 @@ export default function DisagreementReasonStats({ selectedDate, onInsightsUpdate
                     <Cell 
                       key={`cell-${index}`} 
                       fill={COLORS[index % COLORS.length]}
-                      fillOpacity={selectedReason && selectedReason !== entry.reason ? 0.3 : 1}
+                      fillOpacity={selectedReason && selectedReason !== entry.reason ? 0.15 : 1}
                       style={{ cursor: 'pointer' }}
                     />
                   ))}
@@ -447,11 +447,11 @@ export default function DisagreementReasonStats({ selectedDate, onInsightsUpdate
                     dataKey={reason}
                     stroke={color}
                     strokeWidth={2}
-                    strokeOpacity={selectedReason && selectedReason !== reason ? 0.3 : 1}
+                    strokeOpacity={selectedReason && selectedReason !== reason ? 0.15 : 1}
                     dot={{ 
                       fill: color, 
                       r: 4,
-                      fillOpacity: selectedReason && selectedReason !== reason ? 0.3 : 1
+                      fillOpacity: selectedReason && selectedReason !== reason ? 0.15 : 1
                     }}
                     style={{ cursor: 'pointer' }}
                   />
