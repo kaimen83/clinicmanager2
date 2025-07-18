@@ -225,16 +225,15 @@ export default function DisagreementReasonStats({ selectedDate, onInsightsUpdate
   const trendChartData = trendData?.monthlyData.map(monthData => {
     const chartData: any = { month: formatMonth(monthData.month) };
     
-    // 상위 5개 사유만 표시
-    const topReasons = trendData.reasonTotals.slice(0, 5);
-    topReasons.forEach(({ reason }) => {
+    // 모든 사유 표시
+    trendData.reasonTotals.forEach(({ reason }) => {
       chartData[reason] = monthData.reasons[reason]?.[viewMode] || 0;
     });
     
     return chartData;
   }) || [];
 
-  const topReasons = trendData?.reasonTotals.slice(0, 5).map(r => r.reason) || [];
+  const allReasons = trendData?.reasonTotals.map(r => r.reason) || [];
 
   if (loading) {
     return (
@@ -389,6 +388,7 @@ export default function DisagreementReasonStats({ selectedDate, onInsightsUpdate
                       <TableHead>환자명</TableHead>
                       <TableHead className="text-right">상담금액</TableHead>
                       <TableHead>상담날짜</TableHead>
+                      <TableHead>비고</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -398,6 +398,7 @@ export default function DisagreementReasonStats({ selectedDate, onInsightsUpdate
                         <TableCell>{patient.patientName}</TableCell>
                         <TableCell className="text-right">₩{formatAmount(patient.amount)}</TableCell>
                         <TableCell>{new Date(patient.date).toLocaleDateString('ko-KR')}</TableCell>
+                        <TableCell>{patient.notes || '-'}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -434,22 +435,28 @@ export default function DisagreementReasonStats({ selectedDate, onInsightsUpdate
                 onClick={(data) => data.value && handleLegendClick(data.value)}
                 wrapperStyle={{ cursor: 'pointer' }}
               />
-              {topReasons.map((reason, index) => (
-                <Line
-                  key={reason}
-                  type="monotone"
-                  dataKey={reason}
-                  stroke={COLORS[index]}
-                  strokeWidth={2}
-                  strokeOpacity={selectedReason && selectedReason !== reason ? 0.3 : 1}
-                  dot={{ 
-                    fill: COLORS[index], 
-                    r: 4,
-                    fillOpacity: selectedReason && selectedReason !== reason ? 0.3 : 1
-                  }}
-                  style={{ cursor: 'pointer' }}
-                />
-              ))}
+              {allReasons.map((reason) => {
+                // 원형 그래프의 currentStats.stats에서 해당 사유의 인덱스를 찾아 동일한 색상 사용
+                const colorIndex = currentStats.stats.findIndex(stat => stat.reason === reason);
+                const color = COLORS[colorIndex % COLORS.length];
+                
+                return (
+                  <Line
+                    key={reason}
+                    type="monotone"
+                    dataKey={reason}
+                    stroke={color}
+                    strokeWidth={2}
+                    strokeOpacity={selectedReason && selectedReason !== reason ? 0.3 : 1}
+                    dot={{ 
+                      fill: color, 
+                      r: 4,
+                      fillOpacity: selectedReason && selectedReason !== reason ? 0.3 : 1
+                    }}
+                    style={{ cursor: 'pointer' }}
+                  />
+                );
+              })}
             </LineChart>
           </ResponsiveContainer>
         </div>
