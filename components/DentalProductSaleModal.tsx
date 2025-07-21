@@ -74,8 +74,10 @@ export default function DentalProductSaleModal({
       if (!response.ok) throw new Error('구강용품 목록을 불러오는데 실패했습니다.');
       
       const data = await response.json();
-      setProducts(data);
-      setFilteredProducts(data);
+      // API가 { products: [...] } 형태로 반환하므로 products 배열을 추출
+      const productsArray = data.products || [];
+      setProducts(productsArray);
+      setFilteredProducts(productsArray);
     } catch (error) {
       console.error('구강용품 로드 오류:', error);
       toast({
