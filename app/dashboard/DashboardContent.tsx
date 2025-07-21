@@ -12,12 +12,12 @@ import MonthlySettlementModal from '@/components/MonthlySettlementModal';
 import SpeedDialFAB, { FABAction } from '@/components/SpeedDialFAB';
 import PatientSearchModal from '@/components/PatientSearchModal';
 import PatientInfoModal from '@/components/PatientInfoModal';
-import NoticeCreateModal from '@/components/NoticeCreateModal';
 import NoticeBoard from '@/components/NoticeBoard';
+import TodoPanel from '@/components/TodoPanel';
 
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { TrendingUp, Wallet, Calculator, Search, Megaphone } from 'lucide-react';
+import { TrendingUp, Wallet, Calculator, Search, Megaphone, CheckSquare } from 'lucide-react';
 
 type Props = {
   children?: ReactNode;
@@ -30,6 +30,7 @@ export default function DashboardContent({ children: _ }: Props) {
   const [isPatientSearchModalOpen, setIsPatientSearchModalOpen] = useState(false);
   const [isPatientInfoModalOpen, setIsPatientInfoModalOpen] = useState(false);
   const [isNoticeCreateModalOpen, setIsNoticeCreateModalOpen] = useState(false);
+  const [isTodoPanelOpen, setIsTodoPanelOpen] = useState(false);
   const [selectedChartNumber, setSelectedChartNumber] = useState('');
 
   // Speed Dial actions
@@ -43,6 +44,11 @@ export default function DashboardContent({ children: _ }: Props) {
       icon: <Megaphone className="w-5 h-5" />,
       label: '공지사항 작성',
       onClick: () => setIsNoticeCreateModalOpen(true)
+    },
+    {
+      icon: <CheckSquare className="w-5 h-5" />,
+      label: '체크리스트',
+      onClick: () => setIsTodoPanelOpen(true)
     }
   ];
 
@@ -125,16 +131,16 @@ export default function DashboardContent({ children: _ }: Props) {
         chartNumber={selectedChartNumber}
       />
 
-      {/* 공지사항 작성 모달 */}
-      <NoticeCreateModal
-        isOpen={isNoticeCreateModalOpen}
-        onClose={() => setIsNoticeCreateModalOpen(false)}
-      />
-
       {/* 공지사항 보드 */}
       <NoticeBoard
         isCreateModalOpen={isNoticeCreateModalOpen}
         setIsCreateModalOpen={setIsNoticeCreateModalOpen}
+      />
+
+      {/* Todo 패널 */}
+      <TodoPanel
+        isOpen={isTodoPanelOpen}
+        onClose={() => setIsTodoPanelOpen(false)}
       />
     </div>
   );
