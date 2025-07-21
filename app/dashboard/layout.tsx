@@ -5,7 +5,6 @@ import ClinicNavigation from "@/components/ClinicNavigation";
 import { DateProvider } from "@/lib/context/dateContext";
 import { UserRoleProvider } from "@/components/UserRoleProvider";
 import DashboardContent from "./DashboardContent";
-import NoticeBoard from "@/components/NoticeBoard";
 
 export default function DashboardLayout({
   children,
@@ -24,7 +23,6 @@ export default function DashboardLayout({
             </DashboardContent>
           </main>
           
-          <NoticeBoard />
           
           <footer className="border-t border-gray-200 py-6 bg-white">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm text-gray-500">

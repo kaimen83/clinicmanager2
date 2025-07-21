@@ -9,13 +9,15 @@ import ExtraIncomeList from '@/components/ExtraIncomeList';
 import ExpenseList from '@/components/ExpenseList';
 import DailySettlementModal from '@/components/DailySettlementModal';
 import MonthlySettlementModal from '@/components/MonthlySettlementModal';
-import FloatingSearchButton from '@/components/FloatingSearchButton';
+import SpeedDialFAB, { FABAction } from '@/components/SpeedDialFAB';
 import PatientSearchModal from '@/components/PatientSearchModal';
 import PatientInfoModal from '@/components/PatientInfoModal';
+import NoticeCreateModal from '@/components/NoticeCreateModal';
+import NoticeBoard from '@/components/NoticeBoard';
 
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { TrendingUp, Wallet, Calculator } from 'lucide-react';
+import { TrendingUp, Wallet, Calculator, Search, Megaphone } from 'lucide-react';
 
 type Props = {
   children?: ReactNode;
@@ -27,7 +29,22 @@ export default function DashboardContent({ children: _ }: Props) {
   const [isMonthlySettlementModalOpen, setIsMonthlySettlementModalOpen] = useState(false);
   const [isPatientSearchModalOpen, setIsPatientSearchModalOpen] = useState(false);
   const [isPatientInfoModalOpen, setIsPatientInfoModalOpen] = useState(false);
+  const [isNoticeCreateModalOpen, setIsNoticeCreateModalOpen] = useState(false);
   const [selectedChartNumber, setSelectedChartNumber] = useState('');
+
+  // Speed Dial actions
+  const fabActions: FABAction[] = [
+    {
+      icon: <Search className="w-5 h-5" />,
+      label: '환자 검색',
+      onClick: () => setIsPatientSearchModalOpen(true)
+    },
+    {
+      icon: <Megaphone className="w-5 h-5" />,
+      label: '공지사항 작성',
+      onClick: () => setIsNoticeCreateModalOpen(true)
+    }
+  ];
 
   // 환자 선택 핸들러
   const handlePatientSelect = (chartNumber: string) => {
@@ -91,8 +108,8 @@ export default function DashboardContent({ children: _ }: Props) {
         }}
       />
 
-      {/* 플로팅 검색 버튼 */}
-      <FloatingSearchButton onClick={() => setIsPatientSearchModalOpen(true)} />
+      {/* Speed Dial FAB */}
+      <SpeedDialFAB actions={fabActions} />
 
       {/* 환자 검색 모달 */}
       <PatientSearchModal
@@ -106,6 +123,18 @@ export default function DashboardContent({ children: _ }: Props) {
         isOpen={isPatientInfoModalOpen}
         onClose={() => setIsPatientInfoModalOpen(false)}
         chartNumber={selectedChartNumber}
+      />
+
+      {/* 공지사항 작성 모달 */}
+      <NoticeCreateModal
+        isOpen={isNoticeCreateModalOpen}
+        onClose={() => setIsNoticeCreateModalOpen(false)}
+      />
+
+      {/* 공지사항 보드 */}
+      <NoticeBoard
+        isCreateModalOpen={isNoticeCreateModalOpen}
+        setIsCreateModalOpen={setIsNoticeCreateModalOpen}
       />
     </div>
   );

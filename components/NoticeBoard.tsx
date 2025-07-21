@@ -3,13 +3,16 @@
 import { useState, useEffect, useRef } from 'react';
 import { Notice } from '@/types/notice';
 import NoticeItem from './NoticeItem';
-import NoticeCreateButton from './NoticeCreateButton';
 import NoticeCreateModal from './NoticeCreateModal';
 import { useUserActivity } from '@/hooks/useUserActivity';
 
-export default function NoticeBoard() {
+interface NoticeBoardProps {
+  isCreateModalOpen: boolean;
+  setIsCreateModalOpen: (open: boolean) => void;
+}
+
+export default function NoticeBoard({ isCreateModalOpen, setIsCreateModalOpen }: NoticeBoardProps) {
   const [notices, setNotices] = useState<Notice[]>([]);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [newNoticeCount, setNewNoticeCount] = useState(0);
   const lastFetchRef = useRef<number>(Date.now());
@@ -152,7 +155,6 @@ export default function NoticeBoard() {
         </div>
       </div>
       
-      <NoticeCreateButton onClick={() => setIsCreateModalOpen(true)} />
       
       <NoticeCreateModal
         isOpen={isCreateModalOpen}

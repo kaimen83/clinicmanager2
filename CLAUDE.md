@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Development Commands
 
-- **Development server**: `npm run dev` (uses Turbopack for faster builds)
+- **Development server**: `npm run dev` (runs on port 3001 with Turbopack for faster builds)
 - **Build**: `npm run build` 
 - **Production start**: `npm start`
 - **Linting**: `npm run lint`
@@ -15,10 +15,10 @@ This is a dental clinic management system built with Next.js 15, using the App R
 
 ### Core Technology Stack
 - **Framework**: Next.js 15 with App Router
-- **Authentication**: Clerk (Korean localization enabled)
+- **Authentication**: Clerk (Korean localization enabled via `koKR`)
 - **Database**: MongoDB with connection pooling
 - **UI**: Tailwind CSS + Radix UI components
-- **State Management**: React Context for date selection
+- **State Management**: React Context for date selection and refresh triggers
 - **Excel Operations**: XLSX library for import/export
 
 ### Key Architectural Patterns
@@ -50,7 +50,8 @@ const startUtc = new Date(startDateObj.getTime() - kstOffset);
 - **Patient Management**: `patients` collection with chart numbers, contact info, visit paths
 - **Financial Tracking**: `transactions`, `consultations`, `expenses`, `extraIncomes`
 - **Inventory Management**: `dentalProducts`, `implantProducts` with stock tracking
-- **System Data**: `vendors`, `visitPaths`, `settings`
+- **System Data**: `vendors`, `visitPaths`, `settings`, `visitPathGroups`
+- **Additional Collections**: `notices`, `implantContracts`, `cashRecords`, `dentalProductSales`
 
 ### Performance Optimizations
 
@@ -62,8 +63,15 @@ The system includes MongoDB aggregation pipelines for analytics, parallel proces
 - `/app/[page]/page.tsx` - Page components  
 - `/components/[Feature]Modal.tsx` - Modal dialogs
 - `/lib/models/` - Mongoose schemas
-- `/lib/utils/` - Utility functions
+- `/lib/utils/` - Utility functions including critical `utils.ts` with date helpers
 - `/types/` - TypeScript type definitions
+
+### Context Management
+
+The application uses React Context for global state management:
+- **DateContext** (`/lib/context/dateContext.tsx`): Manages selected date and various refresh triggers
+  - `selectedDate`: Currently selected date for filtering
+  - `refreshTrigger`, `cashRefreshTrigger`, `statsRefreshTrigger`, `expenseRefreshTrigger`: Trigger data refreshes
 
 ### Key Business Logic Areas
 
@@ -72,5 +80,14 @@ The system includes MongoDB aggregation pipelines for analytics, parallel proces
 3. **Consultation Tracking**: Agreed vs non-agreed consultation monitoring
 4. **Inventory Management**: Stock in/out operations for dental and implant products
 5. **Financial Reporting**: Daily/monthly statistics with various breakdowns
+6. **Card Deposit Reconciliation**: Automatic crawling and matching of card payments
+7. **Hometax Integration**: Receipt matching and verification for tax compliance
+
+### Important Utility Functions
+
+All date utilities are in `/lib/utils.ts`:
+- `cn()`: Tailwind CSS class name merger
+- `formatCurrency()`: Korean currency formatting (e.g., "10,000원")
+- `generateUUID()`: Cross-browser compatible UUID generation
 
 When working with this codebase, always consider the Korean business context, proper date handling, and the dental practice workflow requirements.

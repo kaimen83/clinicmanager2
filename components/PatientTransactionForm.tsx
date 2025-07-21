@@ -559,6 +559,20 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
           paymentAmount: 0
         }));
       }
+      
+      // 현금이나 계좌이체인 경우 현금영수증 발행을 기본값 true로 설정
+      if (value === '현금' || value === '계좌이체') {
+        setCurrentTreatmentGroup(prev => ({
+          ...prev,
+          cashReceipt: true
+        }));
+      } else {
+        // 다른 수납방법인 경우 현금영수증 발행을 false로 설정
+        setCurrentTreatmentGroup(prev => ({
+          ...prev,
+          cashReceipt: false
+        }));
+      }
     }
     
     // 입력 시 해당 필드의 오류 메시지 삭제
