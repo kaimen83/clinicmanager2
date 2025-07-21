@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { currentUser } from '@clerk/nextjs/server';
 import mongoose from 'mongoose';
 import dbConnect from '@/lib/mongoose';
+import { connectToDatabase } from '@/lib/mongodb';
 import ImplantInventoryLog from '@/lib/models/ImplantInventoryLog';
 // import { toKstDate, toISODateString } from '@/lib/utils/dateUtils';
 
@@ -49,6 +50,7 @@ export async function GET(request: NextRequest) {
         }
 
         await dbConnect();
+        const { db } = await connectToDatabase();
 
         const { searchParams } = new URL(request.url);
         const startDate = searchParams.get('startDate');
@@ -115,6 +117,19 @@ export async function GET(request: NextRequest) {
             .populate('productId')
             .sort({ date: -1 });
 
+        // 누적 사용수량 계산 (전체 기간) - firstops 컬렉션에서 계산 (ImplantStats.tsx와 동일한 방식)
+        const allTimeOperations = await db.collection('firstops').find({}).toArray();
+        let accumulatedTotal = 0;
+        allTimeOperations.forEach((op: any) => {
+            if (op.implants && Array.isArray(op.implants) && op.implants.length > 0) {
+                op.implants.forEach((imp: any) => {
+                    if (imp && typeof imp.quantity === 'number') {
+                        accumulatedTotal += imp.quantity;
+                    }
+                });
+            }
+        });
+
         // 통계 데이터 계산
         const statistics = {
             totalUsage: 0,
@@ -122,6 +137,7 @@ export async function GET(request: NextRequest) {
             totalStockIn: 0,
             totalStockInAmount: 0,
             totalDisposal: 0,
+            accumulatedTotal, // 누적 사용수량 추가
             activities: [] as any[],
             productStats: [] as any[]
         };

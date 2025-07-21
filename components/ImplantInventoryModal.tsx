@@ -54,6 +54,7 @@ interface Statistics {
   totalStockIn: number;
   totalStockInAmount: number;
   totalDisposal: number;
+  accumulatedTotal: number;
   activities: Activity[];
   productStats: ProductStat[];
 }
@@ -546,7 +547,7 @@ export default function ImplantInventoryModal({ isOpen, onClose }: ImplantInvent
 
               {/* 컴팩트 통계 요약 */}
               {statistics && (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                   <Card className="border-0 shadow-sm bg-gradient-to-r from-purple-50 to-purple-100">
                     <CardContent className="p-4">
                       <div className="text-xs text-gray-600 mb-1">총 사용수량</div>
@@ -569,6 +570,12 @@ export default function ImplantInventoryModal({ isOpen, onClose }: ImplantInvent
                     <CardContent className="p-4">
                       <div className="text-xs text-gray-600 mb-1">폐기수량</div>
                       <div className="text-xl font-bold text-red-600">{statistics.totalDisposal.toLocaleString()}</div>
+                    </CardContent>
+                  </Card>
+                  <Card className="border-0 shadow-sm bg-gradient-to-r from-blue-50 to-indigo-100">
+                    <CardContent className="p-4">
+                      <div className="text-xs text-gray-600 mb-1">누적 사용수량</div>
+                      <div className="text-xl font-bold text-blue-700">{statistics.accumulatedTotal.toLocaleString()}</div>
                     </CardContent>
                   </Card>
                 </div>
