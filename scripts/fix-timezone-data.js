@@ -18,7 +18,8 @@ const { MongoClient } = require('mongodb');
 // 설정 (환경변수 또는 기본값)
 const CONFIG = {
   // MongoDB 연결 URL (환경변수 또는 직접 설정)
-  MONGODB_URI: process.env.MONGODB_URI || 'mongodb://localhost:27017',
+  // IPv4 주소 우선 사용으로 Windows 호환성 개선
+  MONGODB_URI: process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017',
   
   // 데이터베이스 이름 (환경변수 또는 직접 설정)
   DATABASE_NAME: process.env.DATABASE_NAME || 'hospital_accounting',
@@ -294,7 +295,14 @@ async function main() {
   try {
     // MongoDB 연결
     console.log('\n🔌 MongoDB 연결 중...');
-    client = new MongoClient(CONFIG.MONGODB_URI);
+    console.log(`   연결 시도: ${CONFIG.MONGODB_URI}`);
+    
+    client = new MongoClient(CONFIG.MONGODB_URI, {
+      connectTimeoutMS: 10000,  // 10초 연결 타임아웃
+      serverSelectionTimeoutMS: 5000,  // 5초 서버 선택 타임아웃
+      family: 4  // IPv4 우선 사용
+    });
+    
     await client.connect();
     
     const db = client.db(options.database);
