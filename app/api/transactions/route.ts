@@ -164,9 +164,20 @@ export async function POST(request: NextRequest) {
 
     // 현재 시간 및 사용자 정보 추가
     const now = createNewDate();
+    
+    // 날짜 처리: YYYY-MM-DD 문자열을 올바른 UTC 날짜로 변환
+    let transactionDate: Date;
+    if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      // KST 날짜를 UTC 00:00:00로 저장 (예: 2025-07-21 KST → 2025-07-21T00:00:00Z UTC)
+      const [year, month, day] = date.split('-').map(Number);
+      transactionDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+    } else {
+      transactionDate = toKstDate(date);
+    }
+    
     const newTransaction = {
       ...data,
-      date: toKstDate(date),
+      date: transactionDate,
       createdAt: now,
       updatedAt: now,
       createdBy: data.createdBy ? new ObjectId(data.createdBy) : null,

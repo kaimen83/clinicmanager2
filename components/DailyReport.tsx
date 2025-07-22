@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { toISODateString } from '@/lib/utils';
 import CashDepositModal from './CashDepositModal';
 
 interface DailyData {
@@ -113,12 +114,11 @@ export default function DailyReport() {
         cardDepositsResponse.json()
       ]);
 
-      // 카드사 입금 데이터를 날짜별로 매핑
+      // 카드사 입금 데이터를 날짜별로 매핑 (KST 기준으로 정확히 처리)
       const cardDepositsByDate: Record<string, number> = {};
       cardDepositsData.forEach((deposit: any) => {
-        // depositDate는 이미 올바른 날짜 형식으로 저장되어 있음
-        const depositDate = new Date(deposit.depositDate);
-        const dateKey = depositDate.toISOString().split('T')[0];
+        // depositDate를 KST 기준으로 변환하여 날짜 키 생성
+        const dateKey = toISODateString(deposit.depositDate);
         cardDepositsByDate[dateKey] = deposit.totalAmount;
       });
 
