@@ -100,10 +100,16 @@ export default function CardDeposits() {
   // 카드사 목록 로드
   const loadCardCompanies = useCallback(async () => {
     try {
-      const response = await fetch('/api/settings/card-companies');
+      const response = await fetch('/api/settings');
       if (response.ok) {
-        const companies = await response.json();
-        setCardCompanies(companies);
+        const settings = await response.json();
+        // cardCompany 타입의 설정만 추출
+        const companies = settings.cardCompany || [];
+        setCardCompanies(companies.map((company: any) => ({
+          _id: company._id || company.value,
+          value: company.value,
+          feeRate: company.feeRate || 0
+        })));
       }
     } catch (error) {
       console.error('카드사 목록 로드 실패:', error);
@@ -232,13 +238,11 @@ export default function CardDeposits() {
     if (!currentEditId) return;
     
     const amount = parseInt(actualDepositAmount.replace(/[^\d]/g, '')) || 0;
-    const item = data.find(d => d._id === currentEditId);
-    const fee = item ? item.saleAmount - amount : 0;
     
+    // 서버에서 수수료를 자동 계산하므로 fee는 전송하지 않음
     await updateStatus(currentEditId, '입금완료', {
       actualDepositDate,
-      actualDepositAmount: amount,
-      fee
+      actualDepositAmount: amount
     });
     
     setDepositModal(false);
@@ -370,8 +374,8 @@ export default function CardDeposits() {
         const item = data.find(d => d._id === id);
         if (!item) return;
         
-        const itemFee = Math.round((item.saleAmount / totalAmount) * totalFee);
-        const itemActualAmount = item.saleAmount - itemFee;
+        // 비율에 따른 실제 입금액 계산 (서버에서 수수료 자동 계산)
+        const itemActualAmount = Math.round((item.saleAmount / totalAmount) * actualAmount);
         
         const response = await fetch(`/api/card-deposits/${id}`, {
           method: 'PATCH',
@@ -380,7 +384,6 @@ export default function CardDeposits() {
             status: '입금완료',
             actualDepositDate: bulkDepositDate,
             actualDepositAmount: itemActualAmount,
-            fee: itemFee,
             bulkDeposit: true
           }),
         });
@@ -401,6 +404,87 @@ export default function CardDeposits() {
     } catch (error) {
       console.error('일괄입금 처리 실패:', error);
       alert('일괄입금 처리 중 오류가 발생했습니다.');
+    }
+  };
+
+  // 카드매출 삭제 처리
+  const handleDeleteDeposit = async (id: string) => {
+    if (!confirm('정말로 이 카드매출/입금 정보를 삭제하시겠습니까?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/card-deposits/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        alert('카드매출/입금 정보가 삭제되었습니다.');
+        await loadData(); // 데이터 새로고침
+      } else {
+        const error = await response.json();
+        alert(`삭제 실패: ${error.message || error.error}`);
+      }
+    } catch (error) {
+      console.error('삭제 실패:', error);
+      alert('삭제 중 오류가 발생했습니다.');
+    }
+  };
+
+  // 엑셀 다운로드 처리
+  const handleExportExcel = async () => {
+    if (!startDate || !endDate) {
+      alert('시작일과 종료일을 선택해주세요.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      // 쿼리 파라미터 구성
+      const params = new URLSearchParams({
+        startDate,
+        endDate,
+        cardCompany: selectedCardCompany
+      });
+
+      const response = await fetch(`/api/card-deposits/export?${params.toString()}`);
+      
+      if (response.ok) {
+        // 파일 다운로드 처리
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        
+        // 파일명 설정 (응답 헤더에서 가져오거나 기본값 사용)
+        const contentDisposition = response.headers.get('content-disposition');
+        let fileName = `카드매출입금_${startDate}_${endDate}.xlsx`;
+        
+        if (contentDisposition) {
+          const fileNameMatch = contentDisposition.match(/filename\*?=['"]?([^'";\n]*)/);
+          if (fileNameMatch) {
+            fileName = decodeURIComponent(fileNameMatch[1]);
+          }
+        }
+        
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        // 성공 메시지
+        alert('엑셀 파일이 다운로드되었습니다.');
+      } else {
+        const error = await response.json();
+        alert(`다운로드 실패: ${error.message || error.error}`);
+      }
+    } catch (error) {
+      console.error('엑셀 다운로드 실패:', error);
+      alert('엑셀 다운로드 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -452,6 +536,10 @@ export default function CardDeposits() {
           <Button onClick={handleCrawling} disabled={isCrawling} variant="outline">
             <RefreshCcw className={`w-4 h-4 mr-2 ${isCrawling ? 'animate-spin' : ''}`} />
             {isCrawling ? '크롤링 중...' : '크롤링'}
+          </Button>
+          <Button onClick={handleExportExcel} disabled={loading} variant="outline">
+            <Download className="w-4 h-4 mr-2" />
+            엑셀 다운로드
           </Button>
         </div>
 
@@ -610,14 +698,24 @@ export default function CardDeposits() {
                     </td>
                     <td className="border p-2">{item.holdReason || '-'}</td>
                     <td className="border p-2">
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        onClick={() => handleEditClick(item._id)}
-                        disabled={editableRows.has(item._id)}
-                      >
-                        {editableRows.has(item._id) ? '수정중' : '수정'}
-                      </Button>
+                      <div className="space-x-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => handleEditClick(item._id)}
+                          disabled={editableRows.has(item._id)}
+                        >
+                          {editableRows.has(item._id) ? '수정중' : '수정'}
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="destructive" 
+                          onClick={() => handleDeleteDeposit(item._id)}
+                          disabled={loading}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 );
