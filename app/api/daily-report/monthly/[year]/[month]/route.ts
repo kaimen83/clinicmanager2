@@ -19,8 +19,8 @@ export async function GET(
   try {
     const { year, month } = await params;
     
-    // 날짜 범위 설정 (MongoDB에 저장된 데이터는 실제로는 KST 날짜가 UTC로 저장됨)
-    // 예: 2025-06-01 KST 데이터가 2025-06-01T00:00:00Z로 저장됨
+    // 날짜 범위 설정 (MongoDB에 저장된 데이터는 KST 날짜가 UTC 00:00:00으로 저장됨)
+    // 예: 2025-07-21 KST 데이터가 2025-07-21T00:00:00Z로 저장됨
     const startUtc = new Date(`${year}-${month.padStart(2, '0')}-01T00:00:00.000Z`);
     const endDate = new Date(parseInt(year), parseInt(month), 0);
     const endUtc = new Date(`${year}-${month.padStart(2, '0')}-${endDate.getDate().toString().padStart(2, '0')}T23:59:59.999Z`);
