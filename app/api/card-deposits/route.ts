@@ -91,9 +91,30 @@ export async function GET(request: NextRequest) {
       const key = `${sale.cardCompany}_${sale.saleAmount}`;
       const existingDeposit = existingDepositsMap.get(key);
       
-      // 입금 예정일 계산 (매출일 + 2 영업일, 기본값)
-      const expectedDepositDate = new Date(sale.saleDate);
-      expectedDepositDate.setDate(expectedDepositDate.getDate() + 2);
+      // 입금 예정일 계산 (매출일 + 2 영업일)
+      const calculateExpectedDepositDate = (saleDate: Date) => {
+        let date = new Date(saleDate);
+        let businessDays = 0;
+        
+        // 시작일을 다음날로 설정
+        date.setDate(date.getDate() + 1);
+        
+        while (businessDays < 2) {
+          // 주말이 아닌 경우에만 영업일 카운트
+          if (date.getDay() !== 0 && date.getDay() !== 6) {
+            businessDays++;
+          }
+          
+          // 다음 날로 이동
+          if (businessDays < 2) {
+            date.setDate(date.getDate() + 1);
+          }
+        }
+        
+        return date;
+      };
+      
+      const expectedDepositDate = calculateExpectedDepositDate(sale.saleDate);
       
       return {
         _id: existingDeposit?._id || `temp_${Date.now()}_${Math.random()}`,

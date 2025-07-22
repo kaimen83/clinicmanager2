@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ObjectId } from 'mongodb';
 
-// 입금예정일 계산 함수
+// 입금예정일 계산 함수 (매출일 + 2 영업일)
 const calculateExpectedDepositDate = (saleDate: Date) => {
   let date = new Date(saleDate);
   let businessDays = 0;

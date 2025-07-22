@@ -4,26 +4,6 @@ import { ObjectId } from 'mongodb';
 import { toKstDate } from '@/lib/utils';
 import { updateCashRecordsForTransaction, deleteCashRecord, PAYMENT_METHODS } from '@/lib/utils/cashManagement';
 
-// 카드매출 동기화 함수
-async function syncCardDeposit(transactionId: string) {
-  try {
-    const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3001'}/api/card-deposits/sync-transaction`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ transactionId })
-    });
-    
-    if (!response.ok) {
-      throw new Error(`카드매출 동기화 실패: ${response.status}`);
-    }
-  } catch (error) {
-    console.error('카드매출 동기화 오류:', error);
-    throw error;
-  }
-}
-
 // GET 요청 처리 - 특정 내원정보(트랜잭션) 조회
 export async function GET(
   request: NextRequest,
@@ -166,24 +146,6 @@ export async function PATCH(
       console.error('시재 기록 업데이트 중 오류:', cashError);
       // 시재 기록 실패는 로그만 남기고 거래는 계속 진행
     }
-
-    // 카드 결제 변경사항이 있는 경우 카드매출 동기화
-    if (updatedTransaction) {
-      try {
-        const hasCardPaymentChange = (
-          existingTransaction.paymentMethod !== updatedTransaction.paymentMethod ||
-          existingTransaction.cardCompany !== updatedTransaction.cardCompany ||
-          existingTransaction.paymentAmount !== updatedTransaction.paymentAmount
-        );
-        
-        if (hasCardPaymentChange || updatedTransaction.paymentMethod === '카드') {
-          await syncCardDeposit(id);
-        }
-      } catch (syncError) {
-        console.error('카드매출 동기화 중 오류:', syncError);
-        // 동기화 실패는 로그만 남기고 거래는 계속 진행
-      }
-    }
     
     return NextResponse.json(updatedTransaction);
   } catch (error) {
@@ -298,24 +260,6 @@ export async function PUT(
       console.error('시재 기록 업데이트 중 오류:', cashError);
       // 시재 기록 실패는 로그만 남기고 거래는 계속 진행
     }
-
-    // 카드 결제 변경사항이 있는 경우 카드매출 동기화
-    if (updatedTransaction) {
-      try {
-        const hasCardPaymentChange = (
-          existingTransaction.paymentMethod !== updatedTransaction.paymentMethod ||
-          existingTransaction.cardCompany !== updatedTransaction.cardCompany ||
-          existingTransaction.paymentAmount !== updatedTransaction.paymentAmount
-        );
-        
-        if (hasCardPaymentChange || updatedTransaction.paymentMethod === '카드') {
-          await syncCardDeposit(id);
-        }
-      } catch (syncError) {
-        console.error('카드매출 동기화 중 오류:', syncError);
-        // 동기화 실패는 로그만 남기고 거래는 계속 진행
-      }
-    }
     
     return NextResponse.json(updatedTransaction);
   } catch (error) {
@@ -391,14 +335,6 @@ export async function DELETE(
     } catch (cashError) {
       console.error('시재 기록 삭제 중 오류:', cashError);
       // 시재 기록 실패는 로그만 남기고 거래는 계속 진행
-    }
-
-    // 카드 결제가 있는 경우 카드매출 동기화 (삭제 전)
-    try {
-      await syncCardDeposit(id);
-    } catch (syncError) {
-      console.error('카드매출 동기화 중 오류:', syncError);
-      // 동기화 실패는 로그만 남기고 거래는 계속 진행
     }
     
     // 내원정보 삭제
