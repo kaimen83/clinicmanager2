@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Filter, SortAsc, Settings, Search } from 'lucide-react';
+import { Plus, Filter, SortAsc, Settings, Search, Flag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 import TodoForm from './TodoForm';
 import TodoItem from './TodoItem';
 import SortableTodoList from './SortableTodoList';
@@ -56,6 +57,18 @@ export default function TodoPanel({ isOpen, onClose }: TodoPanelProps) {
     ...categories,
     ...todos.map(todo => todo.category).filter(Boolean)
   ]));
+
+  // 카테고리 색상 헬퍼
+  const getCategoryColor = (category: string) => {
+    switch (category) {
+      case '환자관리': return 'bg-blue-100 text-blue-700 border-blue-200';
+      case '재고관리': return 'bg-purple-100 text-purple-700 border-purple-200';
+      case '회계': return 'bg-green-100 text-green-700 border-green-200';
+      case '일반업무': return 'bg-gray-100 text-gray-700 border-gray-200';
+      case '개인': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+      default: return 'bg-gray-100 text-gray-700 border-gray-200';
+    }
+  };
 
   // Todo 목록 불러오기
   const fetchTodos = async () => {
@@ -219,11 +232,11 @@ export default function TodoPanel({ isOpen, onClose }: TodoPanelProps) {
 
   return (
     <>
-      <Sheet open={isOpen} onOpenChange={onClose}>
-        <SheetContent className="w-[400px] sm:w-[540px] p-0 flex flex-col">
-          <SheetHeader className="p-6 pb-4 border-b">
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0">
+          <DialogHeader className="p-6 pb-4 border-b">
             <div className="flex items-center justify-between">
-              <SheetTitle>체크리스트</SheetTitle>
+              <DialogTitle>체크리스트</DialogTitle>
               <div className="flex items-center gap-2">
                 <Badge variant="secondary">{stats.active}개 진행중</Badge>
                 <Button 
@@ -238,73 +251,125 @@ export default function TodoPanel({ isOpen, onClose }: TodoPanelProps) {
                 </Button>
               </div>
             </div>
-          </SheetHeader>
+          </DialogHeader>
 
-          <div className="p-6 flex-1 flex flex-col">
-            {/* 검색 */}
-            <div className="relative mb-4">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="할 일 검색..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
+          <div className="p-6 flex-1 flex flex-col overflow-hidden">
+            {/* 검색 및 필터 통합 영역 */}
+            <div className="space-y-3 mb-4">
+              {/* 검색창 */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="할 일 검색..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
 
-            {/* 필터 및 정렬 */}
-            <div className="grid grid-cols-2 gap-2 mb-4">
-              <Select value={filter} onValueChange={(value: FilterType) => setFilter(value)}>
-                <SelectTrigger className="h-8">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">전체 ({stats.total})</SelectItem>
-                  <SelectItem value="active">진행중 ({stats.active})</SelectItem>
-                  <SelectItem value="completed">완료 ({stats.completed})</SelectItem>
-                </SelectContent>
-              </Select>
+              {/* 필터 버튼 그룹 */}
+              <div className="flex flex-wrap gap-2">
+                {/* 상태 필터 */}
+                <div className="flex rounded-md shadow-sm" role="group">
+                  <button
+                    type="button"
+                    onClick={() => setFilter('all')}
+                    className={cn(
+                      "px-3 py-1.5 text-xs font-medium border rounded-l-md",
+                      filter === 'all' 
+                        ? "bg-primary text-primary-foreground border-primary" 
+                        : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                    )}
+                  >
+                    전체 ({stats.total})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFilter('active')}
+                    className={cn(
+                      "px-3 py-1.5 text-xs font-medium border-t border-b",
+                      filter === 'active' 
+                        ? "bg-primary text-primary-foreground border-primary" 
+                        : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                    )}
+                  >
+                    진행중 ({stats.active})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFilter('completed')}
+                    className={cn(
+                      "px-3 py-1.5 text-xs font-medium border rounded-r-md",
+                      filter === 'completed' 
+                        ? "bg-primary text-primary-foreground border-primary" 
+                        : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                    )}
+                  >
+                    완료 ({stats.completed})
+                  </button>
+                </div>
 
-              <Select value={priorityFilter} onValueChange={(value: PriorityFilter) => setPriorityFilter(value)}>
-                <SelectTrigger className="h-8">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">모든 우선순위</SelectItem>
-                  <SelectItem value="high">높음</SelectItem>
-                  <SelectItem value="medium">보통</SelectItem>
-                  <SelectItem value="low">낮음</SelectItem>
-                </SelectContent>
-              </Select>
+                <Separator orientation="vertical" className="h-8" />
 
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className="h-8">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">모든 카테고리</SelectItem>
-                  {availableCategories.map(category => (
-                    <SelectItem key={category} value={category}>
-                      {category}
+                {/* 우선순위 필터 */}
+                <Select value={priorityFilter} onValueChange={(value: PriorityFilter) => setPriorityFilter(value)}>
+                  <SelectTrigger className="h-8 w-[120px]">
+                    <SelectValue placeholder="우선순위" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">모든 우선순위</SelectItem>
+                    <SelectItem value="high">
+                      <span className="flex items-center gap-2">
+                        <Flag className="w-3 h-3 text-red-600" />
+                        높음
+                      </span>
                     </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                    <SelectItem value="medium">
+                      <span className="flex items-center gap-2">
+                        <Flag className="w-3 h-3 text-yellow-600" />
+                        보통
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="low">
+                      <span className="flex items-center gap-2">
+                        <Flag className="w-3 h-3 text-green-600" />
+                        낮음
+                      </span>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
 
-              <Select value={sortBy} onValueChange={(value: SortType) => setSortBy(value)}>
-                <SelectTrigger className="h-8">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="created">생성일순</SelectItem>
-                  <SelectItem value="priority">우선순위순</SelectItem>
-                  <SelectItem value="dueDate">마감일순</SelectItem>
-                  <SelectItem value="category">카테고리순</SelectItem>
-                </SelectContent>
-              </Select>
+                {/* 카테고리 필터 */}
+                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                  <SelectTrigger className="h-8 w-[120px]">
+                    <SelectValue placeholder="카테고리" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">모든 카테고리</SelectItem>
+                    {availableCategories.map(category => (
+                      <SelectItem key={category} value={category}>
+                        <Badge variant="outline" className={cn("text-xs", getCategoryColor(category))}>
+                          {category}
+                        </Badge>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {/* 정렬 */}
+                <Select value={sortBy} onValueChange={(value: SortType) => setSortBy(value)}>
+                  <SelectTrigger className="h-8 w-[120px]">
+                    <SelectValue placeholder="정렬" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="created">생성일순</SelectItem>
+                    <SelectItem value="priority">우선순위순</SelectItem>
+                    <SelectItem value="dueDate">마감일순</SelectItem>
+                    <SelectItem value="category">카테고리순</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-
-            <Separator className="mb-4" />
 
             {/* Todo 목록 */}
             <div className="space-y-3 flex-1 overflow-y-auto">
@@ -366,8 +431,8 @@ export default function TodoPanel({ isOpen, onClose }: TodoPanelProps) {
               </div>
             </div>
           </div>
-        </SheetContent>
-      </Sheet>
+        </DialogContent>
+      </Dialog>
 
       {/* Todo 폼 */}
       <TodoForm
