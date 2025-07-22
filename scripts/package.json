@@ -1,0 +1,25 @@
+{
+  "name": "clinicmanager-scripts",
+  "version": "1.0.0",
+  "description": "Database maintenance scripts for Clinic Manager",
+  "main": "fix-timezone-data.js",
+  "scripts": {
+    "fix-timezone": "node fix-timezone-data.js",
+    "fix-timezone-preview": "node fix-timezone-data.js --dry-run",
+    "test": "node test-timezone-fix.js"
+  },
+  "dependencies": {
+    "mongodb": "^6.0.0"
+  },
+  "devDependencies": {
+    "dotenv": "^16.0.0"
+  },
+  "keywords": [
+    "mongodb",
+    "timezone",
+    "data-migration",
+    "clinic-manager"
+  ],
+  "author": "Clinic Manager Team",
+  "license": "ISC"
+}
