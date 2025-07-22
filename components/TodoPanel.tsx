@@ -55,7 +55,7 @@ export default function TodoPanel({ isOpen, onClose }: TodoPanelProps) {
   const categories = ['환자관리', '재고관리', '회계', '일반업무', '개인'];
   const availableCategories = Array.from(new Set([
     ...categories,
-    ...todos.map(todo => todo.category).filter(Boolean)
+    ...todos.map(todo => todo.category).filter((category): category is string => Boolean(category))
   ]));
 
   // 카테고리 색상 헬퍼
