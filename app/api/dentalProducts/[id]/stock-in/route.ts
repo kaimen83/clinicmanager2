@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { currentUser } from '@clerk/nextjs/server';
 import { ObjectId } from 'mongodb';
+import { createKstDateForMongoDB, createNewDate } from '@/lib/utils';
 
 export async function POST(
   request: NextRequest,
@@ -37,7 +38,7 @@ export async function POST(
     // 재고 업데이트
     const updateData: any = {
       stock: (product.stock || 0) + quantity,
-      updatedAt: new Date()
+      updatedAt: createNewDate()
     };
     
     // 매입가가 제공된 경우 업데이트
@@ -58,7 +59,7 @@ export async function POST(
       price: purchasePrice || product.purchasePrice,
       notes,
       userId,
-      date: new Date()
+      date: createKstDateForMongoDB(new Date())
     });
     
     return NextResponse.json({ message: '입고 처리가 완료되었습니다.' });

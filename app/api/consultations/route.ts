@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
-import { createNewDate } from '@/lib/utils';
+import { createNewDate, createKstDateForMongoDB } from '@/lib/utils';
 
 // GET 요청 처리 - 상담 내역 목록 조회
 export async function GET(request: NextRequest) {
@@ -201,7 +201,7 @@ export async function POST(request: NextRequest) {
     const now = createNewDate();
     
     const consultationData = {
-      date: new Date(body.date),
+      date: createKstDateForMongoDB(body.date),
       chartNumber: body.chartNumber,
       patientName: body.patientName,
       doctor: body.doctor,
@@ -209,7 +209,7 @@ export async function POST(request: NextRequest) {
       amount: Number(body.amount),
       agreed: Boolean(body.agreed),
       disagreementReason: body.agreed ? null : (body.disagreementReason || null),
-      confirmedDate: body.agreed && body.confirmedDate ? new Date(body.confirmedDate) : null,
+      confirmedDate: body.agreed && body.confirmedDate ? createKstDateForMongoDB(body.confirmedDate) : null,
       notes: body.notes || '',
       createdAt: now,
       updatedAt: now

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { currentUser } from '@clerk/nextjs/server';
 import { ObjectId } from 'mongodb';
-import { toKstDate, createNewDate } from '@/lib/utils';
+import { toKstDate, createNewDate, createKstDateForMongoDB } from '@/lib/utils';
 
 // 진료외수입 목록 조회
 export async function GET(request: NextRequest) {
@@ -81,11 +81,11 @@ export async function POST(request: NextRequest) {
     
     const { db } = await connectToDatabase();
     
-    // 한국 시간대로 변환된 날짜
-    const kstDate = toKstDate(date);
+    // MongoDB에 저장할 날짜 (KST 날짜 기준으로 UTC 00:00:00)
+    const mongoDBDate = createKstDateForMongoDB(date);
     
     const extraIncome = {
-      date: kstDate,
+      date: mongoDBDate,
       type,
       amount: Number(amount),
       notes,
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
       details: [
         `수입 유형: ${type}`,
         `금액: ${Number(amount).toLocaleString()}원`,
-        `날짜: ${kstDate.toISOString().split('T')[0]}`, 
+        `날짜: ${mongoDBDate.toISOString().split('T')[0]}`, 
         `메모: ${notes || '없음'}`
       ],
       createdAt: createNewDate()
@@ -152,12 +152,12 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: '해당 진료외수입 내역을 찾을 수 없습니다.' }, { status: 404 });
     }
     
-    // 한국 시간대로 변환된 날짜
-    const kstDate = toKstDate(date);
+    // MongoDB에 저장할 날짜 (KST 날짜 기준으로 UTC 00:00:00)
+    const mongoDBDate = createKstDateForMongoDB(date);
     
     // 수정할 데이터
     const updateData = {
-      date: kstDate,
+      date: mongoDBDate,
       type,
       amount: Number(amount),
       notes,
@@ -184,7 +184,7 @@ export async function PUT(request: NextRequest) {
       details: [
         `수입 유형: ${existingItem.type} → ${type}`,
         `금액: ${existingItem.amount.toLocaleString()}원 → ${Number(amount).toLocaleString()}원`,
-        `날짜: ${new Date(existingItem.date).toISOString().split('T')[0]} → ${kstDate.toISOString().split('T')[0]}`,
+        `날짜: ${new Date(existingItem.date).toISOString().split('T')[0]} → ${mongoDBDate.toISOString().split('T')[0]}`,
         `메모: ${existingItem.notes || '없음'} → ${notes || '없음'}`
       ],
       createdAt: createNewDate()

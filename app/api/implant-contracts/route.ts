@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { connectToDatabase } from '@/lib/mongodb';
+import { createKstDateForMongoDB, createNewDate } from '@/lib/utils';
 
 export async function GET(request: NextRequest) {
     try {
@@ -55,7 +56,7 @@ export async function POST(request: NextRequest) {
 
         const contract = {
             companyName,
-            contractDate: new Date(contractDate),
+            contractDate: createKstDateForMongoDB(contractDate),
             promotionAmount: promotionAmount || 0,
             markupRate: markupRate || 0,
             paymentMethod: paymentMethod || '',
@@ -64,8 +65,8 @@ export async function POST(request: NextRequest) {
             productPrices: productPrices || [],
             isActive: true,
             userId,
-            createdAt: new Date(),
-            updatedAt: new Date()
+            createdAt: createNewDate(),
+            updatedAt: createNewDate()
         };
 
         const result = await db.collection('implantcontracts').insertOne(contract);

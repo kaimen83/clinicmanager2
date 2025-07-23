@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import FirstOp, { IFirstOp, IImplantItem, IFixtureItem } from '@/lib/models/FirstOp';
+import { createKstDateForMongoDB } from '@/lib/utils';
 
 // 1st OP 정보 생성 (POST)
 export async function POST(request: NextRequest) {
@@ -74,7 +75,7 @@ export async function POST(request: NextRequest) {
 
     // 새로운 1st OP 정보 생성
     const firstOp = new FirstOp({
-      date: new Date(date),
+      date: createKstDateForMongoDB(date),
       chartNumber,
       patientName,
       doctor,

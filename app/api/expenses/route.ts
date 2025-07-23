@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongoose';
 import Expense from '@/lib/models/Expense';
 import { currentUser } from '@clerk/nextjs/server';
-import { toKstDate } from '@/lib/utils';
+import { toKstDate, createKstDateForMongoDB } from '@/lib/utils';
 import { createCashExpenseRecord } from '@/lib/utils/cashManagement';
 
 // 지출 목록 조회
@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
     
     // 날짜 데이터 처리
     if (body.date) {
-      body.date = toKstDate(body.date);
+      body.date = createKstDateForMongoDB(body.date);
     }
     
     const newExpense = new Expense({

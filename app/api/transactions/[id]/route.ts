@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
-import { toKstDate } from '@/lib/utils';
+import { toKstDate, createKstDateForMongoDB, createNewDate } from '@/lib/utils';
 import { updateCashRecordsForTransaction, deleteCashRecord, PAYMENT_METHODS } from '@/lib/utils/cashManagement';
 
 // 카드매출 동기화 함수
@@ -97,7 +97,7 @@ export async function PATCH(
     let updateData: any = { ...data };
     
     if (data.date) {
-      updateData.date = toKstDate(data.date);
+      updateData.date = createKstDateForMongoDB(data.date);
     }
     
     // 상담 내역 업데이트
@@ -108,19 +108,19 @@ export async function PATCH(
           return {
             ...consultation,
             _id: typeof consultation._id === 'string' ? new ObjectId(consultation._id) : consultation._id,
-            date: consultation.date ? toKstDate(consultation.date) : toKstDate(new Date()),
-            confirmedDate: consultation.confirmedDate ? toKstDate(consultation.confirmedDate) : null,
-            updatedAt: toKstDate(new Date())
+            date: consultation.date ? createKstDateForMongoDB(consultation.date) : createNewDate(),
+            confirmedDate: consultation.confirmedDate ? createKstDateForMongoDB(consultation.confirmedDate) : null,
+            updatedAt: createNewDate()
           };
         }
         // 새 상담 추가
         return {
           ...consultation,
           _id: new ObjectId(),
-          date: consultation.date ? toKstDate(consultation.date) : toKstDate(new Date()),
-          confirmedDate: consultation.confirmedDate ? toKstDate(consultation.confirmedDate) : null,
-          createdAt: toKstDate(new Date()),
-          updatedAt: toKstDate(new Date())
+          date: consultation.date ? createKstDateForMongoDB(consultation.date) : createNewDate(),
+          confirmedDate: consultation.confirmedDate ? createKstDateForMongoDB(consultation.confirmedDate) : null,
+          createdAt: createNewDate(),
+          updatedAt: createNewDate()
         };
       });
     }
@@ -133,20 +133,20 @@ export async function PATCH(
           return {
             ...payment,
             _id: typeof payment._id === 'string' ? new ObjectId(payment._id) : payment._id,
-            date: payment.date ? toKstDate(payment.date) : toKstDate(new Date())
+            date: payment.date ? createKstDateForMongoDB(payment.date) : createNewDate()
           };
         }
         // 새 수납 추가
         return {
           ...payment,
           _id: new ObjectId(),
-          date: payment.date ? toKstDate(payment.date) : toKstDate(new Date())
+          date: payment.date ? createKstDateForMongoDB(payment.date) : createNewDate()
         };
       });
     }
     
     // 업데이트 시간 추가
-    updateData.updatedAt = toKstDate(new Date());
+    updateData.updatedAt = createNewDate();
     
     // 내원정보 업데이트
     await db.collection('transactions').updateOne(
@@ -229,7 +229,7 @@ export async function PUT(
     let updateData: any = { ...data };
     
     if (data.date) {
-      updateData.date = toKstDate(data.date);
+      updateData.date = createKstDateForMongoDB(data.date);
     }
     
     // 상담 내역 업데이트
@@ -240,19 +240,19 @@ export async function PUT(
           return {
             ...consultation,
             _id: typeof consultation._id === 'string' ? new ObjectId(consultation._id) : consultation._id,
-            date: consultation.date ? toKstDate(consultation.date) : toKstDate(new Date()),
-            confirmedDate: consultation.confirmedDate ? toKstDate(consultation.confirmedDate) : null,
-            updatedAt: toKstDate(new Date())
+            date: consultation.date ? createKstDateForMongoDB(consultation.date) : createNewDate(),
+            confirmedDate: consultation.confirmedDate ? createKstDateForMongoDB(consultation.confirmedDate) : null,
+            updatedAt: createNewDate()
           };
         }
         // 새 상담 추가
         return {
           ...consultation,
           _id: new ObjectId(),
-          date: consultation.date ? toKstDate(consultation.date) : toKstDate(new Date()),
-          confirmedDate: consultation.confirmedDate ? toKstDate(consultation.confirmedDate) : null,
-          createdAt: toKstDate(new Date()),
-          updatedAt: toKstDate(new Date())
+          date: consultation.date ? createKstDateForMongoDB(consultation.date) : createNewDate(),
+          confirmedDate: consultation.confirmedDate ? createKstDateForMongoDB(consultation.confirmedDate) : null,
+          createdAt: createNewDate(),
+          updatedAt: createNewDate()
         };
       });
     }
@@ -265,20 +265,20 @@ export async function PUT(
           return {
             ...payment,
             _id: typeof payment._id === 'string' ? new ObjectId(payment._id) : payment._id,
-            date: payment.date ? toKstDate(payment.date) : toKstDate(new Date())
+            date: payment.date ? createKstDateForMongoDB(payment.date) : createNewDate()
           };
         }
         // 새 수납 추가
         return {
           ...payment,
           _id: new ObjectId(),
-          date: payment.date ? toKstDate(payment.date) : toKstDate(new Date())
+          date: payment.date ? createKstDateForMongoDB(payment.date) : createNewDate()
         };
       });
     }
     
     // 업데이트 시간 추가
-    updateData.updatedAt = toKstDate(new Date());
+    updateData.updatedAt = createNewDate();
     
     // 내원정보 업데이트
     await db.collection('transactions').updateOne(

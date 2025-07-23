@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongoose';
 import CashRecord from '@/lib/models/CashRecord';
 import { currentUser } from '@clerk/nextjs/server';
-import { toKstDate } from '@/lib/utils';
+import { toKstDate, createKstDateForMongoDB } from '@/lib/utils';
 
 // 현금 기록 조회
 export async function GET(request: NextRequest) {
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
     }
     
     // 날짜 데이터 처리
-    const recordDate = toKstDate(date);
+    const recordDate = createKstDateForMongoDB(date);
     
     const newRecord = new CashRecord({
       date: recordDate,

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongoose';
 import Expense from '@/lib/models/Expense';
 import { currentUser } from '@clerk/nextjs/server';
-import { toKstDate } from '@/lib/utils';
+import { toKstDate, createKstDateForMongoDB } from '@/lib/utils';
 import { updateCashExpenseRecord, deleteCashExpenseRecord } from '@/lib/utils/cashManagement';
 
 // 특정 ID 지출 조회
@@ -75,7 +75,7 @@ export async function PUT(
     
     // 날짜 데이터 처리
     if (body.date) {
-      body.date = toKstDate(body.date);
+      body.date = createKstDateForMongoDB(body.date);
     }
     
     // 필드 업데이트

@@ -3,6 +3,7 @@ import { currentUser } from '@clerk/nextjs/server';
 import mongoose from 'mongoose';
 import dbConnect from '@/lib/mongoose';
 import ImplantInventoryLog from '@/lib/models/ImplantInventoryLog';
+import { createKstDateForMongoDB, createNewDate } from '@/lib/utils';
 
 // ImplantProduct 모델 (기존 route.ts에서 가져옴)
 const implantProductSchema = new mongoose.Schema({
@@ -47,7 +48,7 @@ implantProductSchema.methods.updateStock = async function(quantity: number) {
   
   // 재고 업데이트
   this.stock += quantity;
-  this.updatedAt = new Date();
+  this.updatedAt = createNewDate();
   
   // 변경사항 저장
   return await this.save();
@@ -89,7 +90,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             doctor,
             outReason,
             notes,
-            date: date ? new Date(date) : new Date(),
+            date: date ? createKstDateForMongoDB(date) : createKstDateForMongoDB(new Date()),
             userId: user.id
         });
         await log.save();

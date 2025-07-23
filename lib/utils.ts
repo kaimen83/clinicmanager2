@@ -33,6 +33,35 @@ export function toKstDate(date: Date | string | number | null | undefined): Date
   return new Date(utc + (9 * 60 * 60 * 1000)); // UTC+9 (한국 시간)
 }
 
+// MongoDB에 날짜만 저장할 때 사용하는 함수 (시간 무시, KST 날짜 기준)
+export function createKstDateForMongoDB(date: Date | string | null | undefined): Date {
+  if (!date) {
+    const now = getCurrentKstDate();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const day = now.getDate();
+    // UTC로 저장하되, KST 날짜가 올바르게 표시되도록 조정
+    return new Date(Date.UTC(year, month, day, 0, 0, 0));
+  }
+  
+  let year: number, month: number, day: number;
+  
+  if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    // YYYY-MM-DD 형식의 문자열
+    [year, month, day] = date.split('-').map(Number);
+    month = month - 1; // JavaScript의 month는 0부터 시작
+  } else {
+    // Date 객체 또는 다른 형식의 문자열
+    const kstDate = toKstDate(date);
+    year = kstDate.getFullYear();
+    month = kstDate.getMonth();
+    day = kstDate.getDate();
+  }
+  
+  // UTC로 저장하되, KST 날짜가 올바르게 표시되도록 조정
+  return new Date(Date.UTC(year, month, day, 0, 0, 0));
+}
+
 // Date 객체를 ISO 문자열(YYYY-MM-DD)로 변환 (한국 시간 기준으로 정확히 처리)
 export function toISODateString(date: Date | string | number | null | undefined): string {
   const kstDate = toKstDate(date);

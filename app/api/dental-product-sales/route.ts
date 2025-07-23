@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
+import { createKstDateForMongoDB, createNewDate } from '@/lib/utils';
 
 export async function GET(request: NextRequest) {
   try {
@@ -86,7 +87,7 @@ export async function POST(request: NextRequest) {
             { _id: new ObjectId(product.productId) },
             { 
               $inc: { stock: -product.quantity },
-              $set: { updatedAt: new Date() }
+              $set: { updatedAt: createNewDate() }
             },
             { session }
           );
@@ -98,7 +99,7 @@ export async function POST(request: NextRequest) {
 
         // 판매 내역 저장
         const sale = {
-          date: new Date(date),
+          date: createKstDateForMongoDB(date),
           chartNumber,
           patientName,
           doctor,
@@ -111,8 +112,8 @@ export async function POST(request: NextRequest) {
           })),
           totalAmount,
           userId,
-          createdAt: new Date(),
-          updatedAt: new Date()
+          createdAt: createNewDate(),
+          updatedAt: createNewDate()
         };
 
         const result = await db.collection('dentalproductsales').insertOne(sale, { session });

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
+import { createKstDateForMongoDB, createNewDate } from '@/lib/utils';
 
 export async function GET(
     request: NextRequest,
@@ -78,7 +79,7 @@ export async function PUT(
 
         const updateData = {
             companyName,
-            contractDate: new Date(contractDate),
+            contractDate: createKstDateForMongoDB(contractDate),
             promotionAmount: promotionAmount || 0,
             markupRate: markupRate || 0,
             paymentMethod: paymentMethod || '',
@@ -86,7 +87,7 @@ export async function PUT(
             benefits: benefits || '',
             productPrices: productPrices || [],
             isActive,
-            updatedAt: new Date()
+            updatedAt: createNewDate()
         };
 
         await db.collection('implantcontracts').updateOne(

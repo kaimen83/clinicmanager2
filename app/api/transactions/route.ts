@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
-import { createNewDate, toKstDate } from '@/lib/utils';
+import { createNewDate, toKstDate, createKstDateForMongoDB } from '@/lib/utils';
 import { createCashRecordsForTransaction } from '@/lib/utils/cashManagement';
 
 // 카드매출 동기화 함수
@@ -165,8 +165,8 @@ export async function POST(request: NextRequest) {
     // 현재 시간 및 사용자 정보 추가
     const now = createNewDate();
     
-    // 날짜 처리: 모든 경우 toKstDate 사용으로 일관성 유지
-    const transactionDate = toKstDate(date);
+    // 날짜 처리: MongoDB 저장용 KST 날짜 생성
+    const transactionDate = createKstDateForMongoDB(date);
     
     const newTransaction = {
       ...data,
@@ -179,8 +179,8 @@ export async function POST(request: NextRequest) {
         ? data.consultations.map((consultation: any) => ({
             ...consultation,
             _id: new ObjectId(),
-            date: toKstDate(consultation.date),
-            confirmedDate: consultation.confirmedDate ? toKstDate(consultation.confirmedDate) : null,
+            date: createKstDateForMongoDB(consultation.date),
+            confirmedDate: consultation.confirmedDate ? createKstDateForMongoDB(consultation.confirmedDate) : null,
             createdAt: now,
             updatedAt: now
           }))
@@ -190,7 +190,7 @@ export async function POST(request: NextRequest) {
         ? data.payments.map((payment: any) => ({
             ...payment,
             _id: new ObjectId(),
-            date: toKstDate(payment.date)
+            date: createKstDateForMongoDB(payment.date)
           }))
         : []
     };

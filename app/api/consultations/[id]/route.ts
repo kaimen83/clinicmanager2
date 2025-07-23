@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
+import { createKstDateForMongoDB, createNewDate } from '@/lib/utils';
 
 // GET 요청 처리 - 단일 상담 정보 조회
 export async function GET(
@@ -79,7 +80,7 @@ export async function PUT(
         { _id: new ObjectId(id) },
         {
           $set: {
-            date: new Date(body.date),
+            date: createKstDateForMongoDB(body.date),
             chartNumber: body.chartNumber,
             patientName: body.patientName,
             doctor: body.doctor,
@@ -88,7 +89,7 @@ export async function PUT(
             agreed: body.agreed,
             disagreementReason: body.agreed ? null : (body.disagreementReason || null),
             notes: body.notes,
-            updatedAt: new Date()
+            updatedAt: createNewDate()
           }
         }
       );
