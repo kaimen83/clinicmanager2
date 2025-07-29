@@ -16,8 +16,59 @@ export async function PATCH(
     await client.connect();
     const db = client.db('hospital_accounting');
     
+    // ObjectId 유효성 검사 및 쿼리 조건 설정
+    let query: any;
+    if (ObjectId.isValid(id) && String(new ObjectId(id)) === id) {
+      // 유효한 ObjectId인 경우
+      query = { _id: new ObjectId(id) };
+    } else if (id.startsWith('temp_')) {
+      // 임시 ID인 경우 - body에서 매칭 정보를 가져옴
+      if (!body.cardCompany || body.saleAmount === undefined || !body.saleDate) {
+        await client.close();
+        return NextResponse.json({ 
+          error: '임시 ID의 경우 cardCompany, saleAmount, saleDate가 필요합니다.' 
+        }, { status: 400 });
+      }
+      
+      // saleDate를 Date 객체로 변환
+      const saleDateObj = new Date(body.saleDate);
+      const saleDateStart = new Date(saleDateObj);
+      saleDateStart.setHours(0, 0, 0, 0);
+      const saleDateEnd = new Date(saleDateObj);
+      saleDateEnd.setHours(23, 59, 59, 999);
+      
+      query = { 
+        cardCompany: body.cardCompany,
+        saleAmount: body.saleAmount,
+        saleDate: { $gte: saleDateStart, $lte: saleDateEnd }
+      };
+    } else {
+      await client.close();
+      return NextResponse.json({ error: '유효하지 않은 ID입니다.' }, { status: 400 });
+    }
+    
     // 현재 문서 조회 (수수료 계산을 위해)
-    const currentDoc = await db.collection('carddeposits').findOne({ _id: new ObjectId(id) });
+    let currentDoc = await db.collection('carddeposits').findOne(query);
+    
+    // 임시 ID이고 문서가 없는 경우 새로 생성
+    if (!currentDoc && id.startsWith('temp_')) {
+      // 새 문서 생성
+      const newDoc = {
+        cardCompany: body.cardCompany,
+        saleAmount: body.saleAmount,
+        saleDate: new Date(body.saleDate),
+        expectedDepositDate: body.expectedDepositDate ? new Date(body.expectedDepositDate) : new Date(),
+        status: '미입금',
+        transactionIds: body.transactionIds || [],
+        transactionCount: body.transactionCount || 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        createdBy: body.createdBy || null
+      };
+      
+      const insertResult = await db.collection('carddeposits').insertOne(newDoc);
+      currentDoc = { ...newDoc, _id: insertResult.insertedId };
+    }
     
     if (!currentDoc) {
       await client.close();
@@ -92,7 +143,7 @@ export async function PATCH(
     const previousDepositAmount = currentDoc.actualDepositAmount;
 
     const result = await db.collection('carddeposits').updateOne(
-      { _id: new ObjectId(id) },
+      query,
       updateQuery
     );
 
@@ -121,7 +172,13 @@ export async function PATCH(
           if (previousDailyDeposit) {
             // deposits 배열에서 해당 cardDepositId 제거
             const updatedDeposits = previousDailyDeposit.deposits.filter(
-              (deposit: any) => deposit.cardDepositId.toString() !== id
+              (deposit: any) => {
+                // ObjectId와 tempId 모두 처리
+                if (currentDoc._id) {
+                  return deposit.cardDepositId.toString() !== currentDoc._id.toString();
+                }
+                return deposit.tempId !== id;
+              }
             );
 
             // totalAmount 재계산
@@ -173,15 +230,29 @@ export async function PATCH(
 
         // 이미 존재하는 deposit 제거 (중복 방지)
         const filteredDeposits = dailyDeposit.deposits.filter(
-          (deposit: any) => deposit.cardDepositId.toString() !== id
+          (deposit: any) => {
+            // ObjectId와 tempId 모두 처리
+            if (currentDoc._id) {
+              return deposit.cardDepositId?.toString() !== currentDoc._id.toString();
+            }
+            return deposit.tempId !== id;
+          }
         );
 
         // 새로운 deposit 추가
-        filteredDeposits.push({
-          cardDepositId: new ObjectId(id),
+        const newDeposit: any = {
           amount: body.actualDepositAmount,
           cardCompany: currentDoc.cardCompany
-        });
+        };
+        
+        // ObjectId가 있는 경우에만 cardDepositId 추가, 없으면 tempId 사용
+        if (currentDoc._id) {
+          newDeposit.cardDepositId = currentDoc._id;
+        } else {
+          newDeposit.tempId = id;
+        }
+        
+        filteredDeposits.push(newDeposit);
 
         // totalAmount 재계산
         const newTotalAmount = filteredDeposits.reduce(
@@ -227,8 +298,21 @@ export async function DELETE(
     await client.connect();
     const db = client.db('hospital_accounting');
     
+    // ObjectId 유효성 검사 및 쿼리 조건 설정
+    let query: any;
+    if (ObjectId.isValid(id) && String(new ObjectId(id)) === id) {
+      // 유효한 ObjectId인 경우
+      query = { _id: new ObjectId(id) };
+    } else if (id.startsWith('temp_')) {
+      // 임시 ID인 경우
+      query = { tempId: id };
+    } else {
+      await client.close();
+      return NextResponse.json({ error: '유효하지 않은 ID입니다.' }, { status: 400 });
+    }
+    
     // 삭제할 카드매출 정보 조회
-    const cardDeposit = await db.collection('carddeposits').findOne({ _id: new ObjectId(id) });
+    const cardDeposit = await db.collection('carddeposits').findOne(query);
     
     if (!cardDeposit) {
       await client.close();
@@ -236,7 +320,7 @@ export async function DELETE(
     }
 
     // 카드매출 삭제
-    const result = await db.collection('carddeposits').deleteOne({ _id: new ObjectId(id) });
+    const result = await db.collection('carddeposits').deleteOne(query);
     
     await client.close();
 

@@ -7,6 +7,7 @@ import ConsultationPayment from '@/components/ConsultationPayment';
 import EvidenceStatus from '@/components/EvidenceStatus';
 import DailyReport from '@/components/DailyReport';
 import CardDeposits from '@/components/CardDeposits';
+import CardSettlement from '@/components/CardSettlement';
 import PatientAnalysis from '@/components/PatientAnalysis';
 import ImplantStats from '@/components/ImplantStats';
 import { 
@@ -27,7 +28,7 @@ export default function AccountingPage() {
   return (
     <div className="container mx-auto px-6 py-8">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-9 h-auto p-1 bg-gray-100 rounded-xl">
+        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-10 h-auto p-1 bg-gray-100 rounded-xl">
           <TabsTrigger
             value="payment"
             className="flex flex-col items-center gap-2 p-4 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg transition-all duration-200 hover:bg-white/50"
@@ -73,6 +74,18 @@ export default function AccountingPage() {
             </div>
             <span className="text-xs font-medium text-center leading-tight">
               카드매출/입금
+            </span>
+          </TabsTrigger>
+
+          <TabsTrigger
+            value="card-settlement"
+            className="flex flex-col items-center gap-2 p-4 data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg transition-all duration-200 hover:bg-white/50"
+          >
+            <div className="p-2 rounded-lg bg-gradient-to-r from-emerald-500 to-emerald-600">
+              <CreditCard className="w-4 h-4 text-white" />
+            </div>
+            <span className="text-xs font-medium text-center leading-tight">
+              카드정산
             </span>
           </TabsTrigger>
 
@@ -168,6 +181,10 @@ export default function AccountingPage() {
 
         <TabsContent value="card-sales">
           <CardDeposits />
+        </TabsContent>
+
+        <TabsContent value="card-settlement">
+          <CardSettlement />
         </TabsContent>
 
         <TabsContent value="patient-analysis">
