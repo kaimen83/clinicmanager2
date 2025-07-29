@@ -9,7 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { CalendarIcon, Download, RefreshCw, Users, CreditCard } from 'lucide-react';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, createKstDateForMongoDB } from '@/lib/utils';
 import { isSameCardCompany } from '@/lib/utils/depositCalculations';
 import IndividualDepositModal from './IndividualDepositModal';
 import BulkDepositModal from './BulkDepositModal';
@@ -55,8 +55,8 @@ export default function CardSettlement() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          startDate: dateRange.start.toISOString(),
-          endDate: dateRange.end.toISOString(),
+          startDate: createKstDateForMongoDB(dateRange.start).toISOString(),
+          endDate: createKstDateForMongoDB(dateRange.end).toISOString(),
         }),
       });
 
