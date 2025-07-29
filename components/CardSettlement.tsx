@@ -382,9 +382,12 @@ export default function CardSettlement() {
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
               <p className="mt-2 text-gray-600">데이터를 불러오는 중...</p>
             </div>
-          ) : data.length === 0 ? (
+          ) : filteredData.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
-              해당 기간에 카드 결제 내역이 없습니다.
+              {selectedCardCompany === 'all' 
+                ? '해당 기간에 카드 결제 내역이 없습니다.'
+                : `해당 기간에 ${selectedCardCompany} 카드 결제 내역이 없습니다.`
+              }
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -393,7 +396,7 @@ export default function CardSettlement() {
                   <tr className="border-b">
                     <th className="text-left p-2">
                       <Checkbox
-                        checked={selectedItems.length === data.filter(item => !item.isProcessed).length && data.filter(item => !item.isProcessed).length > 0}
+                        checked={selectedItems.length === filteredData.filter(item => !item.isProcessed).length && filteredData.filter(item => !item.isProcessed).length > 0}
                         onCheckedChange={handleSelectAll}
                       />
                     </th>
@@ -409,7 +412,7 @@ export default function CardSettlement() {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.map((item, index) => {
+                  {filteredData.map((item, index) => {
                     const isSelected = selectedItems.some(selected => 
                       selected._id.date === item._id.date && selected._id.cardCompany === item._id.cardCompany
                     );
