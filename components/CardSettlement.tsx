@@ -39,6 +39,7 @@ export default function CardSettlement() {
   });
   const [showStartCalendar, setShowStartCalendar] = useState(false);
   const [showEndCalendar, setShowEndCalendar] = useState(false);
+  const [selectedCardCompany, setSelectedCardCompany] = useState<string>('all'); // 카드사 필터
   
   // 선택 및 모달 관련 상태
   const [selectedItems, setSelectedItems] = useState<CardSettlementData[]>([]);
@@ -87,12 +88,16 @@ export default function CardSettlement() {
 
   // 통계 계산
   const calculateStats = () => {
-    const totalSales = data.reduce((sum, item) => sum + item.totalAmount, 0);
-    const totalActualDeposits = data.reduce((sum, item) => sum + (item.actualDepositAmount || 0), 0);
-    const totalUndeposited = data.reduce((sum, item) => {
+    const filteredData = selectedCardCompany === 'all' 
+      ? data 
+      : data.filter(item => item._id.cardCompany === selectedCardCompany);
+      
+    const totalSales = filteredData.reduce((sum, item) => sum + item.totalAmount, 0);
+    const totalActualDeposits = filteredData.reduce((sum, item) => sum + (item.actualDepositAmount || 0), 0);
+    const totalUndeposited = filteredData.reduce((sum, item) => {
       return sum + (item.actualDepositAmount ? 0 : item.totalAmount);
     }, 0);
-    const totalFees = data.reduce((sum, item) => sum + (item.fee || 0), 0);
+    const totalFees = filteredData.reduce((sum, item) => sum + (item.fee || 0), 0);
 
     return {
       totalSales,
@@ -103,6 +108,14 @@ export default function CardSettlement() {
   };
 
   const stats = calculateStats();
+
+  // 필터링된 데이터
+  const filteredData = selectedCardCompany === 'all' 
+    ? data 
+    : data.filter(item => item._id.cardCompany === selectedCardCompany);
+
+  // 고유한 카드사 목록 추출
+  const cardCompanies = Array.from(new Set(data.map(item => item._id.cardCompany))).sort();
 
   // 체크박스 선택 핸들러
   const handleItemSelect = (item: CardSettlementData, checked: boolean) => {
@@ -130,7 +143,7 @@ export default function CardSettlement() {
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
       // 처리되지 않은 항목들만 선택
-      const unprocessedItems = data.filter(item => !item.isProcessed);
+      const unprocessedItems = filteredData.filter(item => !item.isProcessed);
       setSelectedItems(unprocessedItems);
     } else {
       setSelectedItems([]);
@@ -187,12 +200,12 @@ export default function CardSettlement() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* 헤더 및 필터 */}
-      <Card>
-        <CardHeader>
+      <Card className="shadow-sm">
+        <CardHeader className="pb-3">
           <CardTitle className="flex items-center justify-between">
-            <span>카드정산 현황</span>
+            <span className="text-lg">카드정산 현황</span>
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
@@ -200,25 +213,25 @@ export default function CardSettlement() {
                 onClick={fetchData}
                 disabled={loading}
               >
-                <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`w-4 h-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
                 새로고침
               </Button>
               <Button variant="outline" size="sm">
-                <Download className="w-4 h-4 mr-2" />
-                엑셀 다운로드
+                <Download className="w-4 h-4 mr-1" />
+                엑셀
               </Button>
             </div>
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-4">
+        <CardContent className="pt-0">
+          <div className="flex flex-wrap items-center gap-2">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">기간:</span>
+              <span className="text-sm font-medium text-gray-600">기간:</span>
               <Popover open={showStartCalendar} onOpenChange={setShowStartCalendar}>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <CalendarIcon className="w-4 h-4 mr-2" />
-                    {format(dateRange.start, 'yyyy-MM-dd', { locale: ko })}
+                  <Button variant="outline" size="sm" className="h-8 px-3">
+                    <CalendarIcon className="w-3 h-3 mr-1" />
+                    {format(dateRange.start, 'MM-dd', { locale: ko })}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
@@ -235,9 +248,9 @@ export default function CardSettlement() {
               <span className="text-sm text-gray-500">~</span>
               <Popover open={showEndCalendar} onOpenChange={setShowEndCalendar}>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <CalendarIcon className="w-4 h-4 mr-2" />
-                    {format(dateRange.end, 'yyyy-MM-dd', { locale: ko })}
+                  <Button variant="outline" size="sm" className="h-8 px-3">
+                    <CalendarIcon className="w-3 h-3 mr-1" />
+                    {format(dateRange.end, 'MM-dd', { locale: ko })}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
@@ -251,6 +264,21 @@ export default function CardSettlement() {
                   />
                 </PopoverContent>
               </Popover>
+            </div>
+            
+            {/* 카드사 필터 추가 */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-gray-600">카드사:</span>
+              <select
+                value={selectedCardCompany}
+                onChange={(e) => setSelectedCardCompany(e.target.value)}
+                className="h-8 px-3 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">전체</option>
+                {cardCompanies.map(company => (
+                  <option key={company} value={company}>{company}</option>
+                ))}
+              </select>
             </div>
           </div>
         </CardContent>
