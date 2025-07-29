@@ -56,36 +56,11 @@ export default function EditDepositModal({
     return originalDate !== currentDate || originalAmount !== actualAmount;
   };
 
-  // 빠른 입력 옵션들
-  const quickOptions = [
-    {
-      label: '매출액과 동일 (수수료 0%)',
-      amount: item.totalAmount,
-      feeRate: 0
-    },
-    {
-      label: '2% 수수료',
-      amount: Math.round(item.totalAmount * 0.98),
-      feeRate: 2
-    },
-    {
-      label: '2.5% 수수료',
-      amount: Math.round(item.totalAmount * 0.975),
-      feeRate: 2.5
-    }
-  ];
-
   // 입력값 변경 핸들러
   const handleAmountChange = (value: string) => {
     const formatted = formatNumberInput(value);
     setActualAmountInput(formatted);
     setError(''); // 에러 초기화
-  };
-
-  // 빠른 입력 버튼 핸들러
-  const handleQuickInput = (amount: number) => {
-    setActualAmountInput(formatNumberInput(amount.toString()));
-    setError('');
   };
 
   // 수정 제출 핸들러
@@ -344,24 +319,6 @@ export default function EditDepositModal({
             />
           </div>
 
-          {/* 빠른 입력 옵션 */}
-          <div className="space-y-2">
-            <Label className="text-sm text-gray-600">빠른 입력</Label>
-            <div className="grid grid-cols-1 gap-2">
-              {quickOptions.map((option, index) => (
-                <Button
-                  key={index}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleQuickInput(option.amount)}
-                  className="justify-between text-xs"
-                >
-                  <span>{option.label}</span>
-                  <span>{formatCurrency(option.amount)}</span>
-                </Button>
-              ))}
-            </div>
-          </div>
 
           {/* 실시간 계산 결과 */}
           {actualAmount > 0 && (

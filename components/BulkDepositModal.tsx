@@ -61,11 +61,6 @@ export default function BulkDepositModal({
     setError(''); // 에러 초기화
   };
 
-  // 빠른 입력 (전액 입금)
-  const handleFullAmount = () => {
-    setTotalActualAmountInput(formatNumberInput(totalSalesAmount.toString()));
-    setError('');
-  };
 
   // 폼 제출 핸들러
   const handleSubmit = async () => {
@@ -212,22 +207,13 @@ export default function BulkDepositModal({
           {/* 총 입금액 입력 */}
           <div className="space-y-2">
             <Label htmlFor="totalAmount">총 실제입금액</Label>
-            <div className="flex gap-2">
-              <Input
-                id="totalAmount"
-                value={totalActualAmountInput}
-                onChange={(e) => handleTotalAmountChange(e.target.value)}
-                placeholder="총 입금액을 입력하세요"
-                className="text-right flex-1"
-              />
-              <Button
-                variant="outline"
-                onClick={handleFullAmount}
-                className="whitespace-nowrap"
-              >
-                전액 입금
-              </Button>
-            </div>
+            <Input
+              id="totalAmount"
+              value={totalActualAmountInput}
+              onChange={(e) => handleTotalAmountChange(e.target.value)}
+              placeholder="총 입금액을 입력하세요"
+              className="text-right"
+            />
           </div>
 
           {/* 실시간 계산 요약 */}
