@@ -13,6 +13,7 @@ import ExtraIncomeListModal from './ExtraIncomeListModal';
 import ConsultationStatsModal from './ConsultationStatsModal';
 import ManagementIndicatorModal from './ManagementIndicatorModal';
 import NewPatientListModal from './NewPatientListModal';
+import ExpenseListModal from './ExpenseListModal';
 import { useDateContext } from '@/lib/context/dateContext';
 
 type Props = {
@@ -35,6 +36,7 @@ export default function ClinicStats({ date, onDailySettlement, onMonthlySettleme
   const [isConsultationStatsModalOpen, setIsConsultationStatsModalOpen] = useState(false);
   const [isManagementIndicatorModalOpen, setIsManagementIndicatorModalOpen] = useState(false);
   const [isNewPatientModalOpen, setIsNewPatientModalOpen] = useState(false);
+  const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
   const [modalTitle, setModalTitle] = useState('');
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | undefined>(undefined);
   
@@ -104,6 +106,13 @@ export default function ClinicStats({ date, onDailySettlement, onMonthlySettleme
     if (label === '신환') {
       setModalTitle(`${label} 목록`);
       setIsNewPatientModalOpen(true);
+      return;
+    }
+    
+    // 총지출인 경우 지출 내역 모달 열기
+    if (label === '총지출') {
+      setModalTitle('지출 내역');
+      setIsExpenseModalOpen(true);
       return;
     }
     
@@ -285,7 +294,7 @@ export default function ClinicStats({ date, onDailySettlement, onMonthlySettleme
       {renderStatItem('전체 수납금액', currentDailyStats.totalPaymentAmount, true, true)}
       {renderStatItem('진료외수입', currentDailyStats.nonMedicalIncome, true, true)}
       {renderStatItem('총수입', currentDailyStats.totalIncome)}
-      {renderStatItem('총지출', currentDailyStats.totalExpenses)}
+      {renderStatItem('총지출', currentDailyStats.totalExpenses, true, true)}
       {renderStatItem('상담 동의금액', currentDailyStats.consultationAgreedAmount, true, true, undefined, currentDailyStats.consultationAgreedCount)}
       {renderStatItem('상담 미동의금액', currentDailyStats.consultationNonAgreedAmount, true, true, undefined, currentDailyStats.consultationNonAgreedCount)}
     </div>
@@ -300,7 +309,7 @@ export default function ClinicStats({ date, onDailySettlement, onMonthlySettleme
       {renderStatItem('전체 수납금액', currentMonthlyStats.totalPaymentAmount, true, true)}
       {renderStatItem('진료외수입', currentMonthlyStats.nonMedicalIncome, true, true)}
       {renderStatItem('총수입', currentMonthlyStats.totalIncome)}
-      {renderStatItem('총지출', currentMonthlyStats.totalExpenses)}
+      {renderStatItem('총지출', currentMonthlyStats.totalExpenses, true, true)}
       {renderStatItem('상담 동의금액', currentMonthlyStats.consultationAgreedAmount, true, true, undefined, currentMonthlyStats.consultationAgreedCount)}
       {renderStatItem('상담 미동의금액', currentMonthlyStats.consultationNonAgreedAmount, true, true, undefined, currentMonthlyStats.consultationNonAgreedCount)}
     </div>
@@ -402,6 +411,15 @@ export default function ClinicStats({ date, onDailySettlement, onMonthlySettleme
       <NewPatientListModal
         isOpen={isNewPatientModalOpen}
         onClose={() => setIsNewPatientModalOpen(false)}
+        title={modalTitle}
+        date={date}
+        type={activeTab as 'daily' | 'monthly'}
+      />
+      
+      {/* 지출 내역 모달 */}
+      <ExpenseListModal
+        isOpen={isExpenseModalOpen}
+        onClose={() => setIsExpenseModalOpen(false)}
         title={modalTitle}
         date={date}
         type={activeTab as 'daily' | 'monthly'}
