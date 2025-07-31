@@ -12,6 +12,7 @@ import CardCompanyStatsModal from './CardCompanyStatsModal';
 import ExtraIncomeListModal from './ExtraIncomeListModal';
 import ConsultationStatsModal from './ConsultationStatsModal';
 import ManagementIndicatorModal from './ManagementIndicatorModal';
+import NewPatientListModal from './NewPatientListModal';
 import { useDateContext } from '@/lib/context/dateContext';
 
 type Props = {
@@ -33,6 +34,7 @@ export default function ClinicStats({ date, onDailySettlement, onMonthlySettleme
   const [isExtraIncomeModalOpen, setIsExtraIncomeModalOpen] = useState(false);
   const [isConsultationStatsModalOpen, setIsConsultationStatsModalOpen] = useState(false);
   const [isManagementIndicatorModalOpen, setIsManagementIndicatorModalOpen] = useState(false);
+  const [isNewPatientModalOpen, setIsNewPatientModalOpen] = useState(false);
   const [modalTitle, setModalTitle] = useState('');
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | undefined>(undefined);
   
@@ -98,6 +100,13 @@ export default function ClinicStats({ date, onDailySettlement, onMonthlySettleme
   
   // 결제 목록 모달 열기
   const handleOpenPaymentModal = (label: string, paymentMethod?: string) => {
+    // 신환인 경우 신환 목록 모달 열기
+    if (label === '신환') {
+      setModalTitle(`${label} 목록`);
+      setIsNewPatientModalOpen(true);
+      return;
+    }
+    
     // 상담 통계인 경우 상담 통계 모달 열기
     if (label === '상담 동의금액' || label === '상담 미동의금액') {
       setIsConsultationStatsModalOpen(true);
@@ -270,7 +279,7 @@ export default function ClinicStats({ date, onDailySettlement, onMonthlySettleme
   const renderCompactDailyStats = () => (
     <div className="grid grid-cols-2 gap-2">
       {renderStatItem('총 내원인원', currentDailyStats.totalPatients, false)}
-      {renderStatItem('신환', currentDailyStats.newPatients, false)}
+      {renderStatItem('신환', currentDailyStats.newPatients, false, true)}
       {renderStatItem('현금/계좌이체', currentDailyStats.cashTransferAmount, true, true, '현금')}
       {renderStatItem('카드 수납금액', currentDailyStats.cardAmount, true, true, '카드')}
       {renderStatItem('전체 수납금액', currentDailyStats.totalPaymentAmount, true, true)}
@@ -285,7 +294,7 @@ export default function ClinicStats({ date, onDailySettlement, onMonthlySettleme
   const renderCompactMonthlyStats = () => (
     <div className="grid grid-cols-2 gap-2">
       {renderStatItem('총 내원인원', currentMonthlyStats.totalPatients, false)}
-      {renderStatItem('신환', currentMonthlyStats.newPatients, false)}
+      {renderStatItem('신환', currentMonthlyStats.newPatients, false, true)}
       {renderStatItem('현금/계좌이체', currentMonthlyStats.cashTransferAmount, true, true, '현금')}
       {renderStatItem('카드 수납금액', currentMonthlyStats.cardAmount, true, true, '카드')}
       {renderStatItem('전체 수납금액', currentMonthlyStats.totalPaymentAmount, true, true)}
@@ -386,6 +395,15 @@ export default function ClinicStats({ date, onDailySettlement, onMonthlySettleme
         isOpen={isConsultationStatsModalOpen}
         onClose={() => setIsConsultationStatsModalOpen(false)}
         date={toISODateString(date)}
+        type={activeTab as 'daily' | 'monthly'}
+      />
+      
+      {/* 신환 목록 모달 */}
+      <NewPatientListModal
+        isOpen={isNewPatientModalOpen}
+        onClose={() => setIsNewPatientModalOpen(false)}
+        title={modalTitle}
+        date={date}
         type={activeTab as 'daily' | 'monthly'}
       />
       
