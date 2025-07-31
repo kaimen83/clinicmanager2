@@ -15,7 +15,11 @@ import {
 import { Transaction } from '@/lib/types';
 import { toISODateString } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
-import { Search } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import { Search, RefreshCw, CheckCircle2, XCircle, Edit2, AlertCircle } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import HometaxUnmatchedModal from './HometaxUnmatchedModal';
 
 type Props = {
   isOpen: boolean;
@@ -31,6 +35,16 @@ export default function PaymentListModal({ isOpen, onClose, title, date, payment
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([]);
+  const [crawlingStatus, setCrawlingStatus] = useState<{
+    isRunning: boolean;
+    progress: number;
+    message: string;
+    error: string | null;
+  } | null>(null);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [updatingTransactionId, setUpdatingTransactionId] = useState<string | null>(null);
+  const [showUnmatchedModal, setShowUnmatchedModal] = useState(false);
 
   // 트랜잭션 목록 조회
   const fetchTransactions = async () => {
@@ -76,9 +90,21 @@ export default function PaymentListModal({ isOpen, onClose, title, date, payment
     if (isOpen) {
       fetchTransactions();
       setSearchTerm('');
+      checkSuperAdminPermission();
     }
   }, [isOpen, date, paymentMethod, type]);
 
+  // Super Admin 권한 확인
+  const checkSuperAdminPermission = async () => {
+    try {
+      const response = await fetch('/api/auth/check-permission?role=SUPER_ADMIN');
+      const data = await response.json();
+      setIsSuperAdmin(data.hasPermission || false);
+    } catch (error) {
+      console.error('권한 확인 오류:', error);
+      setIsSuperAdmin(false);
+    }
+  };
 
   // 트랜잭션 정렬 함수
   const sortTransactionsByDate = (transactions: Transaction[]) => {
@@ -113,6 +139,118 @@ export default function PaymentListModal({ isOpen, onClose, title, date, payment
     return format(date, 'yyyy-MM-dd', { locale: ko });
   };
 
+  // 홈텍스 크롤링 시작
+  const startHometaxCrawling = async () => {
+    try {
+      const response = await fetch('/api/hometax/crawl-script', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        // 크롤링 상태 모니터링 시작
+        monitorCrawlingStatus();
+      } else {
+        alert(data.error || '크롤링 시작에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('크롤링 시작 에러:', error);
+      alert('크롤링 시작 중 오류가 발생했습니다.');
+    }
+  };
+
+  // 크롤링 상태 모니터링
+  const monitorCrawlingStatus = () => {
+    const interval = setInterval(async () => {
+      try {
+        const response = await fetch('/api/hometax/crawl-script');
+        const data = await response.json();
+        
+        if (data.success && data.status) {
+          setCrawlingStatus(data.status);
+          
+          // 크롤링이 완료되면 모니터링 중지
+          if (!data.status.isRunning) {
+            clearInterval(interval);
+            
+            // 완료 후 자동으로 검증 실행
+            if (data.status.progress === 100) {
+              setTimeout(() => {
+                verifyHometaxData();
+              }, 2000);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('상태 확인 에러:', error);
+      }
+    }, 1000); // 1초마다 상태 확인
+  };
+
+  // 홈텍스 데이터 검증
+  const verifyHometaxData = async () => {
+    setIsVerifying(true);
+    try {
+      const response = await fetch('/api/hometax/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date: toISODateString(date) }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        const message = `검증 완료: ${data.matchedCount}건이 확인되었습니다.`;
+        if (data.unmatchedCount > 0) {
+          if (confirm(`${message}\n매칭되지 않은 데이터 ${data.unmatchedCount}건이 있습니다.\n매칭되지 않은 데이터를 확인하시겠습니까?`)) {
+            setShowUnmatchedModal(true);
+          }
+        } else {
+          alert(message);
+        }
+        // 트랜잭션 목록 새로고침
+        fetchTransactions();
+      } else {
+        alert('검증 중 오류가 발생했습니다.');
+      }
+    } catch (error) {
+      console.error('검증 에러:', error);
+      alert('검증 중 오류가 발생했습니다.');
+    } finally {
+      setIsVerifying(false);
+      setCrawlingStatus(null);
+    }
+  };
+
+  // 홈텍스 상태 수동 토글
+  const toggleHometaxStatus = async (transactionId: string, currentStatus: boolean) => {
+    if (!isSuperAdmin) return;
+    
+    setUpdatingTransactionId(transactionId);
+    try {
+      const response = await fetch('/api/transactions/toggle-hometax', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          transactionId,
+          verified: !currentStatus
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        // 트랜잭션 목록 새로고침
+        fetchTransactions();
+      } else {
+        alert(data.error || '상태 변경에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('홈텍스 상태 토글 오류:', error);
+      alert('상태 변경 중 오류가 발생했습니다.');
+    } finally {
+      setUpdatingTransactionId(null);
+    }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -151,8 +289,60 @@ export default function PaymentListModal({ isOpen, onClose, title, date, payment
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
+            {paymentMethod === '현금' && (
+              <div className="flex gap-2">
+                <Button
+                  onClick={startHometaxCrawling}
+                  disabled={crawlingStatus?.isRunning || isVerifying}
+                  className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl px-4 py-2 transition-all shadow-md hover:shadow-lg disabled:opacity-50"
+                >
+                  <RefreshCw className={`h-4 w-4 ${crawlingStatus?.isRunning ? 'animate-spin' : ''}`} />
+                  홈텍스 확인
+                </Button>
+                <Button
+                  onClick={() => setShowUnmatchedModal(true)}
+                  variant="outline"
+                  className="flex items-center gap-2 border-orange-300 text-orange-700 hover:bg-orange-50 rounded-xl px-4 py-2 transition-all"
+                >
+                  <AlertCircle className="h-4 w-4" />
+                  모든 홈텍스 데이터
+                </Button>
+              </div>
+            )}
           </div>
           
+          {/* 크롤링 상태 인디케이터 */}
+          {crawlingStatus && (
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4 shadow-sm">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-semibold text-blue-800">
+                  {crawlingStatus.message}
+                </span>
+                <span className="text-sm font-bold text-blue-600">
+                  {crawlingStatus.progress}%
+                </span>
+              </div>
+              <Progress value={crawlingStatus.progress} className="h-2 bg-blue-100" />
+              {crawlingStatus.error && (
+                <div className="mt-2 flex items-center gap-2 text-red-600 bg-red-50 rounded-lg p-2">
+                  <XCircle className="h-4 w-4 flex-shrink-0" />
+                  <span className="text-sm">{crawlingStatus.error}</span>
+                </div>
+              )}
+            </div>
+          )}
+          
+          {/* 검증 중 인디케이터 */}
+          {isVerifying && (
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="w-4 h-4 border-2 border-green-600 border-t-transparent rounded-full animate-spin"></div>
+                <span className="text-sm font-semibold text-green-800">
+                  홈텍스 데이터와 매칭 중입니다...
+                </span>
+              </div>
+            </div>
+          )}
         </div>
         
         <div className="overflow-y-auto flex-1">
@@ -179,6 +369,8 @@ export default function PaymentListModal({ isOpen, onClose, title, date, payment
                     <TableHead className="w-[80px] font-semibold text-gray-700 py-4 text-sm">차트번호</TableHead>
                     <TableHead className="w-[120px] font-semibold text-gray-700 py-4 text-sm">환자명</TableHead>
                     <TableHead className="w-[90px] font-semibold text-gray-700 py-4 text-sm">결제방법</TableHead>
+                    <TableHead className="w-[90px] font-semibold text-gray-700 py-4 text-sm text-center">현금영수증</TableHead>
+                    <TableHead className="w-[80px] font-semibold text-gray-700 py-4 text-sm text-center">홈텍스</TableHead>
                     <TableHead className="w-[120px] text-right font-semibold text-gray-700 py-4 text-sm pr-6">금액</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -199,6 +391,56 @@ export default function PaymentListModal({ isOpen, onClose, title, date, payment
                           {tx.paymentMethod}
                         </span>
                       </TableCell>
+                      <TableCell className="py-3.5 text-center text-sm font-medium">
+                        {tx.cashReceipt ? (
+                          <span className="text-emerald-700">발행</span>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="py-3.5 text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <div className="flex items-center gap-1">
+                            {tx.hometaxVerified ? (
+                              <span 
+                                className={`inline-flex items-center justify-center px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold ${
+                                  isSuperAdmin ? 'cursor-pointer hover:bg-blue-200 transition-colors' : ''
+                                }`}
+                                onClick={isSuperAdmin ? () => toggleHometaxStatus(tx._id, tx.hometaxVerified || false) : undefined}
+                              >
+                                <CheckCircle2 className="w-3 h-3 mr-1" />
+                                확인
+                              </span>
+                                                         ) : (
+                               <span 
+                                 className={`inline-flex items-center justify-center px-2 py-1 bg-red-100 text-red-700 rounded-lg text-xs font-medium ${
+                                   isSuperAdmin ? 'cursor-pointer hover:bg-red-200 transition-colors' : ''
+                                 }`}
+                                 onClick={isSuperAdmin ? () => toggleHometaxStatus(tx._id, tx.hometaxVerified || false) : undefined}
+                               >
+                                 미확인
+                               </span>
+                             )}
+                            {tx.hometaxManuallyEdited && (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <Edit2 className="w-3.5 h-3.5 text-orange-500" />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p className="text-xs">수동으로 편집됨</p>
+                                    {tx.hometaxEditedAt && (
+                                      <p className="text-xs text-gray-400">
+                                        {new Date(tx.hometaxEditedAt).toLocaleDateString('ko-KR')}
+                                      </p>
+                                    )}
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            )}
+                          </div>
+                        </div>
+                      </TableCell>
                       <TableCell className="text-right py-3.5 font-bold text-gray-900 pr-6 text-sm">
                         ₩{formatAmount(tx.paymentAmount)}
                       </TableCell>
@@ -218,6 +460,13 @@ export default function PaymentListModal({ isOpen, onClose, title, date, payment
                 <div className="text-sm text-gray-600">
                   총 <span className="font-bold text-gray-900 text-base">{filteredTransactions.length}</span>건
                 </div>
+                {paymentMethod === '현금' && (
+                  <div className="text-sm text-gray-600">
+                    홈텍스 확인: <span className="font-bold text-blue-700">
+                      {filteredTransactions.filter(tx => tx.hometaxVerified).length}
+                    </span>건
+                  </div>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-gray-500">합계</span>
@@ -229,6 +478,13 @@ export default function PaymentListModal({ isOpen, onClose, title, date, payment
           </div>
         )}
       </DialogContent>
+      
+      <HometaxUnmatchedModal 
+        isOpen={showUnmatchedModal}
+        onClose={() => setShowUnmatchedModal(false)}
+        date={date}
+        type={type}
+      />
     </Dialog>
   );
 } 
