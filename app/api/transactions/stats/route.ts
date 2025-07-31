@@ -57,7 +57,8 @@ export async function GET(request: NextRequest) {
     
     // 쿼리 조건 생성
     const query: any = {
-      date: { $gte: startDate, $lte: endDate }
+      date: { $gte: startDate, $lte: endDate },
+      paymentMethod: { $ne: '수납없음' } // '수납없음' 결제방법 제외
     };
     
     // 결제 방법 필터링
