@@ -115,11 +115,14 @@ export default function PaymentListModal({ isOpen, onClose, title, date, payment
 
   // 검색어 변경 처리
   useEffect(() => {
+    // '수납없음' 결제방법은 제외
+    const filteredByPayment = transactions.filter(tx => tx.paymentMethod !== '수납없음');
+    
     if (searchTerm.trim() === '') {
-      setFilteredTransactions(sortTransactionsByDate(transactions));
+      setFilteredTransactions(sortTransactionsByDate(filteredByPayment));
     } else {
       const term = searchTerm.toLowerCase();
-      const filtered = transactions.filter(
+      const filtered = filteredByPayment.filter(
         (tx) =>
           tx.chartNumber?.toLowerCase().includes(term) ||
           tx.patientName?.toLowerCase().includes(term)
@@ -369,8 +372,12 @@ export default function PaymentListModal({ isOpen, onClose, title, date, payment
                     <TableHead className="w-[80px] font-semibold text-gray-700 py-4 text-sm">차트번호</TableHead>
                     <TableHead className="w-[120px] font-semibold text-gray-700 py-4 text-sm">환자명</TableHead>
                     <TableHead className="w-[90px] font-semibold text-gray-700 py-4 text-sm">결제방법</TableHead>
-                    <TableHead className="w-[90px] font-semibold text-gray-700 py-4 text-sm text-center">현금영수증</TableHead>
-                    <TableHead className="w-[80px] font-semibold text-gray-700 py-4 text-sm text-center">홈텍스</TableHead>
+                    {paymentMethod === '현금' && (
+                      <>
+                        <TableHead className="w-[90px] font-semibold text-gray-700 py-4 text-sm text-center">현금영수증</TableHead>
+                        <TableHead className="w-[80px] font-semibold text-gray-700 py-4 text-sm text-center">홈텍스</TableHead>
+                      </>
+                    )}
                     <TableHead className="w-[120px] text-right font-semibold text-gray-700 py-4 text-sm pr-6">금액</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -391,56 +398,60 @@ export default function PaymentListModal({ isOpen, onClose, title, date, payment
                           {tx.paymentMethod}
                         </span>
                       </TableCell>
-                      <TableCell className="py-3.5 text-center text-sm font-medium">
-                        {tx.cashReceipt ? (
-                          <span className="text-emerald-700">발행</span>
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="py-3.5 text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          <div className="flex items-center gap-1">
-                            {tx.hometaxVerified ? (
-                              <span 
-                                className={`inline-flex items-center justify-center px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold ${
-                                  isSuperAdmin ? 'cursor-pointer hover:bg-blue-200 transition-colors' : ''
-                                }`}
-                                onClick={isSuperAdmin ? () => toggleHometaxStatus(tx._id, tx.hometaxVerified || false) : undefined}
-                              >
-                                <CheckCircle2 className="w-3 h-3 mr-1" />
-                                확인
-                              </span>
-                                                         ) : (
-                               <span 
-                                 className={`inline-flex items-center justify-center px-2 py-1 bg-red-100 text-red-700 rounded-lg text-xs font-medium ${
-                                   isSuperAdmin ? 'cursor-pointer hover:bg-red-200 transition-colors' : ''
-                                 }`}
-                                 onClick={isSuperAdmin ? () => toggleHometaxStatus(tx._id, tx.hometaxVerified || false) : undefined}
-                               >
-                                 미확인
-                               </span>
-                             )}
-                            {tx.hometaxManuallyEdited && (
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger>
-                                    <Edit2 className="w-3.5 h-3.5 text-orange-500" />
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p className="text-xs">수동으로 편집됨</p>
-                                    {tx.hometaxEditedAt && (
-                                      <p className="text-xs text-gray-400">
-                                        {new Date(tx.hometaxEditedAt).toLocaleDateString('ko-KR')}
-                                      </p>
-                                    )}
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
+                      {paymentMethod === '현금' && (
+                        <>
+                          <TableCell className="py-3.5 text-center text-sm font-medium">
+                            {tx.cashReceipt ? (
+                              <span className="text-emerald-700">발행</span>
+                            ) : (
+                              <span className="text-gray-400">-</span>
                             )}
-                          </div>
-                        </div>
-                      </TableCell>
+                          </TableCell>
+                          <TableCell className="py-3.5 text-center">
+                            <div className="flex items-center justify-center gap-2">
+                              <div className="flex items-center gap-1">
+                                {tx.hometaxVerified ? (
+                                  <span 
+                                    className={`inline-flex items-center justify-center px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold ${
+                                      isSuperAdmin ? 'cursor-pointer hover:bg-blue-200 transition-colors' : ''
+                                    }`}
+                                    onClick={isSuperAdmin ? () => toggleHometaxStatus(tx._id, tx.hometaxVerified || false) : undefined}
+                                  >
+                                    <CheckCircle2 className="w-3 h-3 mr-1" />
+                                    확인
+                                  </span>
+                                ) : (
+                                   <span 
+                                     className={`inline-flex items-center justify-center px-2 py-1 bg-red-100 text-red-700 rounded-lg text-xs font-medium ${
+                                       isSuperAdmin ? 'cursor-pointer hover:bg-red-200 transition-colors' : ''
+                                     }`}
+                                     onClick={isSuperAdmin ? () => toggleHometaxStatus(tx._id, tx.hometaxVerified || false) : undefined}
+                                   >
+                                     미확인
+                                   </span>
+                                 )}
+                                {tx.hometaxManuallyEdited && (
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger>
+                                        <Edit2 className="w-3.5 h-3.5 text-orange-500" />
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p className="text-xs">수동으로 편집됨</p>
+                                        {tx.hometaxEditedAt && (
+                                          <p className="text-xs text-gray-400">
+                                            {new Date(tx.hometaxEditedAt).toLocaleDateString('ko-KR')}
+                                          </p>
+                                        )}
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                )}
+                              </div>
+                            </div>
+                          </TableCell>
+                        </>
+                      )}
                       <TableCell className="text-right py-3.5 font-bold text-gray-900 pr-6 text-sm">
                         ₩{formatAmount(tx.paymentAmount)}
                       </TableCell>
