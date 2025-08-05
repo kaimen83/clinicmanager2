@@ -95,10 +95,10 @@ export async function GET(request: NextRequest) {
       // 진료외수입 계산
       const extraIncome = extraincomes.reduce((sum, income) => sum + (Number(income.amount) || 0), 0);
       
-      // 실제 매출이 있었던 날짜 수 (0원이 아닌 날짜만)
-      const treatmentDays = Array.from(dailyRevenueMap.values()).filter(revenue => revenue > 0).length;
+      // 실제 트랜잭션이 있었던 날짜 수 (원장별 계산 방식과 통일)
+      const treatmentDays = dailyRevenueMap.size;
       
-      // 일평균 계산 (실제 매출이 있었던 날짜만 기준)
+      // 일평균 계산 (트랜잭션이 있었던 모든 날짜 기준)
       const avgTotalRevenue = treatmentDays > 0 ? Math.round(totalRevenue / treatmentDays) : 0;
       const avgCashRevenue = treatmentDays > 0 ? Math.round(cashRevenue / treatmentDays) : 0;
       
