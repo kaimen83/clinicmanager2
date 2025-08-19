@@ -363,8 +363,8 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
     }
     
     if (currentTreatmentGroup.paymentMethod !== '수납없음' && 
-        (currentTreatmentGroup.paymentAmount <= 0 || isNaN(currentTreatmentGroup.paymentAmount))) {
-      newErrors.paymentAmount = '수납금액은 0보다 커야 합니다.';
+        (currentTreatmentGroup.paymentAmount === 0 || isNaN(currentTreatmentGroup.paymentAmount))) {
+      newErrors.paymentAmount = '수납금액을 입력해주세요.';
     }
     
     setErrors(newErrors);
@@ -645,7 +645,7 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
     const isCurrentGroupValid = 
       currentTreatmentGroup.doctor && 
       currentTreatmentGroup.treatmentType && 
-      ((currentTreatmentGroup.paymentMethod !== '수납없음' && currentTreatmentGroup.paymentAmount > 0) || 
+      ((currentTreatmentGroup.paymentMethod !== '수납없음' && currentTreatmentGroup.paymentAmount !== 0) || 
        currentTreatmentGroup.paymentMethod === '수납없음') &&
       (currentTreatmentGroup.paymentMethod !== '카드' || 
        (currentTreatmentGroup.paymentMethod === '카드' && currentTreatmentGroup.cardCompany));
@@ -659,7 +659,7 @@ export default function PatientTransactionForm({ isOpen, onClose, onTransactionA
     } else if (
       currentTreatmentGroup.doctor || 
       currentTreatmentGroup.treatmentType || 
-      (currentTreatmentGroup.paymentMethod !== '수납없음' && currentTreatmentGroup.paymentAmount > 0)
+      (currentTreatmentGroup.paymentMethod !== '수납없음' && currentTreatmentGroup.paymentAmount !== 0)
     ) {
       // 일부만 입력된 경우 오류 메시지 표시
       toast({

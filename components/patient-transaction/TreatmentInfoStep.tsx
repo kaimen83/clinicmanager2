@@ -31,7 +31,7 @@ export default function TreatmentInfoStep({
   const isCurrentGroupValid = 
     currentTreatmentGroup.doctor && 
     currentTreatmentGroup.treatmentType && 
-    ((currentTreatmentGroup.paymentMethod !== '수납없음' && currentTreatmentGroup.paymentAmount > 0) || 
+    ((currentTreatmentGroup.paymentMethod !== '수납없음' && currentTreatmentGroup.paymentAmount !== 0) || 
      currentTreatmentGroup.paymentMethod === '수납없음') &&
     (currentTreatmentGroup.paymentMethod !== '카드' || 
      (currentTreatmentGroup.paymentMethod === '카드' && currentTreatmentGroup.cardCompany));
@@ -58,12 +58,17 @@ export default function TreatmentInfoStep({
     }
   }, [currentTreatmentGroup.paymentAmount, isPaymentAmountFocused]);
 
-  // 숫자만 입력 허용하는 함수
+  // 숫자만 입력 허용하는 함수 (마이너스 포함)
   const formatNumberInput = (value: string): string => {
-    // 숫자가 아닌 문자 제거
+    // 마이너스 기호와 숫자만 남기기
+    const isNegative = value.includes('-');
     const numbersOnly = value.replace(/[^\d]/g, '');
     // 천단위 구분자 추가
-    return numbersOnly ? parseInt(numbersOnly).toLocaleString() : '';
+    if (numbersOnly) {
+      const formatted = parseInt(numbersOnly).toLocaleString();
+      return isNegative ? '-' + formatted : formatted;
+    }
+    return isNegative ? '-' : '';
   };
 
   // 수납금액 입력 처리
@@ -72,9 +77,10 @@ export default function TreatmentInfoStep({
     const formattedValue = formatNumberInput(inputValue);
     setPaymentAmountDisplay(formattedValue);
     
-    // 숫자 값으로 변환하여 상태 업데이트
+    // 숫자 값으로 변환하여 상태 업데이트 (마이너스 포함)
+    const isNegative = formattedValue.startsWith('-');
     const numericValue = formattedValue.replace(/[^\d]/g, '');
-    const amount = numericValue ? parseInt(numericValue) : 0;
+    const amount = numericValue ? (isNegative ? -parseInt(numericValue) : parseInt(numericValue)) : 0;
     
     // 가짜 이벤트 객체 생성하여 기존 핸들러 호출
     const fakeEvent = {
