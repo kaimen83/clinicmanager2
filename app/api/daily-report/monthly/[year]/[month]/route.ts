@@ -84,7 +84,8 @@ export async function GET(
       // 결제 방법별 집계 (수납없음 제외)
       const paidTransactions = dayTransactions.filter((t: any) => t.paymentMethod !== '수납없음' && t.paymentAmount > 0);
       
-      const cardAmount = paidTransactions
+      // 카드 금액 계산 (마이너스 값 포함 - 환불 등)
+      const cardAmount = dayTransactions
         .filter((t: any) => t.paymentMethod === '카드')
         .reduce((sum: number, t: any) => sum + (t.paymentAmount || 0), 0);
 
