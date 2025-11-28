@@ -144,25 +144,32 @@ export async function GET(request: NextRequest) {
 
         // 활동 내역 및 통계 계산
         logs.forEach(log => {
+            // productId가 null인 경우 (삭제된 제품) 건너뛰기
+            if (!log.productId) {
+                return;
+            }
+            
+            const product = log.productId as any;
+            
             if (log.type === 'OUT') {
                 statistics.totalUsage += log.quantity;
-                statistics.totalAmount += log.quantity * (log.productId as any).price;
+                statistics.totalAmount += log.quantity * (product.price || 0);
                 if (log.outReason === '폐기') {
                     statistics.totalDisposal += log.quantity;
                 }
             } else {
                 statistics.totalStockIn += log.quantity;
-                statistics.totalStockInAmount += log.quantity * (log.productId as any).price;
+                statistics.totalStockInAmount += log.quantity * (product.price || 0);
             }
 
             statistics.activities.push({
                 _id: log._id,
                 date: log.date,
                 type: log.type,
-                category: (log.productId as any).category,
-                productName: (log.productId as any).name,
-                specification: (log.productId as any).specification,
-                usage: (log.productId as any).usage,
+                category: product.category || '알 수 없음',
+                productName: product.name || '삭제된 제품',
+                specification: product.specification || '',
+                usage: product.usage || '알 수 없음',
                 quantity: log.quantity,
                 patientName: log.patientName,
                 doctor: log.doctor,
@@ -176,7 +183,7 @@ export async function GET(request: NextRequest) {
             const products = await ImplantProduct.find();
             for (const product of products) {
                 const productLogs = logs.filter(log => 
-                    (log.productId as any)._id.toString() === product._id.toString()
+                    log.productId && (log.productId as any)._id.toString() === product._id.toString()
                 );
 
                 const totalUsage = productLogs
