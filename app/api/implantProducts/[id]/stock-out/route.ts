@@ -39,21 +39,6 @@ const implantProductSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// 재고 업데이트 메서드
-implantProductSchema.methods.updateStock = async function(quantity: number) {
-  // 음수 재고 방지
-  if (this.stock + quantity < 0) {
-    throw new Error('재고가 부족합니다.');
-  }
-  
-  // 재고 업데이트
-  this.stock += quantity;
-  this.updatedAt = createNewDate();
-  
-  // 변경사항 저장
-  return await this.save();
-};
-
 const ImplantProduct = mongoose.models.ImplantProduct || mongoose.model('ImplantProduct', implantProductSchema);
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -77,8 +62,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             return NextResponse.json({ message: '재고가 부족합니다.' }, { status: 400 });
         }
 
-        // 재고 업데이트
-        await product.updateStock(-quantity);
+        // 재고 업데이트 (직접 업데이트)
+        product.stock -= quantity;
+        product.updatedAt = createNewDate();
+        await product.save();
 
         // 출고 기록 생성
         const log = new ImplantInventoryLog({
