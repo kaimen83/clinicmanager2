@@ -3,8 +3,50 @@ import { currentUser } from '@clerk/nextjs/server';
 import mongoose from 'mongoose';
 import dbConnect from '@/lib/mongoose';
 
+// ImplantProduct 모델 스키마 정의
+const implantProductSchema = new mongoose.Schema({
+  category: {
+    type: String,
+    required: true,
+    enum: ['fixture', '이식재', '소모품', '기타']
+  },
+  name: {
+    type: String,
+    required: true
+  },
+  specification: {
+    type: String,
+    required: false
+  },
+  price: {
+    type: Number,
+    required: true,
+    min: 0
+  },
+  stock: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  usage: {
+    type: String,
+    required: true,
+    enum: ['원내', '기공소']
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now
+  }
+}, {
+  timestamps: true
+});
+
 // 모델이 이미 등록되어 있는지 확인 후 등록
-const ImplantProduct = mongoose.models.ImplantProduct;
+const ImplantProduct = mongoose.models.ImplantProduct || mongoose.model('ImplantProduct', implantProductSchema);
 
 // 특정 ID 임플란트 제품 조회
 export async function GET(
