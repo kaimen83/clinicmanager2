@@ -181,8 +181,8 @@ export default function ImplantSpecificationList({ title }: ImplantSpecification
 
       // 새로 추가된 제품 데이터 가져오기
       const data = await response.json();
-      // 로컬 상태 업데이트
-      setProducts(prevProducts => [...prevProducts, data]);
+      // 로컬 상태 업데이트 (API 응답에서 product 필드 사용)
+      setProducts(prevProducts => [...prevProducts, data.product]);
       
       resetNewProductFields();
       setIsAddDialogOpen(false);
