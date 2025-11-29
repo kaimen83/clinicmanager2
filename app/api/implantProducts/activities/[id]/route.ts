@@ -75,9 +75,18 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
             return NextResponse.json({ message: '제품을 찾을 수 없습니다.' }, { status: 404 });
         }
 
-        // 재고 수량 복구
+        // 재고 수량 복구 (updateStock 메서드 대신 직접 업데이트 - 모델 중복 정의 문제 해결)
         const quantityChange = log.type === 'IN' ? -log.quantity : log.quantity;
-        await product.updateStock(quantityChange);
+        const newStock = product.stock + quantityChange;
+        
+        // 음수 재고 방지
+        if (newStock < 0) {
+            return NextResponse.json({ message: '재고가 부족하여 삭제할 수 없습니다. 다른 활동 내역을 먼저 삭제해주세요.' }, { status: 400 });
+        }
+        
+        product.stock = newStock;
+        product.updatedAt = new Date();
+        await product.save();
 
         // 활동 내역 삭제
         await ImplantInventoryLog.findByIdAndDelete(resolvedParams.id);
