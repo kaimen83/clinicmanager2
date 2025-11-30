@@ -32,8 +32,10 @@ export default function BulkDepositModal({
   onClose, 
   onComplete 
 }: BulkDepositModalProps) {
-  // 폼 상태
-  const [actualDepositDate, setActualDepositDate] = useState<Date>(new Date());
+  // 폼 상태 - 입금예정일 중 가장 빠른 날짜를 기본값으로 설정
+  const [actualDepositDate, setActualDepositDate] = useState<Date>(
+    new Date(Math.min(...items.map(item => new Date(item.expectedDepositDate).getTime())))
+  );
   const [totalActualAmountInput, setTotalActualAmountInput] = useState('');
   const [showCalendar, setShowCalendar] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
