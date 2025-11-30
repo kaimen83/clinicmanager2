@@ -32,7 +32,7 @@ export default function IndividualDepositModal({
   onComplete 
 }: IndividualDepositModalProps) {
   // 폼 상태
-  const [actualDepositDate, setActualDepositDate] = useState<Date>(new Date());
+  const [actualDepositDate, setActualDepositDate] = useState<Date>(new Date(item.expectedDepositDate));
   const [actualAmountInput, setActualAmountInput] = useState('');
   const [showCalendar, setShowCalendar] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
