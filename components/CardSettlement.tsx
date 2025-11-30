@@ -126,16 +126,23 @@ export default function CardSettlement() {
         return;
       }
       
-      // 첫 선택이거나 같은 카드사인 경우만 허용
-      if (selectedItems.length === 0 || selectedItems[0]._id.cardCompany === item._id.cardCompany) {
-        setSelectedItems(prev => [...prev, item]);
-      } else {
-        alert('같은 카드사 항목만 일괄처리 가능합니다.');
+      // 첫 선택 시 카드사 필터도 자동 적용
+      if (selectedItems.length === 0) {
+        setSelectedCardCompany(item._id.cardCompany);
       }
+      
+      setSelectedItems(prev => [...prev, item]);
     } else {
-      setSelectedItems(prev => prev.filter(selected => 
-        !(selected._id.date === item._id.date && selected._id.cardCompany === item._id.cardCompany)
-      ));
+      setSelectedItems(prev => {
+        const newSelectedItems = prev.filter(selected => 
+          !(selected._id.date === item._id.date && selected._id.cardCompany === item._id.cardCompany)
+        );
+        // 모두 해제되면 필터도 초기화
+        if (newSelectedItems.length === 0) {
+          setSelectedCardCompany('all');
+        }
+        return newSelectedItems;
+      });
     }
   };
 
@@ -194,6 +201,7 @@ export default function CardSettlement() {
   // 처리 완료 후 데이터 새로고침
   const handleProcessComplete = () => {
     setSelectedItems([]);
+    setSelectedCardCompany('all');
     setModalType(null);
     setCurrentItem(null);
     fetchData(); // 데이터 새로고침
@@ -354,7 +362,10 @@ export default function CardSettlement() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setSelectedItems([])}
+                  onClick={() => {
+                    setSelectedItems([]);
+                    setSelectedCardCompany('all');
+                  }}
                 >
                   선택 해제
                 </Button>
