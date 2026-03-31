@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, UserRound, Stethoscope, ClipboardList, CreditCard, DollarSign, Package, FileSpreadsheet, Users, ReceiptText, ShoppingBag, HardDrive, FileUp, MessageSquare } from "lucide-react";
+import { Settings, UserRound, Stethoscope, ClipboardList, CreditCard, DollarSign, Package, FileSpreadsheet, Users, ReceiptText, ShoppingBag, HardDrive, FileUp, MessageSquare, Truck } from "lucide-react";
 import { Button } from "./ui/button";
 import SettingsList from "./SettingsList";
 import { Badge } from "./ui/badge";
@@ -13,6 +13,7 @@ import ImplantSubTabs from "./ImplantSubTabs";
 import DentalProductsList from "./DentalProductsList";
 import DatabaseBackup from "./DatabaseBackup";
 import ExcelImporter from "./ExcelImporter";
+import VendorManager from "./VendorManager";
 
 type TabItem = {
   id: string;
@@ -89,6 +90,11 @@ export default function SystemSettingsModal() {
       settingType: "expenseAccount"
     },
     {
+      id: "vendors",
+      label: "거래처",
+      icon: <Truck className="h-4 w-4" />
+    },
+    {
       id: "oralProducts",
       label: "구강용품",
       icon: <ShoppingBag className="h-4 w-4" />,
@@ -136,6 +142,9 @@ export default function SystemSettingsModal() {
         
       case "excelImport":
         return <ExcelImporter title="엑셀 파일 불러오기" />;
+        
+      case "vendors":
+        return <VendorManager title="거래처 관리" />;
         
       case "oralProducts":
         return (
